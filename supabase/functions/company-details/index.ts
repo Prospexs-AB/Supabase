@@ -16,21 +16,50 @@ Deno.serve(async (req) => {
   );
 
   try {
+    // Authentication logic
+    let userId = null;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization header is required" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    try {
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired token" }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 401,
+          }
+        );
+      }
+
+      userId = user.id;
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: "Authentication failed" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    // Route handling
     switch (method) {
       case "GET":
-        const url = new URL(req.url);
-        const userId = url.searchParams.get("user_id");
-
-        if (!userId) {
-          return new Response(
-            JSON.stringify({ error: "user_id parameter is required" }),
-            {
-              headers: { "Content-Type": "application/json" },
-              status: 400,
-            }
-          );
-        }
-
         try {
           const { data, error } = await supabase
             .from("user_details")
@@ -62,17 +91,7 @@ Deno.serve(async (req) => {
 
       case "POST":
         const body = await req.json();
-        const { user_id, company_name, company_website } = body;
-
-        if (!user_id) {
-          return new Response(
-            JSON.stringify({ error: "user_id is required" }),
-            {
-              headers: { "Content-Type": "application/json" },
-              status: 400,
-            }
-          );
-        }
+        const { company_name, company_website } = body;
 
         if (!company_name) {
           return new Response(
@@ -89,7 +108,7 @@ Deno.serve(async (req) => {
             .from("user_details")
             .upsert(
               {
-                user_id,
+                user_id: userId,
                 company_name,
                 company_website,
               },
@@ -150,14 +169,15 @@ Deno.serve(async (req) => {
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
 
-  # GET request (retrieve company details by user_id)
-  curl -i --location --request GET 'http://127.0.0.1:54321/functions/v1/company-details?user_id=YOUR_USER_UUID' \
-    --header 'Authorization: Bearer YOUR_ANON_KEY'
+  # GET request (retrieve company details for authenticated user)
+  curl -i --location --request GET 'http://127.0.0.1:54321/functions/v1/company-details' \
+    --header 'Authorization: Bearer YOUR_JWT_TOKEN'
 
   # POST request (create/update company details)
+  # Note: user_id is automatically extracted from JWT token
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/company-details' \
-    --header 'Authorization: Bearer YOUR_ANON_KEY' \
+    --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
     --header 'Content-Type: application/json' \
-    --data '{"user_id":"YOUR_USER_UUID","company_name":"Example Corp","company_website":"https://example.com"}'
+    --data '{"company_name":"Example Corp","company_website":"https://example.com"}'
 
 */
