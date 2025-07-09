@@ -13,21 +13,46 @@ Deno.serve(async (req) => {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
   );
 
+  // Authentication logic
+  let userId = null;
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "Authorization header is required" }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 401,
+      }
+    );
+  }
+
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    userId = user.id;
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Authentication failed" }), {
+      headers: { "Content-Type": "application/json" },
+      status: 401,
+    });
+  }
+
   switch (method) {
     case "GET":
-      const url = new URL(req.url);
-      const userId = url.searchParams.get("user_id");
-
-      if (!userId) {
-        return new Response(
-          JSON.stringify({ error: "user_id parameter is required" }),
-          {
-            headers: { "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
-      }
-
       try {
         const { data, error } = await supabase
           .from("campaigns")
@@ -57,21 +82,11 @@ Deno.serve(async (req) => {
       }
 
     case "POST":
-      const body = await req.json();
-      const { user_id } = body;
-
-      if (!user_id) {
-        return new Response(JSON.stringify({ error: "user_id is required" }), {
-          headers: { "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-
       try {
         const { data, error } = await supabase
           .from("campaigns")
           .insert({
-            user_id,
+            user_id: userId,
           })
           .select()
           .single();
