@@ -53,32 +53,81 @@ Deno.serve(async (req) => {
 
   switch (method) {
     case "GET":
-      try {
-        const { data, error } = await supabase
-          .from("campaigns")
-          .select("*")
-          .eq("user_id", userId);
+      const url = new URL(req.url);
+      const campaignId = url.searchParams.get("campaign_id");
 
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            headers: { "Content-Type": "application/json" },
-            status: 500,
-          });
-        }
+      if (!campaignId) {
+        try {
+          const { data, error } = await supabase
+            .from("campaigns")
+            .select("*")
+            .eq("user_id", userId);
 
-        return new Response(JSON.stringify({ data }), {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        });
-      } catch (dbError) {
-        console.error("Database error:", dbError);
-        return new Response(
-          JSON.stringify({ error: "Failed to fetch company details" }),
-          {
-            headers: { "Content-Type": "application/json" },
-            status: 500,
+          if (error) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            });
           }
-        );
+
+          return new Response(JSON.stringify({ data }), {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          return new Response(
+            JSON.stringify({ error: "Failed to fetch company details" }),
+            {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            }
+          );
+        }
+      } else {
+        try {
+          const { data, error } = await supabase
+            .from("campaigns")
+            .select(
+              `
+              id,
+              created_at,
+              language,
+              company_name,
+              company_website,
+              campaign_progress (
+                id,
+                latest_step,
+                status,
+                created_at
+              )
+            `
+            )
+            .eq("user_id", userId)
+            .eq("id", campaignId)
+            .single();
+
+          if (error) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            });
+          }
+
+          return new Response(JSON.stringify({ data }), {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          return new Response(
+            JSON.stringify({ error: "Failed to fetch campaign details" }),
+            {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            }
+          );
+        }
       }
 
     case "POST":
