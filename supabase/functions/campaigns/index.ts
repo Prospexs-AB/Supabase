@@ -131,17 +131,6 @@ Deno.serve(async (req) => {
       }
 
     case "POST":
-      const body = await req.json();
-      if (!body.company_name || !body.company_website) {
-        return new Response(
-          JSON.stringify({ error: "company name and website url is required" }),
-          {
-            headers: { "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
-      }
-
       try {
         const { data: campaignProgressData, error: campaignProgressError } =
           await supabase
@@ -169,8 +158,6 @@ Deno.serve(async (req) => {
           .from("campaigns")
           .insert({
             user_id: userId,
-            company_name: body.company_name,
-            company_website: body.company_website,
             progress_id: campaignProgressId,
           })
           .select()
