@@ -4,6 +4,7 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
 function cleanHtmlContent(html: string): string | null {
@@ -33,21 +34,74 @@ function cleanHtmlContent(html: string): string | null {
 
 Deno.serve(async (req) => {
   try {
-    const { url } = await req.json();
-
-    if (!url) {
+    const supabase = createClient(
+      "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
+    );
+    // Authentication logic
+    let userId = null;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "URL parameter is required" }),
+        JSON.stringify({ error: "Authorization header is required" }),
         {
-          status: 400,
           headers: { "Content-Type": "application/json" },
+          status: 401,
         }
       );
     }
 
-    const websiteUrl = url;
+    try {
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired token" }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 401,
+          }
+        );
+      }
+
+      userId = user.id;
+    } catch (error) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const { campaign_id, company_name, company_website } = await req.json();
+    if (!company_name || !company_website) {
+      return new Response(
+        JSON.stringify({ error: "company name and website url is required" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+
+    const { data: campaignData, error: campaignError } = await supabase
+      .from("campaigns")
+      .update({ company_name, company_website })
+      .eq("user_id", userId)
+      .eq("id", campaign_id)
+      .select()
+      .single();
+
+    await supabase
+      .from("campaign_progress")
+      .update({ latest_step: 1 })
+      .eq("id", campaignData.progress_id);
+
     const params = new URLSearchParams({
-      url: websiteUrl,
+      url: company_website,
       apikey: Deno.env.get("ZENROWS_API"),
     });
     const response = await fetch(
@@ -76,7 +130,7 @@ Deno.serve(async (req) => {
     }
 
     console.log("Analyzing content with OpenAI...");
-    const prompt = `Write a brief but comprehensive bio for ${websiteUrl} based on the following content from their website and any other verifiable sources. Keep the bio under 150 words. Avoid unnecessary details or lengthy descriptions. Focus on the most important details while keeping it concise:
+    const prompt = `Write a brief but comprehensive bio for ${company_website} based on the following content from their website and any other verifiable sources. Keep the bio under 150 words. Avoid unnecessary details or lengthy descriptions. Focus on the most important details while keeping it concise:
 
     ${content.substring(0, 8000)}
 
