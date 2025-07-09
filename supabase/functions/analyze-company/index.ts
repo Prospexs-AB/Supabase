@@ -6,8 +6,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
-console.log("Hello from Functions!");
-
 function cleanHtmlContent(html: string): string | null {
   try {
     const textContent = html
