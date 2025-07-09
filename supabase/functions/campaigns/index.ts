@@ -82,26 +82,65 @@ Deno.serve(async (req) => {
       }
 
     case "POST":
+      const body = await req.json();
+      if (!body.company_name || !body.company_website) {
+        return new Response(
+          JSON.stringify({ error: "company name and website url is required" }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
+
       try {
-        const { data, error } = await supabase
+        const { data: campaignProgressData, error: campaignProgressError } =
+          await supabase
+            .from("campaign_progress")
+            .insert({
+              latest_step: 0,
+              status: "in_progress",
+            })
+            .select()
+            .single();
+
+        if (campaignProgressError) {
+          return new Response(
+            JSON.stringify({ error: campaignProgressError.message }),
+            {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            }
+          );
+        }
+
+        const campaignProgressId = campaignProgressData.id;
+
+        const { data: campaignData, error: campaignError } = await supabase
           .from("campaigns")
           .insert({
             user_id: userId,
+            company_name: body.company_name,
+            company_website: body.company_website,
+            progress_id: campaignProgressId,
           })
           .select()
           .single();
 
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            headers: { "Content-Type": "application/json" },
-            status: 500,
-          });
+        if (campaignError) {
+          return new Response(
+            JSON.stringify({ error: campaignError.message }),
+            {
+              headers: { "Content-Type": "application/json" },
+              status: 500,
+            }
+          );
         }
 
         return new Response(
           JSON.stringify({
             message: "Campaign created successfully",
-            data,
+            campaignData,
           }),
           {
             headers: { "Content-Type": "application/json" },
@@ -134,6 +173,6 @@ Deno.serve(async (req) => {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/campaigns' \
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    --data '{"company_name":"Functions","company_website":"https://functions.com"}'
 
 */
