@@ -1,0 +1,119 @@
+// Follow this setup guide to integrate the Deno language server with your editor:
+// https://deno.land/manual/getting_started/setup_your_environment
+// This enables autocomplete, go to definition, etc.
+
+// Setup type definitions for built-in Supabase Runtime APIs
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
+
+const getUserId = async (req: Request, supabase: SupabaseClient) => {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    throw new Error("Authorization header is required");
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    throw new Error("Invalid or expired token");
+  }
+
+  return user.id;
+};
+
+Deno.serve(async (req) => {
+  const supabase = createClient(
+    "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
+  );
+
+  try {
+    const userId = await getUserId(req, supabase);
+
+    const body = await req.json();
+
+    const { campaign_id, language } = body;
+
+    if (!campaign_id) {
+      return new Response(
+        JSON.stringify({ error: "campaign_id is required" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+
+    if (!language) {
+      return new Response(JSON.stringify({ error: "language is required" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    const { data: campaignData, error: campaignError } = await supabase
+      .from("campaigns")
+      .update({ language })
+      .eq("user_id", userId)
+      .eq("id", campaign_id)
+      .select()
+      .single();
+
+    if (campaignError) {
+      return new Response(JSON.stringify({ error: campaignError.message }), {
+        headers: { "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const { error: progressError } = await supabase
+      .from("campaign_progress")
+      .update({ latest_step: 1 })
+      .eq("id", campaignData.progress_id);
+
+    if (progressError) {
+      return new Response(JSON.stringify({ error: progressError.message }), {
+        headers: { "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: "Campaign language updated successfully",
+        data: campaignData,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { "Content-Type": "application/json" },
+      status:
+        error.message.includes("Authorization") ||
+        error.message.includes("Invalid")
+          ? 401
+          : 500,
+    });
+  }
+});
+
+/* To invoke locally:
+
+  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
+  2. Make an HTTP request:
+
+  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/campaign-language' \
+    --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
+    --header 'Content-Type: application/json' \
+    --data '{"campaign_id":"123","language":"en"}'
+
+*/
