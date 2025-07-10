@@ -6,50 +6,31 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const getUserId = async (req: Request, supabase: SupabaseClient) => {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    throw new Error("Authorization header is required");
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    throw new Error("Invalid or expired token");
+  }
+
+  return user.id;
+};
+
 Deno.serve(async (req) => {
   const method = req.method.toUpperCase();
   const supabase = createClient(
     "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
   );
-
-  // Authentication logic
-  let userId = null;
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ error: "Authorization header is required" }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 401,
-      }
-    );
-  }
-
-  try {
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
-    }
-
-    userId = user.id;
-  } catch (error) {
-    return new Response(JSON.stringify({ error: "Authentication failed" }), {
-      headers: { "Content-Type": "application/json" },
-      status: 401,
-    });
-  }
+  const userId = await getUserId(req, supabase);
 
   switch (method) {
     case "GET":
