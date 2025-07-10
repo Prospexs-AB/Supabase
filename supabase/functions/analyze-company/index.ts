@@ -76,28 +76,26 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    await supabase
-      .from("campaign_progress")
-      .update({ latest_step: 2 })
-      .eq("id", campaignData.progress_id);
-
     const params = new URLSearchParams({
       url: company_website,
       apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
     });
-    
+
     console.log("Scraping URL:", company_website);
-    console.log("Using ZenRows API key:", Deno.env.get("ZENROWS_API") ? "Present" : "Missing");
-    
+    console.log(
+      "Using ZenRows API key:",
+      Deno.env.get("ZENROWS_API") ? "Present" : "Missing"
+    );
+
     const response = await fetch(
       `https://api.zenrows.com/v1/?${params.toString()}`
     );
-    
+
     console.log("ZenRows response status:", response.status);
     const html = await response.text();
     console.log("Raw HTML length:", html.length);
     console.log("Raw HTML preview:", html.substring(0, 500));
-    
+
     const content = cleanHtmlContent(html);
     console.log(
       "Extracted content:",
@@ -207,6 +205,12 @@ Deno.serve(async (req) => {
 
       const parsedAnalysis = JSON.parse(cleanAnalysis);
       console.log("Parsed analysis:", parsedAnalysis);
+
+      await supabase
+        .from("campaign_progress")
+        .update({ latest_step: 2, step_2_result: parsedAnalysis })
+        .eq("id", campaignData.progress_id);
+
       return new Response(JSON.stringify({ data: parsedAnalysis }), {
         headers: { "Content-Type": "application/json" },
       });
