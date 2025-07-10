@@ -83,12 +83,21 @@ Deno.serve(async (req) => {
 
     const params = new URLSearchParams({
       url: company_website,
-      apikey: Deno.env.get("ZENROWS_API"),
+      apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
     });
+    
+    console.log("Scraping URL:", company_website);
+    console.log("Using ZenRows API key:", Deno.env.get("ZENROWS_API") ? "Present" : "Missing");
+    
     const response = await fetch(
       `https://api.zenrows.com/v1/?${params.toString()}`
     );
+    
+    console.log("ZenRows response status:", response.status);
     const html = await response.text();
+    console.log("Raw HTML length:", html.length);
+    console.log("Raw HTML preview:", html.substring(0, 500));
+    
     const content = cleanHtmlContent(html);
     console.log(
       "Extracted content:",
@@ -111,6 +120,7 @@ Deno.serve(async (req) => {
     }
 
     console.log("Analyzing content with OpenAI...");
+    console.log("Content being sent to OpenAI:", content.substring(0, 1000));
     const prompt = `Write a brief but comprehensive bio for ${company_website} based on the following content from their website and any other verifiable sources. Keep the bio under 150 words. Avoid unnecessary details or lengthy descriptions. Focus on the most important details while keeping it concise:
 
     ${content.substring(0, 8000)}
@@ -144,7 +154,22 @@ Deno.serve(async (req) => {
     - Emphasize unique aspects that differentiate the company
     - If certain information isn't available, focus on what is known
 
-    Please analyze the content and create a brief company profile following this structure.`;
+    Please analyze the content and create a brief company profile following this structure.
+
+    Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know. Use data that is available in the content and make sure this information is accurate and not made up.
+
+    Return the name of the company and make sure it is accurate.
+
+    Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+    {
+      "summary": "your analysis here",
+      "points_of_interest": [
+        { "point of interest 1": "value" },
+        { "point of interest 2": "value" },
+        { "point of interest 3": "value" },
+      ],
+      "company_name": "value"
+    }`;
 
     console.log("Sending request to OpenAI API...");
     const completion = await openai.chat.completions.create({
@@ -168,9 +193,34 @@ Deno.serve(async (req) => {
     const analysis = completion.choices[0].message.content;
     console.log("OpenAI analysis:", analysis);
 
-    return new Response(JSON.stringify({ analysis }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      let cleanAnalysis = analysis.trim();
+      if (cleanAnalysis.startsWith("```json")) {
+        cleanAnalysis = cleanAnalysis
+          .replace(/^```json\s*/, "")
+          .replace(/\s*```$/, "");
+      } else if (cleanAnalysis.startsWith("```")) {
+        cleanAnalysis = cleanAnalysis
+          .replace(/^```\s*/, "")
+          .replace(/\s*```$/, "");
+      }
+
+      const parsedAnalysis = JSON.parse(cleanAnalysis);
+      console.log("Parsed analysis:", parsedAnalysis);
+      return new Response(JSON.stringify({ data: parsedAnalysis }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error("Error parsing JSON response:", error.message);
+      console.log("Raw response was:", analysis);
+      return new Response(
+        JSON.stringify({ error: "Error parsing JSON response" }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
   } catch (error) {
     console.error("Error processing request:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
