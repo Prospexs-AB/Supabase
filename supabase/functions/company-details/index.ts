@@ -6,7 +6,19 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+    });
+  }
   const method = req.method.toUpperCase();
 
   // Create Supabase client once for all operations
@@ -23,7 +35,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Authorization header is required" }),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 401,
         }
       );
@@ -40,7 +52,7 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ error: "Invalid or expired token" }),
           {
-            headers: { "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 401,
           }
         );
@@ -48,13 +60,10 @@ Deno.serve(async (req) => {
 
       userId = user.id;
     } catch (error) {
-      return new Response(
-        JSON.stringify({ error: "Authentication failed" }),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     // Route handling
@@ -69,13 +78,13 @@ Deno.serve(async (req) => {
 
           if (error) {
             return new Response(JSON.stringify({ error: error.message }), {
-              headers: { "Content-Type": "application/json" },
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 500,
             });
           }
 
           return new Response(JSON.stringify({ data }), {
-            headers: { "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
           });
         } catch (dbError) {
@@ -83,7 +92,7 @@ Deno.serve(async (req) => {
           return new Response(
             JSON.stringify({ error: "Failed to fetch company details" }),
             {
-              headers: { "Content-Type": "application/json" },
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 500,
             }
           );
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
           return new Response(
             JSON.stringify({ error: "company_name is required" }),
             {
-              headers: { "Content-Type": "application/json" },
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 400,
             }
           );
@@ -122,7 +131,7 @@ Deno.serve(async (req) => {
 
           if (error) {
             return new Response(JSON.stringify({ error: error.message }), {
-              headers: { "Content-Type": "application/json" },
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 500,
             });
           }
@@ -133,7 +142,7 @@ Deno.serve(async (req) => {
           };
 
           return new Response(JSON.stringify(result), {
-            headers: { "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
           });
         } catch (dbError) {
@@ -141,7 +150,7 @@ Deno.serve(async (req) => {
           return new Response(
             JSON.stringify({ error: "Failed to save company details" }),
             {
-              headers: { "Content-Type": "application/json" },
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 500,
             }
           );
@@ -151,14 +160,14 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ error: `Method ${method} not allowed` }),
           {
-            headers: { "Content-Type": "application/json" },
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 405,
           }
         );
     }
   } catch (error) {
     return new Response(JSON.stringify({ error: "Internal server error" }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }

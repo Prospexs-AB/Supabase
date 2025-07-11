@@ -9,6 +9,13 @@ import {
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
+
 const getUserId = async (req: Request, supabase: SupabaseClient) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
@@ -28,6 +35,12 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
 };
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+    });
+  }
+
   const supabase = createClient(
     "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
@@ -44,7 +57,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "campaign_id is required" }),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         }
       );
@@ -52,7 +65,7 @@ Deno.serve(async (req) => {
 
     if (!language) {
       return new Response(JSON.stringify({ error: "language is required" }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -67,7 +80,7 @@ Deno.serve(async (req) => {
 
     if (campaignError) {
       return new Response(JSON.stringify({ error: campaignError.message }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -79,7 +92,7 @@ Deno.serve(async (req) => {
 
     if (progressError) {
       return new Response(JSON.stringify({ error: progressError.message }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -90,13 +103,13 @@ Deno.serve(async (req) => {
         data: campaignData,
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
     );
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status:
         error.message.includes("Authorization") ||
         error.message.includes("Invalid")

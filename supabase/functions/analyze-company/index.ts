@@ -7,6 +7,13 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
+
 const getUserId = async (req: Request, supabase: SupabaseClient) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
@@ -51,6 +58,14 @@ function cleanHtmlContent(html: string): string | null {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
   try {
     const supabase = createClient(
       "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
@@ -62,7 +77,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "company name and website url is required" }),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         }
       );
@@ -112,7 +127,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Could not extract content from website" }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
@@ -212,7 +227,7 @@ Deno.serve(async (req) => {
         .eq("id", campaignData.progress_id);
 
       return new Response(JSON.stringify({ data: parsedAnalysis }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (error) {
       console.error("Error parsing JSON response:", error.message);
@@ -220,7 +235,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Error parsing JSON response" }),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 500,
         }
       );
@@ -229,7 +244,7 @@ Deno.serve(async (req) => {
     console.error("Error processing request:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
