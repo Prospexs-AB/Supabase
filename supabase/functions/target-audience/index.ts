@@ -79,8 +79,6 @@ Deno.serve(async (req) => {
       .eq("id", campaign_id)
       .single();
 
-    console.log("Campaign query result:", { campaignData, campaignError });
-
     if (campaignError) {
       return new Response(JSON.stringify({ error: campaignError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,16 +86,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("Campaign data found:", JSON.stringify(campaignData, null, 2));
-    console.log("Campaign progress_id:", campaignData.progress_id);
-
     const { data: progressData, error: progressError } = await supabase
       .from("campaign_progress")
       .select("*")
       .eq("id", campaignData.progress_id)
       .single();
-
-    console.log("Progress query result:", { progressData, progressError });
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
@@ -105,45 +98,27 @@ Deno.serve(async (req) => {
     });
 
     console.log("Analyzing content with OpenAI...");
-    console.log("Progress data:", JSON.stringify(progressData, null, 2));
-    console.log("Step 1 result:", progressData.step_1_result);
-    console.log("Step 2 result:", progressData.step_2_result);
-    console.log("Step 3 result:", progressData.step_3_result);
     console.log("Lead location:", locale);
     console.log("Language:", locale);
 
-    // Extract company info and insights with null checks
+        // Extract company info and insights with null checks
     const step3Result = progressData.step_3_result || {};
     const step2Result = progressData.step_2_result || {};
     const step1Result = progressData.step_1_result || {};
-
-    console.log("Raw step results:");
-    console.log("Step 1 result (raw):", step1Result);
-    console.log("Step 2 result (raw):", step2Result);
-    console.log("Step 3 result (raw):", step3Result);
-
+    
     const {
       unique_selling_points: usps = [],
       problem_solved: problems = [],
       benefits: benefits = [],
     } = step3Result;
-
+    
     const {
       company_name: name = "Unknown Company",
       summary: description = "No description available",
       country,
     } = step2Result;
-
+    
     const { language = "en" } = step1Result;
-
-    console.log("Extracted data:");
-    console.log("USPs:", usps);
-    console.log("Problems:", problems);
-    console.log("Benefits:", benefits);
-    console.log("Company name:", name);
-    console.log("Description:", description);
-    console.log("Country:", country);
-    console.log("Language:", language);
     // Get country context for location targeting
     // Default to Sweden if not provided (for Sellpy specifically)
     const companyCountry = country || "Sweden";
