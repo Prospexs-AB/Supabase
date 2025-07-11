@@ -4,7 +4,10 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
 const corsHeaders = {
@@ -173,6 +176,8 @@ Deno.serve(async (req) => {
 
     Return the name of the company and make sure it is accurate.
 
+    Return the country of the company if its available in the content, if not keep it empty.
+
     Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
     {
       "summary": "your analysis here",
@@ -181,7 +186,8 @@ Deno.serve(async (req) => {
         { "point of interest 2": "value" },
         { "point of interest 3": "value" },
       ],
-      "company_name": "value"
+      "company_name": "value",
+      "country": "value"
     }`;
 
     console.log("Sending request to OpenAI API...");
