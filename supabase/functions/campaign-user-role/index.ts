@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    const { campaign_id, language } = body;
+    const { campaign_id, user_role } = body;
 
     if (!campaign_id) {
       return new Response(
@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!language) {
-      return new Response(JSON.stringify({ error: "language is required" }), {
+    if (!user_role) {
+      return new Response(JSON.stringify({ error: "user_role is required" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -72,10 +72,9 @@ Deno.serve(async (req) => {
 
     const { data: campaignData, error: campaignError } = await supabase
       .from("campaigns")
-      .update({ language })
+      .select("*")
       .eq("user_id", userId)
       .eq("id", campaign_id)
-      .select()
       .single();
 
     if (campaignError) {
@@ -87,7 +86,7 @@ Deno.serve(async (req) => {
 
     const { error: progressError } = await supabase
       .from("campaign_progress")
-      .update({ latest_step: 1, step_1_result: { language } })
+      .update({ latest_step: 4, step_4_result: { user_role } })
       .eq("id", campaignData.progress_id);
 
     if (progressError) {
@@ -99,7 +98,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: "Campaign language updated successfully",
+        message: "Campaign user role updated successfully",
         data: campaignData,
       }),
       {
@@ -124,9 +123,9 @@ Deno.serve(async (req) => {
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/campaign-language' \
+  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/campaign-user-role' \
     --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
     --header 'Content-Type: application/json' \
-    --data '{"campaign_id":"123","language":"en"}'
+    --data '{"campaign_id":"123","user_role":"founder"}'
 
 */

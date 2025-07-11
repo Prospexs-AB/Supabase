@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabase
       .from("campaign_progress")
       .update({
+        latest_step: 3,
         step_3_result: parsedAnalysis,
       })
       .eq("id", campaignData.progress_id);
@@ -226,10 +227,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify(parsedAnalysis), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        message: "Company analysis completed successfully",
+        data: parsedAnalysis,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Error processing request:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
