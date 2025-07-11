@@ -34,6 +34,7 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
+      status: 200,
       headers: corsHeaders,
     });
   }

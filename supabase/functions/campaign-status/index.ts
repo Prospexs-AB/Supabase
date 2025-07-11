@@ -3,21 +3,112 @@
 // This enables autocomplete, go to definition, etc.
 
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
 
-console.log("Hello from Functions!")
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
 
-Deno.serve(async (req) => {
-  const { name } = await req.json()
-  const data = {
-    message: `Hello ${name}!`,
+const getUserId = async (req: Request, supabase: SupabaseClient) => {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    throw new Error("Authorization header is required");
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    throw new Error("Invalid or expired token");
   }
 
+  return user.id;
+};
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
+  const supabase = createClient(
+    "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
+  );
+
+  const userId = await getUserId(req, supabase);
+
+  const url = new URL(req.url);
+  const campaignId = url.searchParams.get("campaign_id");
+
+  if (!campaignId) {
+    return new Response(JSON.stringify({ error: "campaign_id is required" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
+  }
+
+  const { data: campaignData, error: campaignError } = await supabase
+    .from("campaigns")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", campaignId)
+    .single();
+
+  if (campaignError) {
+    return new Response(JSON.stringify({ error: campaignError.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
+
+  const { data: campaignProgressData, error: campaignProgressError } =
+    await supabase
+      .from("campaign_progress")
+      .select("*")
+      .eq("id", campaignData.progress_id)
+      .single();
+
+  if (campaignProgressError) {
+    return new Response(
+      JSON.stringify({ error: campaignProgressError.message }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
+
+  const stepResult = `step_${campaignProgressData.latest_step}_result`;
+
+  const responseData = {
+    latest_step: campaignProgressData.latest_step,
+    result: campaignProgressData[stepResult],
+  };
+
   return new Response(
-    JSON.stringify(data),
-    { headers: { "Content-Type": "application/json" } },
-  )
-})
+    JSON.stringify({
+      message: "Campaign status",
+      data: responseData,
+    }),
+    {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    }
+  );
+});
 
 /* To invoke locally:
 
@@ -27,6 +118,6 @@ Deno.serve(async (req) => {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/campaign-status' \
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    --data '{"campaign_id":"123"}'
 
 */
