@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
       4. "metrics": Array of 2-3 relevant KPIs as objects with:
         - "value": A specific metric (e.g., "45%", "$2.5M")
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
+      5. "country": The country of the target audience (e.g., "Sweden", "United States")
 
       Geographic Focus: ${locationContext}
       ${
