@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    const { campaign_id, locale } = body;
+    const { campaign_id, recommendation } = body;
 
     if (!campaign_id) {
       return new Response(
@@ -65,11 +65,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!locale) {
-      return new Response(JSON.stringify({ error: "locale is required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+    if (!recommendation) {
+      return new Response(
+        JSON.stringify({ error: "recommendation is required" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
     }
 
     const { data: campaignData, error: campaignError } = await supabase
@@ -92,90 +95,234 @@ Deno.serve(async (req) => {
       .eq("id", campaignData.progress_id)
       .single();
 
+    const { step_1_result, step_2_result, step_6_result } = progressData;
+
+    const { language } = step_1_result;
+    const { country } = step_2_result;
+    const { locale: location } = step_6_result;
+
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
       apiKey: apiKey,
     });
 
     console.log("Analyzing content with OpenAI...");
-    console.log("Lead location:", locale);
-    console.log("Language:", locale);
+    console.log("Lead location:", location);
+    console.log("Language:", language);
 
-        // Extract company info and insights with null checks
-    const step3Result = progressData.step_3_result || {};
-    const step2Result = progressData.step_2_result || {};
-    const step1Result = progressData.step_1_result || {};
-    
+    console.log(
+      `Generating audience insights for ${recommendation.role} in ${recommendation.industry}`
+    );
+    console.log(
+      `Type: ${insightType}, Location: ${location}, Country: ${country}`
+    );
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not found in environment variables");
+    }
+
     const {
-      unique_selling_points: usps = [],
-      problem_solved: problems = [],
-      benefits: benefits = [],
-    } = step3Result;
-    
-    const {
-      company_name: name = "Unknown Company",
-      summary: description = "No description available",
-      country,
-    } = step2Result;
-    
-    const { language = "en" } = step1Result;
-    // Get country context for location targeting
-    // Default to Sweden if not provided (for Sellpy specifically)
-    const companyCountry = country || "Sweden";
-    const isLocal = locale === "local";
-    // Set location context based on local/international choice
-    const locationContext = isLocal ? companyCountry : "international markets";
+      role,
+      industry,
+      reasoning,
+      companyName = "",
+      companyDescription = "",
+      companyWebsite = "",
+    } = recommendation;
 
-    const prompt = `
-      Generate 3-5 highly targeted audience segments for a company with these details:
+    const basePrompt = `You are an expert business analyst and market researcher specializing in ${
+      recommendation.industry
+    }. 
+      You have access to extensive market data, industry reports, competitor analyses, and consumer behavior studies.
+      Your expertise is in analyzing how companies can effectively position their offerings to specific audience segments.
 
-      Company: ${name}
-      Description: ${description}
-      Company Country: ${companyCountry}
-      Location Focus: ${
-        isLocal
-          ? `Local (${companyCountry})`
-          : "International (outside of " + companyCountry + ")"
-      }
-      Language: ${language === "en" ? "English" : "Swedish"}
+      Focus on ${recommendation.role}s in ${recommendation.industry} ${
+      location === "local" ? `in ${country}` : "globally"
+    }.
 
-      Company Insights:
+      Use these guidelines for your analysis:
+      1. Be extremely specific and data-driven - include concrete numbers, percentages, statistics, and facts
+      2. Reference industry benchmarks, reports, trends, and recent market developments
+      3. Always mention the company name "${companyName}" explicitly when discussing their offerings
+      4. Focus on measurable impacts and outcomes for the audience
+      5. Use location-specific insights for ${
+        location === "local" ? country : "international"
+      } market
+      6. Draw connections between company capabilities and audience needs based on market research`;
+    let promptContent = "";
+    if (insightType === "usps") {
+      promptContent = `# Context
+      ## Target Audience:
+      Role: ${recommendation.role}
+      Industry: ${recommendation.industry}
+      Market: ${location === "local" ? country : "International"}
+
+      ## Company Information:
+      Company Name: ${companyName}
+      ${companyDescription ? `Company Description: ${companyDescription}` : ""}
+      ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
       ${
-        usps.length > 0
-          ? `USPs:\n${usps.map((usp) => `- ${usp}`).join("\n")}`
-          : ""
-      }
-      ${
-        problems.length > 0
-          ? `Problems Solved:\n${problems
-              .map((problem) => `- ${problem}`)
-              .join("\n")}`
-          : ""
-      }
-      ${
-        benefits.length > 0
-          ? `Benefits:\n${benefits.map((benefit) => `- ${benefit}`).join("\n")}`
+        recommendation.reasoning
+          ? `Audience Relevance: ${recommendation.reasoning}`
           : ""
       }
 
-      For each target audience segment, provide:
-      1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
-      2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
-      3. "reasoning": Data-backed explanation of fit (2-3 sentences)
-      4. "metrics": Array of 2-3 relevant KPIs as objects with:
-        - "value": A specific metric (e.g., "45%", "$2.5M")
-        - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
+        # Task
+        Create 3 highly specific, data-driven Unique Selling Points (USPs) that precisely demonstrate how ${companyName}'s solutions address ${
+        recommendation.role
+      }s' needs in the ${recommendation.industry} sector ${
+        location === "local" ? `in ${country}` : "internationally"
+      }.
 
-      Geographic Focus: ${locationContext}
+        Each USP must:
+        1. Start with a clear, bold headline highlighting a specific capability or advantage
+        2. Include at least 3 precise numerical data points (percentages, statistics, market figures) related to the industry, audience challenges, or solution effectiveness
+        3. Reference relevant industry trends, market challenges, or competitive benchmarks specific to the ${
+          recommendation.industry
+        } sector
+        4. Explicitly explain why this capability matters to ${
+          recommendation.role
+        }s with concrete examples of business impact
+        5. Highlight a competitive differentiation based on market research or industry analysis
+        6. Focus on the ${
+          location === "local"
+            ? `local market conditions in ${country}`
+            : "international market landscape"
+        }
+
+      # Format
+      For each USP:
+      1. Start with "**USP X: [Compelling Headline]**" as a clear header
+      2. Follow with a detailed paragraph that includes:
+        - Industry-specific context with supporting data
+        - How ${companyName} addresses this specific need
+        - Quantified impact or advantage
+        - Why this matters specifically to ${recommendation.role}s in ${
+        recommendation.industry
+      }
+      3. End with a "Source:" line that specifies one of:
+        - "Company Website" if the information comes from their website
+        - The full name of the news outlet if from a news article
+        - The name of the industry report or research paper
+        - The name of the market research firm or analyst
+        - "LinkedIn" if from company LinkedIn data
+
+      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
+    } else if (insightType === "problems") {
+      promptContent = `# Context
+      ## Target Audience:
+      Role: ${recommendation.role}
+      Industry: ${recommendation.industry}
+      Market: ${location === "local" ? country : "International"}
+
+      ## Company Information:
+      Company Name: ${companyName}
+      ${companyDescription ? `Company Description: ${companyDescription}` : ""}
+      ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
       ${
-        isLocal
-          ? `IMPORTANT: The target audiences MUST be specific to ${companyCountry}'s market. ALWAYS include "${companyCountry}" at the end of the industry name.`
-          : `IMPORTANT: The target audiences should focus on markets OUTSIDE of ${companyCountry}. Do not include ${companyCountry} in the target audiences.`
+        recommendation.reasoning
+          ? `Audience Relevance: ${recommendation.reasoning}`
+          : ""
       }
 
-      Format: JSON array of target audience objects.
-      `;
+      # Task
+      Identify 3 significant, data-backed problems that ${
+        recommendation.role
+      }s in ${recommendation.industry} face ${
+        location === "local" ? `specifically in ${country}` : "internationally"
+      } that ${companyName} can solve.
 
+        Each problem must:
+        1. Start with a clear, bold headline identifying a specific, documented challenge
+        2. Include at least 3 precise numerical data points (percentages, statistics, market figures, survey results) that quantify the problem's impact or prevalence
+        3. Reference specific industry reports, market studies, or research findings related to this challenge
+        4. Explain the business consequences for ${
+          recommendation.role
+        }s who don't address this problem
+        5. Connect to how ${companyName}'s specific capabilities address this problem based on their offerings
+        6. Consider the ${
+          location === "local"
+            ? `local market context in ${country}`
+            : "international market context"
+        }
+
+      # Format
+      For each problem:
+      1. Start with "**Problem X: [Clear Problem Statement]**" as a distinct header
+      2. Follow with a detailed paragraph that includes:
+        - Data-driven description of the problem with statistics
+        - The specific impact on ${recommendation.role}s in ${
+        recommendation.industry
+      }
+      - How ${companyName}'s capabilities provide a solution
+      - Why solving this problem creates value for the target audience
+      3. End with a "Source:" line that specifies one of:
+        - "Company Website" if the information comes from their website
+        - The full name of the news outlet if from a news article
+        - The name of the industry report or research paper
+        - The name of the market research firm or analyst
+        - "LinkedIn" if from company LinkedIn data
+
+      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
+    } else if (insightType === "benefits") {
+      promptContent = `# Context
+        ## Target Audience:
+        Role: ${recommendation.role}
+        Industry: ${recommendation.industry}
+        Market: ${location === "local" ? country : "International"}
+
+        ## Company Information:
+        Company Name: ${companyName}
+        ${
+          companyDescription ? `Company Description: ${companyDescription}` : ""
+        }
+        ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
+        ${
+          recommendation.reasoning
+            ? `Audience Relevance: ${recommendation.reasoning}`
+            : ""
+        }
+
+      # Task
+      Create 3 compelling, measurable benefits that ${
+        recommendation.role
+      }s in ${
+        recommendation.industry
+      } would gain from working with ${companyName}, backed by industry data and market research.
+
+        Each benefit must:
+        1. Start with a clear, bold headline highlighting a specific, quantifiable outcome
+        2. Include at least 3 precise numerical data points (ROI figures, efficiency metrics, performance improvements, market statistics) that demonstrate value
+        3. Reference industry benchmarks, comparative performance data, or success metrics relevant to ${
+          recommendation.industry
+        }
+        4. Connect directly to known challenges or goals of ${
+          recommendation.role
+        }s with evidence
+        5. Highlight how ${companyName}'s approach delivers superior results compared to alternatives
+        6. Account for the ${
+          location === "local"
+            ? `local market realities in ${country}`
+            : "international market landscape"
+        }
+
+      # Format
+      For each benefit:
+      1. Start with "**Benefit X: [Quantifiable Outcome]**" as a distinct header
+      2. Follow with a detailed paragraph that includes:
+        - Specific, measurable value with supporting data
+        - How this benefit addresses known priorities of ${recommendation.role}s
+        - Why this benefit matters in the context of ${recommendation.industry}
+        - How ${companyName} delivers this benefit in a differentiated way
+      3. End with a "Source:" line that specifies one of:
+        - "Company Website" if the information comes from their website
+        - The full name of the news outlet if from a news article
+        - The name of the industry report or research paper
+        - The name of the market research firm or analyst
+        - "LinkedIn" if from company LinkedIn data
+
+      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
+    }
     console.log("Sending request to OpenAI API...");
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -187,7 +334,7 @@ Deno.serve(async (req) => {
         },
         {
           role: "user",
-          content: prompt,
+          content: promptContent,
         },
       ],
       temperature: 0.7,
