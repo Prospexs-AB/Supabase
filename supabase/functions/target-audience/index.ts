@@ -99,26 +99,27 @@ Deno.serve(async (req) => {
 
     console.log("Analyzing content with OpenAI...");
     console.log("Lead location:", locale);
-    console.log("Language:", locale);
 
-        // Extract company info and insights with null checks
+    // Extract company info and insights with null checks
     const step3Result = progressData.step_3_result || {};
     const step2Result = progressData.step_2_result || {};
     const step1Result = progressData.step_1_result || {};
-    
+
     const {
       unique_selling_points: usps = [],
       problem_solved: problems = [],
       benefits: benefits = [],
     } = step3Result;
-    
+
     const {
       company_name: name = "Unknown Company",
       summary: description = "No description available",
       country,
     } = step2Result;
-    
+
     const { language = "en" } = step1Result;
+    console.log("Language:", language);
+
     // Get country context for location targeting
     // Default to Sweden if not provided (for Sellpy specifically)
     const companyCountry = country || "Sweden";
@@ -219,6 +220,7 @@ Deno.serve(async (req) => {
           latest_step: 6,
           step_6_result: {
             target_audience: parsedAnalysis,
+            locale,
           },
         })
         .eq("id", campaignData.progress_id);
