@@ -29,24 +29,62 @@ const parseOpenAIResponse = (analysis: string) => {
 
   let cleanAnalysis = analysis.trim();
   
+  console.log("Original analysis length:", cleanAnalysis.length);
+  console.log("Original analysis preview:", cleanAnalysis.substring(0, 200));
+  
   // Remove markdown code blocks if present
   if (cleanAnalysis.startsWith("```json")) {
     cleanAnalysis = cleanAnalysis
       .replace(/^```json\s*/, "")
       .replace(/\s*```$/, "");
+    console.log("Removed ```json blocks");
   } else if (cleanAnalysis.startsWith("```")) {
     cleanAnalysis = cleanAnalysis
       .replace(/^```\s*/, "")
       .replace(/\s*```$/, "");
+    console.log("Removed ``` blocks");
   }
 
+  // Try to find JSON content if it's embedded in other text
+  const jsonMatch = cleanAnalysis.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleanAnalysis = jsonMatch[0];
+    console.log("Extracted JSON content from mixed text");
+  }
+
+  console.log("Cleaned analysis length:", cleanAnalysis.length);
+  console.log("Cleaned analysis preview:", cleanAnalysis.substring(0, 200));
+
   try {
-    return JSON.parse(cleanAnalysis);
+    const result = JSON.parse(cleanAnalysis);
+    console.log("Successfully parsed JSON");
+    return result;
   } catch (error) {
     console.error("Error parsing JSON response:", error.message);
     console.log("Raw response was:", analysis);
     console.log("Cleaned response was:", cleanAnalysis);
-    throw new Error(`Failed to parse JSON response: ${error.message}`);
+    
+    // Try to fix common JSON formatting issues
+    try {
+      console.log("Attempting to fix JSON formatting...");
+      let fixedJson = cleanAnalysis
+        .replace(/(\w+):/g, '"$1":') // Add quotes to unquoted keys
+        .replace(/,\s*}/g, '}') // Remove trailing commas
+        .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
+        .replace(/,\s*,/g, ',') // Remove double commas
+        .replace(/\n/g, ' ') // Remove newlines
+        .replace(/\r/g, '') // Remove carriage returns
+        .replace(/\t/g, ' ') // Remove tabs
+        .replace(/\s+/g, ' '); // Normalize whitespace
+      
+      console.log("Fixed JSON preview:", fixedJson.substring(0, 200));
+      const result = JSON.parse(fixedJson);
+      console.log("Successfully parsed fixed JSON");
+      return result;
+    } catch (secondError) {
+      console.error("Failed to fix JSON:", secondError.message);
+      throw new Error(`Failed to parse JSON response: ${error.message}. Raw response preview: ${cleanAnalysis.substring(0, 300)}...`);
+    }
   }
 };
 
@@ -128,7 +166,29 @@ Deno.serve(async (req) => {
       .eq("id", campaignData.progress_id)
       .single();
 
+    if (progressError) {
+      return new Response(JSON.stringify({ error: progressError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    if (!progressData) {
+      return new Response(JSON.stringify({ error: "Campaign progress not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
+
     const { step_1_result, step_2_result, step_6_result } = progressData;
+
+    // Add null checks for step results
+    if (!step_1_result || !step_2_result || !step_6_result) {
+      return new Response(JSON.stringify({ error: "Missing required step results" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     const { company_website: companyWebsite } = campaignData;
     const { language } = step_1_result;
@@ -136,9 +196,12 @@ Deno.serve(async (req) => {
       step_2_result;
     const { locale: location } = step_6_result;
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not found in environment variables");
+    }
     const openai = new OpenAI({
-      apiKey: apiKey,
+      apiKey: openaiApiKey,
     });
 
     let parsedRecommendations = [];
@@ -160,10 +223,6 @@ Deno.serve(async (req) => {
         console.log(
           `Type: ${insightType}, Location: ${location}, Country: ${country}`
         );
-        const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-        if (!openaiApiKey) {
-          throw new Error("OpenAI API key not found in environment variables");
-        }
 
         const basePrompt = `You are an expert business analyst and market researcher specializing in ${
           recommendation.industry
@@ -247,7 +306,7 @@ Deno.serve(async (req) => {
         Return the response in an array of JSON objects such as:
         [
           {
-            "usp": "USP 1: [Compelling Headline]",
+            "title": "USP 1: [Compelling Headline]",
             "description": "Detailed paragraph explaining the USP",
             "source": "Source: Company Website"
           }
@@ -315,7 +374,7 @@ Deno.serve(async (req) => {
           Return the response in an array of JSON objects such as:
           [
             {
-              "problem": "Problem 1: [Clear Problem Statement]",
+              "title": "Problem 1: [Clear Problem Statement]",
               "description": "Detailed paragraph explaining the problem",
               "source": "Source: Company Website"
             }
@@ -387,7 +446,7 @@ Deno.serve(async (req) => {
         Return the response in an array of JSON objects such as:
         [
           {
-            "benefit": "Benefit 1: [Quantifiable Outcome]",
+            "title": "Benefit 1: [Quantifiable Outcome]",
             "description": "Detailed paragraph explaining the benefit",
             "source": "Source: Company Website"
           }
@@ -419,10 +478,14 @@ Deno.serve(async (req) => {
         try {
           const parsedAnalysis = parseOpenAIResponse(analysis);
           console.log("Parsed analysis:", parsedAnalysis);
+          console.log("Parsed analysis type:", typeof parsedAnalysis);
+          console.log("Parsed analysis length:", Array.isArray(parsedAnalysis) ? parsedAnalysis.length : 'not an array');
           insightAnalysis[insightType] = parsedAnalysis;
         } catch (error) {
           console.error("Error parsing JSON response:", error.message);
           console.log("Raw response was:", analysis);
+          console.log("Response length:", analysis.length);
+          console.log("First 500 chars:", analysis.substring(0, 500));
           return new Response(
             JSON.stringify({ error: "Error parsing JSON response" }),
             {
