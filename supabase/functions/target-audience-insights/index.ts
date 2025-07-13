@@ -28,10 +28,10 @@ const parseOpenAIResponse = (analysis: string) => {
   }
 
   let cleanAnalysis = analysis.trim();
-  
+
   console.log("Original analysis length:", cleanAnalysis.length);
   console.log("Original analysis preview:", cleanAnalysis.substring(0, 200));
-  
+
   // Remove markdown code blocks if present
   if (cleanAnalysis.startsWith("```json")) {
     cleanAnalysis = cleanAnalysis
@@ -39,9 +39,7 @@ const parseOpenAIResponse = (analysis: string) => {
       .replace(/\s*```$/, "");
     console.log("Removed ```json blocks");
   } else if (cleanAnalysis.startsWith("```")) {
-    cleanAnalysis = cleanAnalysis
-      .replace(/^```\s*/, "")
-      .replace(/\s*```$/, "");
+    cleanAnalysis = cleanAnalysis.replace(/^```\s*/, "").replace(/\s*```$/, "");
     console.log("Removed ``` blocks");
   }
 
@@ -63,27 +61,31 @@ const parseOpenAIResponse = (analysis: string) => {
     console.error("Error parsing JSON response:", error.message);
     console.log("Raw response was:", analysis);
     console.log("Cleaned response was:", cleanAnalysis);
-    
+
     // Try to fix common JSON formatting issues
     try {
       console.log("Attempting to fix JSON formatting...");
       let fixedJson = cleanAnalysis
         .replace(/(\w+):/g, '"$1":') // Add quotes to unquoted keys
-        .replace(/,\s*}/g, '}') // Remove trailing commas
-        .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
-        .replace(/,\s*,/g, ',') // Remove double commas
-        .replace(/\n/g, ' ') // Remove newlines
-        .replace(/\r/g, '') // Remove carriage returns
-        .replace(/\t/g, ' ') // Remove tabs
-        .replace(/\s+/g, ' '); // Normalize whitespace
-      
+        .replace(/,\s*}/g, "}") // Remove trailing commas
+        .replace(/,\s*]/g, "]") // Remove trailing commas in arrays
+        .replace(/,\s*,/g, ",") // Remove double commas
+        .replace(/\n/g, " ") // Remove newlines
+        .replace(/\r/g, "") // Remove carriage returns
+        .replace(/\t/g, " ") // Remove tabs
+        .replace(/\s+/g, " "); // Normalize whitespace
+
       console.log("Fixed JSON preview:", fixedJson.substring(0, 200));
       const result = JSON.parse(fixedJson);
       console.log("Successfully parsed fixed JSON");
       return result;
     } catch (secondError) {
       console.error("Failed to fix JSON:", secondError.message);
-      throw new Error(`Failed to parse JSON response: ${error.message}. Raw response preview: ${cleanAnalysis.substring(0, 300)}...`);
+      throw new Error(
+        `Failed to parse JSON response: ${
+          error.message
+        }. Raw response preview: ${cleanAnalysis.substring(0, 300)}...`
+      );
     }
   }
 };
@@ -174,20 +176,26 @@ Deno.serve(async (req) => {
     }
 
     if (!progressData) {
-      return new Response(JSON.stringify({ error: "Campaign progress not found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404,
-      });
+      return new Response(
+        JSON.stringify({ error: "Campaign progress not found" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        }
+      );
     }
 
     const { step_1_result, step_2_result, step_6_result } = progressData;
 
     // Add null checks for step results
     if (!step_1_result || !step_2_result || !step_6_result) {
-      return new Response(JSON.stringify({ error: "Missing required step results" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing required step results" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
     }
 
     const { company_website: companyWebsite } = campaignData;
@@ -479,7 +487,12 @@ Deno.serve(async (req) => {
           const parsedAnalysis = parseOpenAIResponse(analysis);
           console.log("Parsed analysis:", parsedAnalysis);
           console.log("Parsed analysis type:", typeof parsedAnalysis);
-          console.log("Parsed analysis length:", Array.isArray(parsedAnalysis) ? parsedAnalysis.length : 'not an array');
+          console.log(
+            "Parsed analysis length:",
+            Array.isArray(parsedAnalysis)
+              ? parsedAnalysis.length
+              : "not an array"
+          );
           insightAnalysis[insightType] = parsedAnalysis;
         } catch (error) {
           console.error("Error parsing JSON response:", error.message);
