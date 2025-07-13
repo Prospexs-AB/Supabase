@@ -17,6 +17,39 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
+/**
+ * Parses JSON response from OpenAI, handling common formatting issues
+ * @param analysis - Raw response string from OpenAI
+ * @returns Parsed JSON object or array
+ */
+const parseOpenAIResponse = (analysis: string) => {
+  if (!analysis) {
+    throw new Error("Empty response from OpenAI");
+  }
+
+  let cleanAnalysis = analysis.trim();
+  
+  // Remove markdown code blocks if present
+  if (cleanAnalysis.startsWith("```json")) {
+    cleanAnalysis = cleanAnalysis
+      .replace(/^```json\s*/, "")
+      .replace(/\s*```$/, "");
+  } else if (cleanAnalysis.startsWith("```")) {
+    cleanAnalysis = cleanAnalysis
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "");
+  }
+
+  try {
+    return JSON.parse(cleanAnalysis);
+  } catch (error) {
+    console.error("Error parsing JSON response:", error.message);
+    console.log("Raw response was:", analysis);
+    console.log("Cleaned response was:", cleanAnalysis);
+    throw new Error(`Failed to parse JSON response: ${error.message}`);
+  }
+};
+
 const getUserId = async (req: Request, supabase: SupabaseClient) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
@@ -53,7 +86,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    const { campaign_id, recommendation } = body;
+    const { campaign_id, recommendations } = body;
 
     if (!campaign_id) {
       return new Response(
@@ -65,9 +98,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!recommendation) {
+    if (!recommendations) {
       return new Response(
-        JSON.stringify({ error: "recommendation is required" }),
+        JSON.stringify({ error: "recommendations is required" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
@@ -97,8 +130,10 @@ Deno.serve(async (req) => {
 
     const { step_1_result, step_2_result, step_6_result } = progressData;
 
+    const { company_website: companyWebsite } = campaignData;
     const { language } = step_1_result;
-    const { country } = step_2_result;
+    const { company_name: companyName, summary: companyDescription } =
+      step_2_result;
     const { locale: location } = step_6_result;
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -106,166 +141,52 @@ Deno.serve(async (req) => {
       apiKey: apiKey,
     });
 
-    console.log("Analyzing content with OpenAI...");
-    console.log("Lead location:", location);
-    console.log("Language:", language);
+    let parsedRecommendations = [];
 
-    console.log(
-      `Generating audience insights for ${recommendation.role} in ${recommendation.industry}`
-    );
-    console.log(
-      `Type: ${insightType}, Location: ${location}, Country: ${country}`
-    );
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key not found in environment variables");
-    }
+    for (const recommendation of recommendations) {
+      const { role, industry, reasoning, country } = recommendation;
 
-    const {
-      role,
-      industry,
-      reasoning,
-      companyName = "",
-      companyDescription = "",
-      companyWebsite = "",
-    } = recommendation;
+      const insightTypes = ["usps", "problems", "benefits"];
+      let insightAnalysis = {};
 
-    const basePrompt = `You are an expert business analyst and market researcher specializing in ${
-      recommendation.industry
-    }. 
-      You have access to extensive market data, industry reports, competitor analyses, and consumer behavior studies.
-      Your expertise is in analyzing how companies can effectively position their offerings to specific audience segments.
+      for (const insightType of insightTypes) {
+        console.log("Analyzing content with OpenAI...");
+        console.log("Lead location:", location);
+        console.log("Language:", language);
 
-      Focus on ${recommendation.role}s in ${recommendation.industry} ${
-      location === "local" ? `in ${country}` : "globally"
-    }.
+        console.log(
+          `Generating audience insights for ${recommendation.role} in ${recommendation.industry}`
+        );
+        console.log(
+          `Type: ${insightType}, Location: ${location}, Country: ${country}`
+        );
+        const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+        if (!openaiApiKey) {
+          throw new Error("OpenAI API key not found in environment variables");
+        }
 
-      Use these guidelines for your analysis:
-      1. Be extremely specific and data-driven - include concrete numbers, percentages, statistics, and facts
-      2. Reference industry benchmarks, reports, trends, and recent market developments
-      3. Always mention the company name "${companyName}" explicitly when discussing their offerings
-      4. Focus on measurable impacts and outcomes for the audience
-      5. Use location-specific insights for ${
-        location === "local" ? country : "international"
-      } market
-      6. Draw connections between company capabilities and audience needs based on market research`;
-    let promptContent = "";
-    if (insightType === "usps") {
-      promptContent = `# Context
-      ## Target Audience:
-      Role: ${recommendation.role}
-      Industry: ${recommendation.industry}
-      Market: ${location === "local" ? country : "International"}
-
-      ## Company Information:
-      Company Name: ${companyName}
-      ${companyDescription ? `Company Description: ${companyDescription}` : ""}
-      ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
-      ${
-        recommendation.reasoning
-          ? `Audience Relevance: ${recommendation.reasoning}`
-          : ""
-      }
-
-        # Task
-        Create 3 highly specific, data-driven Unique Selling Points (USPs) that precisely demonstrate how ${companyName}'s solutions address ${
-        recommendation.role
-      }s' needs in the ${recommendation.industry} sector ${
-        location === "local" ? `in ${country}` : "internationally"
-      }.
-
-        Each USP must:
-        1. Start with a clear, bold headline highlighting a specific capability or advantage
-        2. Include at least 3 precise numerical data points (percentages, statistics, market figures) related to the industry, audience challenges, or solution effectiveness
-        3. Reference relevant industry trends, market challenges, or competitive benchmarks specific to the ${
+        const basePrompt = `You are an expert business analyst and market researcher specializing in ${
           recommendation.industry
-        } sector
-        4. Explicitly explain why this capability matters to ${
-          recommendation.role
-        }s with concrete examples of business impact
-        5. Highlight a competitive differentiation based on market research or industry analysis
-        6. Focus on the ${
-          location === "local"
-            ? `local market conditions in ${country}`
-            : "international market landscape"
-        }
+        }. 
+        You have access to extensive market data, industry reports, competitor analyses, and consumer behavior studies.
+        Your expertise is in analyzing how companies can effectively position their offerings to specific audience segments.
 
-      # Format
-      For each USP:
-      1. Start with "**USP X: [Compelling Headline]**" as a clear header
-      2. Follow with a detailed paragraph that includes:
-        - Industry-specific context with supporting data
-        - How ${companyName} addresses this specific need
-        - Quantified impact or advantage
-        - Why this matters specifically to ${recommendation.role}s in ${
-        recommendation.industry
-      }
-      3. End with a "Source:" line that specifies one of:
-        - "Company Website" if the information comes from their website
-        - The full name of the news outlet if from a news article
-        - The name of the industry report or research paper
-        - The name of the market research firm or analyst
-        - "LinkedIn" if from company LinkedIn data
+        Focus on ${recommendation.role}s in ${recommendation.industry} ${
+          location === "local" ? `in ${country}` : "globally"
+        }.
 
-      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-    } else if (insightType === "problems") {
-      promptContent = `# Context
-      ## Target Audience:
-      Role: ${recommendation.role}
-      Industry: ${recommendation.industry}
-      Market: ${location === "local" ? country : "International"}
-
-      ## Company Information:
-      Company Name: ${companyName}
-      ${companyDescription ? `Company Description: ${companyDescription}` : ""}
-      ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
-      ${
-        recommendation.reasoning
-          ? `Audience Relevance: ${recommendation.reasoning}`
-          : ""
-      }
-
-      # Task
-      Identify 3 significant, data-backed problems that ${
-        recommendation.role
-      }s in ${recommendation.industry} face ${
-        location === "local" ? `specifically in ${country}` : "internationally"
-      } that ${companyName} can solve.
-
-        Each problem must:
-        1. Start with a clear, bold headline identifying a specific, documented challenge
-        2. Include at least 3 precise numerical data points (percentages, statistics, market figures, survey results) that quantify the problem's impact or prevalence
-        3. Reference specific industry reports, market studies, or research findings related to this challenge
-        4. Explain the business consequences for ${
-          recommendation.role
-        }s who don't address this problem
-        5. Connect to how ${companyName}'s specific capabilities address this problem based on their offerings
-        6. Consider the ${
-          location === "local"
-            ? `local market context in ${country}`
-            : "international market context"
-        }
-
-      # Format
-      For each problem:
-      1. Start with "**Problem X: [Clear Problem Statement]**" as a distinct header
-      2. Follow with a detailed paragraph that includes:
-        - Data-driven description of the problem with statistics
-        - The specific impact on ${recommendation.role}s in ${
-        recommendation.industry
-      }
-      - How ${companyName}'s capabilities provide a solution
-      - Why solving this problem creates value for the target audience
-      3. End with a "Source:" line that specifies one of:
-        - "Company Website" if the information comes from their website
-        - The full name of the news outlet if from a news article
-        - The name of the industry report or research paper
-        - The name of the market research firm or analyst
-        - "LinkedIn" if from company LinkedIn data
-
-      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-    } else if (insightType === "benefits") {
-      promptContent = `# Context
+        Use these guidelines for your analysis:
+        1. Be extremely specific and data-driven - include concrete numbers, percentages, statistics, and facts
+        2. Reference industry benchmarks, reports, trends, and recent market developments
+        3. Always mention the company name "${companyName}" explicitly when discussing their offerings
+        4. Focus on measurable impacts and outcomes for the audience
+        5. Use location-specific insights for ${
+          location === "local" ? country : "international"
+        } market
+        6. Draw connections between company capabilities and audience needs based on market research`;
+        let promptContent = "";
+        if (insightType === "usps") {
+          promptContent = `# Context
         ## Target Audience:
         Role: ${recommendation.role}
         Industry: ${recommendation.industry}
@@ -283,114 +204,265 @@ Deno.serve(async (req) => {
             : ""
         }
 
-      # Task
-      Create 3 compelling, measurable benefits that ${
-        recommendation.role
-      }s in ${
-        recommendation.industry
-      } would gain from working with ${companyName}, backed by industry data and market research.
+          # Task
+          Create 3 highly specific, data-driven Unique Selling Points (USPs) that precisely demonstrate how ${companyName}'s solutions address ${
+            recommendation.role
+          }s' needs in the ${recommendation.industry} sector ${
+            location === "local" ? `in ${country}` : "internationally"
+          }.
 
-        Each benefit must:
-        1. Start with a clear, bold headline highlighting a specific, quantifiable outcome
-        2. Include at least 3 precise numerical data points (ROI figures, efficiency metrics, performance improvements, market statistics) that demonstrate value
-        3. Reference industry benchmarks, comparative performance data, or success metrics relevant to ${
-          recommendation.industry
+          Each USP must:
+          1. Start with a clear, bold headline highlighting a specific capability or advantage
+          2. Include at least 3 precise numerical data points (percentages, statistics, market figures) related to the industry, audience challenges, or solution effectiveness
+          3. Reference relevant industry trends, market challenges, or competitive benchmarks specific to the ${
+            recommendation.industry
+          } sector
+          4. Explicitly explain why this capability matters to ${
+            recommendation.role
+          }s with concrete examples of business impact
+          5. Highlight a competitive differentiation based on market research or industry analysis
+          6. Focus on the ${
+            location === "local"
+              ? `local market conditions in ${country}`
+              : "international market landscape"
+          }
+
+        # Format
+        For each USP:
+        1. Start with "**USP X: [Compelling Headline]**" as a clear header
+        2. Follow with a detailed paragraph that includes:
+          - Industry-specific context with supporting data
+          - How ${companyName} addresses this specific need
+          - Quantified impact or advantage
+          - Why this matters specifically to ${recommendation.role}s in ${
+            recommendation.industry
+          }
+        3. End with a "Source:" line that specifies one of:
+          - "Company Website" if the information comes from their website
+          - The full name of the news outlet if from a news article
+          - The name of the industry report or research paper
+          - The name of the market research firm or analyst
+          - "LinkedIn" if from company LinkedIn data
+
+        Return the response in an array of JSON objects such as:
+        [
+          {
+            "usp": "USP 1: [Compelling Headline]",
+            "description": "Detailed paragraph explaining the USP",
+            "source": "Source: Company Website"
+          }
+        ]
+        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
+        } else if (insightType === "problems") {
+          promptContent = `# Context
+        ## Target Audience:
+        Role: ${recommendation.role}
+        Industry: ${recommendation.industry}
+        Market: ${location === "local" ? country : "International"}
+
+        ## Company Information:
+        Company Name: ${companyName}
+        ${
+          companyDescription ? `Company Description: ${companyDescription}` : ""
         }
-        4. Connect directly to known challenges or goals of ${
+        ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
+        ${
+          recommendation.reasoning
+            ? `Audience Relevance: ${recommendation.reasoning}`
+            : ""
+        }
+
+        # Task
+        Identify 3 significant, data-backed problems that ${
           recommendation.role
-        }s with evidence
-        5. Highlight how ${companyName}'s approach delivers superior results compared to alternatives
-        6. Account for the ${
-          location === "local"
-            ? `local market realities in ${country}`
-            : "international market landscape"
+        }s in ${recommendation.industry} face ${
+            location === "local"
+              ? `specifically in ${country}`
+              : "internationally"
+          } that ${companyName} can solve.
+
+          Each problem must:
+          1. Start with a clear, bold headline identifying a specific, documented challenge
+          2. Include at least 3 precise numerical data points (percentages, statistics, market figures, survey results) that quantify the problem's impact or prevalence
+          3. Reference specific industry reports, market studies, or research findings related to this challenge
+          4. Explain the business consequences for ${
+            recommendation.role
+          }s who don't address this problem
+          5. Connect to how ${companyName}'s specific capabilities address this problem based on their offerings
+          6. Consider the ${
+            location === "local"
+              ? `local market context in ${country}`
+              : "international market context"
+          }
+
+        # Format
+        For each problem:
+        1. Start with "**Problem X: [Clear Problem Statement]**" as a distinct header
+        2. Follow with a detailed paragraph that includes:
+          - Data-driven description of the problem with statistics
+          - The specific impact on ${recommendation.role}s in ${
+            recommendation.industry
+          }
+        - How ${companyName}'s capabilities provide a solution
+        - Why solving this problem creates value for the target audience
+        3. End with a "Source:" line that specifies one of:
+          - "Company Website" if the information comes from their website
+          - The full name of the news outlet if from a news article
+          - The name of the industry report or research paper
+          - The name of the market research firm or analyst
+          - "LinkedIn" if from company LinkedIn data
+
+          Return the response in an array of JSON objects such as:
+          [
+            {
+              "problem": "Problem 1: [Clear Problem Statement]",
+              "description": "Detailed paragraph explaining the problem",
+              "source": "Source: Company Website"
+            }
+          ]
+        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
+        } else if (insightType === "benefits") {
+          promptContent = `# Context
+          ## Target Audience:
+          Role: ${recommendation.role}
+          Industry: ${recommendation.industry}
+          Market: ${location === "local" ? country : "International"}
+
+          ## Company Information:
+          Company Name: ${companyName}
+          ${
+            companyDescription
+              ? `Company Description: ${companyDescription}`
+              : ""
+          }
+          ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
+          ${
+            recommendation.reasoning
+              ? `Audience Relevance: ${recommendation.reasoning}`
+              : ""
+          }
+
+        # Task
+        Create 3 compelling, measurable benefits that ${
+          recommendation.role
+        }s in ${
+            recommendation.industry
+          } would gain from working with ${companyName}, backed by industry data and market research.
+
+          Each benefit must:
+          1. Start with a clear, bold headline highlighting a specific, quantifiable outcome
+          2. Include at least 3 precise numerical data points (ROI figures, efficiency metrics, performance improvements, market statistics) that demonstrate value
+          3. Reference industry benchmarks, comparative performance data, or success metrics relevant to ${
+            recommendation.industry
+          }
+          4. Connect directly to known challenges or goals of ${
+            recommendation.role
+          }s with evidence
+          5. Highlight how ${companyName}'s approach delivers superior results compared to alternatives
+          6. Account for the ${
+            location === "local"
+              ? `local market realities in ${country}`
+              : "international market landscape"
+          }
+
+        # Format
+        For each benefit:
+        1. Start with "**Benefit X: [Quantifiable Outcome]**" as a distinct header
+        2. Follow with a detailed paragraph that includes:
+          - Specific, measurable value with supporting data
+          - How this benefit addresses known priorities of ${
+            recommendation.role
+          }s
+          - Why this benefit matters in the context of ${
+            recommendation.industry
+          }
+          - How ${companyName} delivers this benefit in a differentiated way
+        3. End with a "Source:" line that specifies one of:
+          - "Company Website" if the information comes from their website
+          - The full name of the news outlet if from a news article
+          - The name of the industry report or research paper
+          - The name of the market research firm or analyst
+          - "LinkedIn" if from company LinkedIn data
+
+        Return the response in an array of JSON objects such as:
+        [
+          {
+            "benefit": "Benefit 1: [Quantifiable Outcome]",
+            "description": "Detailed paragraph explaining the benefit",
+            "source": "Source: Company Website"
+          }
+        ]
+        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
         }
-
-      # Format
-      For each benefit:
-      1. Start with "**Benefit X: [Quantifiable Outcome]**" as a distinct header
-      2. Follow with a detailed paragraph that includes:
-        - Specific, measurable value with supporting data
-        - How this benefit addresses known priorities of ${recommendation.role}s
-        - Why this benefit matters in the context of ${recommendation.industry}
-        - How ${companyName} delivers this benefit in a differentiated way
-      3. End with a "Source:" line that specifies one of:
-        - "Company Website" if the information comes from their website
-        - The full name of the news outlet if from a news article
-        - The name of the industry report or research paper
-        - The name of the market research firm or analyst
-        - "LinkedIn" if from company LinkedIn data
-
-      USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-    }
-    console.log("Sending request to OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-        },
-        {
-          role: "user",
-          content: promptContent,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-    });
-
-    console.log("Successfully analyzed content with OpenAI");
-    const analysis = completion.choices[0].message.content;
-    console.log("OpenAI analysis:", analysis);
-
-    try {
-      let cleanAnalysis = analysis.trim();
-      if (cleanAnalysis.startsWith("```json")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```json\s*/, "")
-          .replace(/\s*```$/, "");
-      } else if (cleanAnalysis.startsWith("```")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```\s*/, "")
-          .replace(/\s*```$/, "");
-      }
-
-      const parsedAnalysis = JSON.parse(cleanAnalysis);
-      console.log("Parsed analysis:", parsedAnalysis);
-
-      const { error: progressError } = await supabase
-        .from("campaign_progress")
-        .update({
-          latest_step: 6,
-          step_6_result: {
-            target_audience: parsedAnalysis,
-          },
-        })
-        .eq("id", campaignData.progress_id);
-
-      if (progressError) {
-        return new Response(JSON.stringify({ error: progressError.message }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
+        console.log("Sending request to OpenAI API...");
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
+            },
+            {
+              role: "user",
+              content: promptContent,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 1500,
         });
+
+        console.log("Successfully analyzed content with OpenAI");
+        const analysis = completion.choices[0].message.content;
+        console.log("OpenAI analysis:", analysis);
+
+        try {
+          const parsedAnalysis = parseOpenAIResponse(analysis);
+          console.log("Parsed analysis:", parsedAnalysis);
+          insightAnalysis[insightType] = parsedAnalysis;
+        } catch (error) {
+          console.error("Error parsing JSON response:", error.message);
+          console.log("Raw response was:", analysis);
+          return new Response(
+            JSON.stringify({ error: "Error parsing JSON response" }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 500,
+            }
+          );
+        }
       }
 
-      return new Response(JSON.stringify({ data: parsedAnalysis }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      // Add the complete recommendation with all insights after processing all insight types
+      parsedRecommendations.push({
+        role,
+        industry,
+        country,
+        reasoning,
+        insights: insightAnalysis,
       });
-    } catch (error) {
-      console.error("Error parsing JSON response:", error.message);
-      console.log("Raw response was:", analysis);
-      return new Response(
-        JSON.stringify({ error: "Error parsing JSON response" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
     }
+
+    const { error: updateError } = await supabase
+      .from("campaign_progress")
+      .update({
+        latest_step: 6,
+        step_6_result: {
+          target_audience: parsedRecommendations,
+        },
+      })
+      .eq("id", campaignData.progress_id);
+
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    return new Response(JSON.stringify({ data: parsedRecommendations }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
