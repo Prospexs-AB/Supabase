@@ -522,10 +522,8 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabase
       .from("campaign_progress")
       .update({
-        latest_step: 6,
-        step_6_result: {
-          target_audience: parsedRecommendations,
-        },
+        latest_step: 7,
+        step_7_result: parsedRecommendations,
       })
       .eq("id", campaignData.progress_id);
 
