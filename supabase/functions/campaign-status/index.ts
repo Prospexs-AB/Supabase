@@ -93,15 +93,10 @@ Deno.serve(async (req) => {
 
   const stepResult = `step_${campaignProgressData.latest_step}_result`;
 
-  const responseData = {
-    latest_step: campaignProgressData.latest_step,
-    result: campaignProgressData[stepResult],
-  };
-
   return new Response(
     JSON.stringify({
       message: "Campaign status",
-      data: responseData,
+      data: campaignProgressData,
     }),
     {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
