@@ -211,6 +211,21 @@ Deno.serve(async (req) => {
     const parsedAnalysis = JSON.parse(cleanAnalysis);
     console.log("Parsed analysis:", parsedAnalysis);
 
+    const { error: updateError } = await supabase
+      .from("campaign_progress")
+      .update({
+        step_3_result: parsedAnalysis,
+      })
+      .eq("id", campaignData.progress_id);
+
+    if (updateError) {
+      console.error("Error updating campaign progress:", updateError);
+      return new Response(JSON.stringify({ error: updateError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
     return new Response(
       JSON.stringify({
         message: "Company analysis completed successfully",

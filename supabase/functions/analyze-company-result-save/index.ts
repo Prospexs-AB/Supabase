@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
   );
 
   const userId = await getUserId(req, supabase);
-  const { campaign_id, analysis } = await req.json();
+  const { campaign_id } = await req.json();
 
   const { data: campaignData, error: campaignError } = await supabase
     .from("campaigns")
@@ -66,7 +66,6 @@ Deno.serve(async (req) => {
     .from("campaign_progress")
     .update({
       latest_step: 3,
-      step_3_result: analysis,
     })
     .eq("id", campaignData.progress_id);
 
@@ -81,7 +80,6 @@ Deno.serve(async (req) => {
   return new Response(
     JSON.stringify({
       message: "Company analysis saved successfully",
-      data: analysis,
     }),
     {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -98,6 +96,6 @@ Deno.serve(async (req) => {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/analyze-company-result-save' \
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    --data '{"campaign_id":"1"}'
 
 */
