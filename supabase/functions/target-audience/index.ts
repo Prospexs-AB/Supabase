@@ -215,14 +215,21 @@ Deno.serve(async (req) => {
       const parsedAnalysis = JSON.parse(cleanAnalysis);
       console.log("Parsed analysis:", parsedAnalysis);
 
+      const new_latest_step = 6;
+      const cleanFurtherProgress = {};
+      for (let x = new_latest_step + 1; x <= 9; x++) {
+        const keyName = `step_${x}_result`;
+        cleanFurtherProgress[keyName] = null;
+      }
       const { error: progressError } = await supabase
         .from("campaign_progress")
         .update({
-          latest_step: 6,
+          latest_step: new_latest_step,
           step_6_result: {
             target_audience: parsedAnalysis,
             locale,
           },
+          ...cleanFurtherProgress,
         })
         .eq("id", campaignData.progress_id);
 

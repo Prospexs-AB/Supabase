@@ -62,10 +62,18 @@ Deno.serve(async (req) => {
     });
   }
 
+  const new_latest_step = 3;
+  const cleanFurtherProgress = {};
+  for (let x = new_latest_step + 1; x <= 9; x++) {
+    const keyName = `step_${x}_result`;
+    cleanFurtherProgress[keyName] = null;
+  }
+
   const { error: updateError } = await supabase
     .from("campaign_progress")
     .update({
-      latest_step: 3,
+      latest_step: new_latest_step,
+      ...cleanFurtherProgress,
     })
     .eq("id", campaignData.progress_id);
 

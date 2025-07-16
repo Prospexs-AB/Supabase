@@ -155,14 +155,22 @@ Deno.serve(async (req) => {
     const data = await response.json();
     console.log("data", data);
 
+    const new_latest_step = 5;
+    const cleanFurtherProgress = {};
+    for (let x = new_latest_step + 1; x <= 9; x++) {
+      const keyName = `step_${x}_result`;
+      cleanFurtherProgress[keyName] = null;
+    }
+
     const { error: progressError } = await supabase
       .from("campaign_progress")
       .update({
-        latest_step: 5,
+        latest_step: new_latest_step,
         step_5_result: {
           linkedin_url: linkedin_url,
           linkedin_profile: data,
         },
+        ...cleanFurtherProgress,
       })
       .eq("id", campaignData.progress_id);
 
