@@ -137,58 +137,73 @@ Deno.serve(async (req) => {
 
     console.log("Analyzing content with OpenAI...");
     console.log("Content being sent to OpenAI:", content.substring(0, 1000));
-    const prompt = `Write a brief but comprehensive bio for ${company_website} based on the following content from their website and any other verifiable sources. Keep the bio under 150 words. Avoid unnecessary details or lengthy descriptions. Focus on the most important details while keeping it concise:
+    const prompt = `
+    Give me a brief but information-rich paragraph describing ${company_website}.
+      The paragraph should include:
+        - What the company does (product/service)
+        - What makes it stand out or unique
+        - Where it's based
+        - Key facts and figures (revenue, funding, number of users/clients, valuation, etc.)
+        - Notable partnerships or customers
+        - Any recent news, launches, or updates
+      Write it as a single, concise paragraph—not in bullet points.
+      For reference, follow the style and level of detail in these examples:
 
-    ${content.substring(0, 8000)}
+      Example 1: Description Example for www.teamtailor.com:
+        Teamtailor is a Stockholm-based recruitment software company founded in 2013. They
+        offer an all-in-one Applicant Tracking System (ATS) combined with employer branding
+        tools, designed to help companies attract, engage, and hire top talent efficiently. Their
+        platform is trusted by over 10,000 companies and 200,000+ users worldwide.
+        
+        As of May 2025, Teamtailor has approximately 530 employees across five continents
+        and generates an annual revenue of $75 million . The company has raised $10 million in
+        funding to date.
 
-    Cover these key points, but be selective and focus on the most significant verified information:
+      Example 2: Description Example for www.remote.com
+        Remote is a San Francisco-based HR tech company founded in 2019 by Job van der
+        Voort and Marcelo Lebre. They offer a global employment platform that helps businesses
+        hire, manage, and pay employees and contractors in over 200 countries without needing
+        local entities.
 
-    1. **Brief Overview:**
-      - Company's name, industry, and founding year (if available)
-      - Core mission and how they solve industry challenges
+        Their services include Employer of Record (EOR), global payroll, contractor
+        management, benefits administration, and compliance solutions. Remote owns legal
+        entities in multiple countries, ensuring compliance with local labor and tax laws. They
+        also provide tools like HRIS, time tracking, and expense management.
 
-    2. **Key Products/Services:**
-      - Main offerings and their primary benefits
-      - Target market and impact
+      Example 3: Description Example for www.zimpler.com
+        Zimpler is a Swedish fintech company founded in 2012, specializing in instant
+        account-to-account (A2A) payment solutions. Their platform enables businesses to
+        facilitate seamless, secure, and real-time transactions across various markets, including
+        iGaming, e-commerce, and financial services.
+        
+        What sets Zimpler apart is its focus on simplifying complex payment processes. Their
+        services include instant deposits and payouts, cross-border transactions, and tailored
+        solutions like Zimpler Go, which streamlines user onboarding and payments. Operating
+        under the supervision of the Swedish Financial Supervisory Authority, Zimpler ensures
+        compliance with stringent regulatory standards.
 
-    3. **Scale & Presence:**
-      - Geographic reach
-      - Notable achievements or metrics
-      - Key partnerships (if significant)
+        Please analyze the content below and create a brief company profile following the above structure.
 
-    Here are some examples of good concise company descriptions:
+        ${content.substring(0, 8000)}
 
-    Example 1: Zoho Corporation is an Indian multinational technology company that develops a comprehensive suite of web-based business tools. Founded in 1996 by Sridhar Vembu and Tony Thomas, the company was originally known as AdventNet before rebranding to Zoho in 2009. Headquartered in Chennai, Tamil Nadu, India, Zoho has expanded its presence globally, including a significant office in Austin, Texas.
+        Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know. Use data that is available in the content and make sure this information is accurate and not made up.
 
-    Example 2: Mynt is a Swedish fintech company founded in 2018 by Baltsar Sahlin, Johan Obermayer, and Magnus Wideberg. Headquartered in Stockholm, Mynt offers a comprehensive spend management platform tailored for small and medium-sized enterprises (SMEs). The company provides smart corporate credit cards and an intuitive mobile app that seamlessly integrates with various accounting systems, enabling businesses to automate and streamline their expense management processes.
+        Return the name of the company and make sure it is accurate.
 
-    Example 3: Pleo is a Danish fintech company founded in 2015 by Jeppe Rindom and Niccolò Perra. The company offers a smart spend management platform with physical and virtual company cards that automate expense reporting. Headquartered in Copenhagen, Pleo serves over 37,000 businesses across Europe and employs approximately 1,000 people. The company has raised over $430 million in funding and achieved a $4.7 billion valuation in 2021.
+        Return the country of the company if its available in the content, if not keep it empty.
 
-    Key Guidelines:
-    - Keep it concise but informative (2-3 paragraphs maximum, under 150 words total)
-    - Focus on verified facts and specific details
-    - Emphasize unique aspects that differentiate the company
-    - If certain information isn't available, focus on what is known
-
-    Please analyze the content and create a brief company profile following this structure.
-
-    Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know. Use data that is available in the content and make sure this information is accurate and not made up.
-
-    Return the name of the company and make sure it is accurate.
-
-    Return the country of the company if its available in the content, if not keep it empty.
-
-    Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
-    {
-      "summary": "your analysis here",
-      "points_of_interest": [
-        { "point of interest 1": "value" },
-        { "point of interest 2": "value" },
-        { "point of interest 3": "value" },
-      ],
-      "company_name": "value",
-      "country": "value"
-    }`;
+        Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+        {
+          "summary": "your analysis here",
+          "points_of_interest": [
+          { "point of interest 1": "value" },
+          { "point of interest 2": "value" },
+          { "point of interest 3": "value" },
+          ],
+          "company_name": "value",
+          "country": "value"
+        }
+    `;
 
     console.log("Sending request to OpenAI API...");
     const completion = await openai.chat.completions.create({
