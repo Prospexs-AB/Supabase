@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
         - Notable partnerships or customers
         - Any recent news, launches, or updates
       Write it as a single, concise paragraph—not in bullet points.
+
       For reference, follow the style and level of detail in these examples:
 
       Example 1: Description Example for www.teamtailor.com:
@@ -221,7 +222,7 @@ Deno.serve(async (req) => {
         strong push into the enterprise market, monday.com is positioning itself as a leading
         “Work OS” for businesses of all sizes.
 
-        Please analyze the content below and create a brief company profile following the above structure.
+        Please analyze the content below and create a brief company profile following the above structure, make it around 1000 plus words, use more if needed.
 
         ${content.substring(0, 8000)}
 
