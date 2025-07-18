@@ -186,20 +186,20 @@ Deno.serve(async (req) => {
       - Company USPs, Benefits, and Problems Solved:
         ${
           usps.length > 0
-            ? `USPs:\n${usps.map((usp) => `- ${usp}`).join("\n")}`
+            ? `USPs:\n${usps.map((usp) => `- ${usp.value}`).join("\n")}`
             : ""
         }
         ${
           problems.length > 0
             ? `Problems Solved:\n${problems
-                .map((problem) => `- ${problem}`)
+                .map((problem) => `- ${problem.value}`)
                 .join("\n")}`
             : ""
         }
         ${
           benefits.length > 0
             ? `Benefits:\n${benefits
-                .map((benefit) => `- ${benefit}`)
+                .map((benefit) => `- ${benefit.value}`)
                 .join("\n")}`
             : ""
         }
