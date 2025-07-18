@@ -122,6 +122,9 @@ Deno.serve(async (req) => {
   );
 
   try {
+    console.log(
+      "========== Starting target audience insights function =========="
+    );
     const userId = await getUserId(req, supabase);
 
     const body = await req.json();
@@ -185,10 +188,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { step_1_result, step_2_result, step_6_result } = progressData;
+    const { step_1_result, step_2_result, step_3_result, step_6_result } =
+      progressData;
 
     // Add null checks for step results
-    if (!step_1_result || !step_2_result || !step_6_result) {
+    if (!step_1_result || !step_2_result || !step_3_result || !step_6_result) {
       return new Response(
         JSON.stringify({ error: "Missing required step results" }),
         {
@@ -203,6 +207,7 @@ Deno.serve(async (req) => {
     const { company_name: companyName, summary: companyDescription } =
       step_2_result;
     const { locale: location } = step_6_result;
+    const { unique_selling_points, problem_solved, benefits } = step_3_result;
 
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
@@ -212,311 +217,272 @@ Deno.serve(async (req) => {
       apiKey: openaiApiKey,
     });
 
-    let parsedRecommendations = [];
-
+    let finalInsights = [];
     for (const recommendation of recommendations) {
       const { role, industry, reasoning, country } = recommendation;
 
-      const insightTypes = ["usps", "problems", "benefits"];
-      let insightAnalysis = {};
+      const prompt = `
+      You are a senior industry analyst who deeply understands the role, industry, and country of the
+      target audience. It should feel like you've spent years in their shoes - you know their daily
+      challenges, how decisions are made, what tools they trust, and what pressures they're under.
 
-      for (const insightType of insightTypes) {
-        console.log("Analyzing content with OpenAI...");
-        console.log("Lead location:", location);
-        console.log("Language:", language);
+      Your task is to analyze how this company's previously identified USPs, Benefits, and
+      Problems Solved affect this specific target audience.
 
-        console.log(
-          `Generating audience insights for ${recommendation.role} in ${recommendation.industry}`
-        );
-        console.log(
-          `Type: ${insightType}, Location: ${location}, Country: ${country}`
-        );
+      You'll break it down into three categories:
+      USPs, Benefits, and Problems Solved.
 
-        const basePrompt = `You are an expert business analyst and market researcher specializing in ${
-          recommendation.industry
-        }. 
-        You have access to extensive market data, industry reports, competitor analyses, and consumer behavior studies.
-        Your expertise is in analyzing how companies can effectively position their offerings to specific audience segments.
+      For each category, write five detailed paragraphs (not bullet points). Each paragraph should
+      explain how a specific USP, benefit, or problem solved directly impacts the target
+      audience's workflow, business model, or strategic goals - using real-world context,
+      numbers, local trends, and examples whenever possible.
+      Your analysis should be:
 
-        Focus on ${recommendation.role}s in ${recommendation.industry} ${
-          location === "local" ? `in ${country}` : "globally"
-        }.
+      - Based on the USPs, Benefits, and Problems Solved already identified for the company
+      - Tailored to the decision-makers in the target audience's role and region
+      - Supported by verifiable information from the company's website, product documentation,
+      customer cases, and reliable public sources
+      - Benchmarked against similar tools in the industry if specific data is missing — but never
+      made up or assumed
 
-        Use these guidelines for your analysis:
-        1. Be extremely specific and data-driven - include concrete numbers, percentages, statistics, and facts
-        2. Reference industry benchmarks, reports, trends, and recent market developments
-        3. Always mention the company name "${companyName}" explicitly when discussing their offerings
-        4. Focus on measurable impacts and outcomes for the audience
-        5. Use location-specific insights for ${
-          location === "local" ? country : "international"
-        } market
-        6. Draw connections between company capabilities and audience needs based on market research`;
-        let promptContent = "";
-        if (insightType === "usps") {
-          promptContent = `# Context
-        ## Target Audience:
-        Role: ${recommendation.role}
-        Industry: ${recommendation.industry}
-        Market: ${location === "local" ? country : "International"}
+      Keep it fact-based, practical, and locally relevant. Write it like it's meant to be handed to
+      someone working in that target audience.
 
-        ## Company Information:
-        Company Name: ${companyName}
-        ${
-          companyDescription ? `Company Description: ${companyDescription}` : ""
-        }
-        ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
-        ${
-          recommendation.reasoning
-            ? `Audience Relevance: ${recommendation.reasoning}`
-            : ""
-        }
+      Target Audience: ${role} at ${industry} in ${country}
 
-          # Task
-          Create 3 highly specific, data-driven Unique Selling Points (USPs) that precisely demonstrate how ${companyName}'s solutions address ${
-            recommendation.role
-          }s' needs in the ${recommendation.industry} sector ${
-            location === "local" ? `in ${country}` : "internationally"
-          }.
+      Use the following USPs, Benefits, and Problems Solved as your base for this analysis:
+      Unique Selling Points: ${unique_selling_points
+        .map((usp) => `- ${usp.value}`)
+        .join("\n")}
+      Benefits: ${benefits.map((benefit) => `- ${benefit.value}`).join("\n")}
+      Problems Solved: ${problem_solved
+        .map((problem) => `- ${problem.value}`)
+        .join("\n")}
 
-          Each USP must:
-          1. Start with a clear, bold headline highlighting a specific capability or advantage
-          2. Include at least 3 precise numerical data points (percentages, statistics, market figures) related to the industry, audience challenges, or solution effectiveness
-          3. Reference relevant industry trends, market challenges, or competitive benchmarks specific to the ${
-            recommendation.industry
-          } sector
-          4. Explicitly explain why this capability matters to ${
-            recommendation.role
-          }s with concrete examples of business impact
-          5. Highlight a competitive differentiation based on market research or industry analysis
-          6. Focus on the ${
-            location === "local"
-              ? `local market conditions in ${country}`
-              : "international market landscape"
+      Here are some examples of what the analysis should look like:
+      Examples of Target Audiences USPs, Benefits and Problems Solved for www.legora.com:
+
+      USPs for Partners at Large B2B Law Firms in Sweden.
+
+      - USP 1 for Partners at Large B2B Law Firms in Sweden:
+        AI-Powered Tabular Review Built for Bulk Due Diligence
+        In firms like Mannheimer Swartling, which handles hundreds of M&A, financing, and corporate
+        transactions annually, manually reviewing contract batches of 50+ agreements can take days of
+        billable associate time. Legora's tabular review converts dozens of documents into sortable data
+        tables in minutes. For Partners, this means faster quality control, earlier issue spotting, and the
+        ability to commit to more deals under flat-fee pricing - helping to align with today's Swedish
+        client expectations around speed and value.
+
+      - USP 2 for Partners at Large B2B Law Firms in Sweden:
+        Endorsement by Peers in Scandinavian and European Tier-One Firms
+        Seeing top firms like Bird & Bird and Goodwin using Legora gives Swedish Partners confidence
+        in the platform. These firms' embrace of the tool - especially in tech and energy deal flows -
+        serves as a de-risking signal. Partners in Stockholm can thus position Legora not as a
+        speculative investment, but as peer-validated infrastructure that enhances existing strategic
+        legal services.
+
+      - USP 3 for Partners at Large B2B Law Firms in Sweden:
+        Word Add-In That Honors Swedish Legal Drafting Habits
+        Swedish Partners - steeped in chapter-and-verse drafting in Word—hesitate to switch platforms.
+        Legora's design philosophy respects this habit by providing AI tools within the familiar Word
+        interface. Contract review remains immersive and natural, with added structure. This design
+        insight removes training friction and protects workflow continuity, enabling adoption without
+        disruption or fatigue.
+
+      - USP 4 for Partners at Large B2B Law Firms in Sweden:
+        Product-Led Development with Practicing Lawyer Input
+        Legora's platform was shaped through direct collaboration with practicing lawyers - not just
+        software engineers. This practitioner-led design resonates with Swedish Partners who often
+        lament generic automation solutions that overlook real-world drafting nuance. Legora's layout
+        and feature set are therefore not just convenient but strategically aligned with Swedish legal
+        drafting patterns and compliance workflows.
+
+      - USP 5 for Partners at Large B2B Law Firms in Sweden:
+        Strong Financial Backing and Enterprise-Grade Data Security
+        Legora's $675M valuation and leadership backing from heavyweights like ICONIQ Growth and
+        General Catalyst matter considerably in Sweden's risk-averse corporate counseling culture.
+        Partners evaluating legal tech want assurance of longevity and compliance standards -
+        especially GDPR readiness. Legora's investor pedigree and data security infrastructure meet
+        those expectations, addressing concerns about vendor stability and data residency.
+
+      Benefits for Partners at Large B2B Law Firms in Sweden.
+
+      - Benefits 1 for Partners at Large B2B Law Firms in Sweden:
+        Dramatically Increased Billable Capacity in High-Volume Practice Areas
+        Partners running M&A or finance deal teams traditionally allocate associate or paralegal hours
+        to comb through agreements. By reducing review times by up to 90%, Legora effectively
+        multiplies capacity without hire. This means Partners can open more matter slots per team,
+        supporting aggressive growth targets and offering clients faster, smarter, and more efficient
+        services.
+
+      - Benefits 2 for Partners at Large B2B Law Firms in Sweden:
+        Strengthened Client Retention Through Speed and Insight
+        In Sweden's competitive legal market, delivering at speed—especially under fixed-fee billing - is
+        a powerful value driver. Legora enables Partners to surface clause-by-clause comparisons and
+        risk insights faster, positioning their firms as innovative leaders. This not only wows clients but
+        improves retention rates and promotes higher follow-on deal flow, particularly in sectors like
+        fintech, energy, and infrastructure.
+
+      - Benefits 3 for Partners at Large B2B Law Firms in Sweden:
+        Margin Preservation Amidst Rising Internal Costs
+        Swedish firms are increasingly pressured to cover associate and overhead costs within flat-fee
+        arrangements. By automating time-draining tasks such as renewal tracking or indemnity
+        comparison, Legora reduces internal cost leakage. Partners can therefore maintain healthy
+        margins without having to sacrifice investment in strategic client guidance.
+
+      - Benefits 4 for Partners at Large B2B Law Firms in Sweden:
+        Internal Consistency & Quality Assurance Across Teams
+        Large B2B firms often juggle multiple practice groups—each with different drafting conventions.
+        Legora introduces structure by aggregating clause-level data across all practice areas, enabling
+        Partners to ensure uniformity. This is invaluable during partner-level quality reviews and
+        supports brand consistency, even when junior lawyers come and go.
+
+      - Benefits 5 for Partners at Large B2B Law Firms in Sweden:
+        Competitive Differentiation Through Tech-Led Services
+        When RFPs come in, Partners positioned as tech-forward advisors secure an edge. Legora's
+        structured outputs - like searchable datasets and analytics-driven review summaries—enable
+        Partners to responsively service clients with complex compliance or due-diligence needs. By
+        marketing their capability to track clauses at scale, firms can elevate perceived value above
+        traditional law firm approaches.
+
+      Problems Solved for Partners at Large B2B Law Firms in Sweden
+
+      - Problems Solved 1 for Partners at Large B2B Law Firms in Sweden:
+        Manual Bottlenecks That Delay High-Volume Transactions
+        Swedish B2B law firms like Mannheimer Swartling, Vinge, and Delphi handle hundreds of
+        contracts per week across their M&A, real estate, and banking practices. A single M&A
+        transaction might include 30 - 100 supplier, customer, or IP agreements that need to be
+        reviewed before closing. Traditionally, this review is done manually by junior associates or
+        secondees, often under immense time pressure. These bottlenecks regularly slow down
+        closings, increase stress on teams, and introduce risk due to human error. Legora eliminates
+        these frictions by automating clause-by-clause review across large batches of contracts in
+        minutes. This allows partners to finalize transactions faster, meet aggressive closing schedules,
+        and reduce dependency on stretched associate resources - without compromising legal
+        precision.
+
+      - Problems Solved 2 for Partners at Large B2B Law Firms in Sweden:
+        Margin Compression from Fixed-Fee Work and Client Demands for Efficiency
+        The Swedish legal market is shifting toward fixed-fee or capped-fee pricing, particularly in
+        transactional and regulatory advisory work. Clients - especially in sectors like real estate,
+        renewables, and PE - expect speed, predictability, and transparency. For partners, this creates a
+        growing tension: delivering excellent work at scale without escalating internal costs. Without
+        automation, profitability often suffers, especially when junior time cannot be billed. Legora
+        directly addresses this by significantly reducing the hours needed for contract review and
+        making deliverables more standardized and scalable. Partners can thus commit to flat fees with
+        confidence, safeguard their margins, and reinvest freed-up capacity into new client matters.
+
+      - Problems Solved 3 for Partners at Large B2B Law Firms in Sweden:
+        Inconsistency and Risk in Clause Language Across Teams
+        In large Swedish law firms with 200+ lawyers, it's common for the same clause - like
+        indemnities, exclusivity, or termination rights - to appear with slight but significant differences
+        across deals. This inconsistency can lead to internal friction during partner review, difficulty
+        reusing templates, and even client dissatisfaction when clauses don't align with prior advice.
+        Legora solves this by structuring all reviewed clauses into a unified, searchable format, allowing
+        partners to quickly compare wording across deals, teams, and historical matters. This enables
+        more consistent advice across the firm, easier creation of standard templates, and faster
+        onboarding of new team members or laterals - all while reducing exposure to drafting risk.
+
+      - Problems Solved 4 for Partners at Large B2B Law Firms in Sweden:
+        Cultural Resistance and Low Adoption of Legal Tech
+        Despite years of interest in legal tech, many Swedish firms still struggle with actual adoption.
+        Partners face internal pushback from senior associates and support staff who are already
+        stretched and reluctant to learn new systems. Failed rollouts create skepticism and damage
+        innovation credibility within the firm. Legora avoids these pitfalls by embedding itself directly into
+        Microsoft Word - the one tool lawyers already live in. No context-switching, no steep learning
+        curve. Associates can begin reviewing in a smarter, structured format from day one, while
+        partners can extract value from the tool without needing major behavior change. This allows law
+        firm innovation efforts to actually land and stick - something Swedish firms have historically
+        struggled with.
+
+      - Problems Solved 5 for Partners at Large B2B Law Firms in Sweden:
+        Limited Visibility into Key Contract Data Puts Clients and Firms at Risk
+        Even the most sophisticated law firms in Sweden rely heavily on unstructured contract data -
+        stored in PDFs, tracked in Excel, or remembered ad hoc by specific team members. This
+        fragmented visibility becomes a real risk during audits, disputes, or regulatory inspections,
+        where clients expect firms to instantly surface key dates, obligations, or risk exposures. Missed
+        renewal deadlines or buried exclusivity clauses can damage client relationships and erode trust.
+        Legora prevents this by turning every contract into a structured dataset, complete with
+        searchable clauses, filtering, and export functionality. Partners can instantly access the
+        information they need, across hundreds of documents, and present it to clients or regulators
+        within minutes. This transforms the firm from a reactive service provider into a proactive
+        strategic partner - especially important in industries facing rising compliance expectations,
+        like ESG, financial services, and energy.
+
+        Escape all string values to comply with JSON format (no unescaped line breaks or illegal characters).
+        Add more usps, problems, and benefits if there are more, the example is just for reference.
+        Avoid markdown or explanations. Format strictly as a single valid JSON object.
+        Respond with only the JSON object such as:
+        {
+          "role": "Example Role",
+          "industry": "Example Industry",
+          "country": "Country",
+          "reasoning": "Example Reasoning",
+          "insights": {
+            "usps": [
+              {
+                "title": "USP 1: Example USP",
+                "description": "Example USP Description",
+                "source": "Source: Example Source"
+              },
+            ],
+            "problems": [
+              {
+                "title": "Problem 1: Example Problem",
+                "description": "Example Problem Description",
+                "source": "Source: Example Source"
+              },
+            ],
+            "benefits": [
+              {
+                "title": "Benefit 1: Example Benefit",
+                "description": "Example Benefit Description",
+                "source": "Source: Example Source"
+              },
+            ]
           }
+        }
+      `;
 
-        # Format
-        For each USP:
-        1. Start with "**USP X: [Compelling Headline]**" as a clear header
-        2. Follow with a detailed paragraph that includes:
-          - Industry-specific context with supporting data
-          - How ${companyName} addresses this specific need
-          - Quantified impact or advantage
-          - Why this matters specifically to ${recommendation.role}s in ${
-            recommendation.industry
-          }
-        3. End with a "Source:" line that specifies one of:
-          - "Company Website" if the information comes from their website
-          - The full name of the news outlet if from a news article
-          - The name of the industry report or research paper
-          - The name of the market research firm or analyst
-          - "LinkedIn" if from company LinkedIn data
+      console.log("Prompt:", prompt);
 
-        Return the response in an array of JSON objects such as:
-        [
+      console.log("Sending request to OpenAI API...");
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
           {
-            "title": "USP 1: [Compelling Headline]",
-            "description": "Detailed paragraph explaining the USP",
-            "source": "Source: Company Website"
-          }
-        ]
-        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-        } else if (insightType === "problems") {
-          promptContent = `# Context
-        ## Target Audience:
-        Role: ${recommendation.role}
-        Industry: ${recommendation.industry}
-        Market: ${location === "local" ? country : "International"}
-
-        ## Company Information:
-        Company Name: ${companyName}
-        ${
-          companyDescription ? `Company Description: ${companyDescription}` : ""
-        }
-        ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
-        ${
-          recommendation.reasoning
-            ? `Audience Relevance: ${recommendation.reasoning}`
-            : ""
-        }
-
-        # Task
-        Identify 3 significant, data-backed problems that ${
-          recommendation.role
-        }s in ${recommendation.industry} face ${
-            location === "local"
-              ? `specifically in ${country}`
-              : "internationally"
-          } that ${companyName} can solve.
-
-          Each problem must:
-          1. Start with a clear, bold headline identifying a specific, documented challenge
-          2. Include at least 3 precise numerical data points (percentages, statistics, market figures, survey results) that quantify the problem's impact or prevalence
-          3. Reference specific industry reports, market studies, or research findings related to this challenge
-          4. Explain the business consequences for ${
-            recommendation.role
-          }s who don't address this problem
-          5. Connect to how ${companyName}'s specific capabilities address this problem based on their offerings
-          6. Consider the ${
-            location === "local"
-              ? `local market context in ${country}`
-              : "international market context"
-          }
-
-        # Format
-        For each problem:
-        1. Start with "**Problem X: [Clear Problem Statement]**" as a distinct header
-        2. Follow with a detailed paragraph that includes:
-          - Data-driven description of the problem with statistics
-          - The specific impact on ${recommendation.role}s in ${
-            recommendation.industry
-          }
-        - How ${companyName}'s capabilities provide a solution
-        - Why solving this problem creates value for the target audience
-        3. End with a "Source:" line that specifies one of:
-          - "Company Website" if the information comes from their website
-          - The full name of the news outlet if from a news article
-          - The name of the industry report or research paper
-          - The name of the market research firm or analyst
-          - "LinkedIn" if from company LinkedIn data
-
-          Return the response in an array of JSON objects such as:
-          [
-            {
-              "title": "Problem 1: [Clear Problem Statement]",
-              "description": "Detailed paragraph explaining the problem",
-              "source": "Source: Company Website"
-            }
-          ]
-        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-        } else if (insightType === "benefits") {
-          promptContent = `# Context
-          ## Target Audience:
-          Role: ${recommendation.role}
-          Industry: ${recommendation.industry}
-          Market: ${location === "local" ? country : "International"}
-
-          ## Company Information:
-          Company Name: ${companyName}
-          ${
-            companyDescription
-              ? `Company Description: ${companyDescription}`
-              : ""
-          }
-          ${companyWebsite ? `Company Website: ${companyWebsite}` : ""}
-          ${
-            recommendation.reasoning
-              ? `Audience Relevance: ${recommendation.reasoning}`
-              : ""
-          }
-
-        # Task
-        Create 3 compelling, measurable benefits that ${
-          recommendation.role
-        }s in ${
-            recommendation.industry
-          } would gain from working with ${companyName}, backed by industry data and market research.
-
-          Each benefit must:
-          1. Start with a clear, bold headline highlighting a specific, quantifiable outcome
-          2. Include at least 3 precise numerical data points (ROI figures, efficiency metrics, performance improvements, market statistics) that demonstrate value
-          3. Reference industry benchmarks, comparative performance data, or success metrics relevant to ${
-            recommendation.industry
-          }
-          4. Connect directly to known challenges or goals of ${
-            recommendation.role
-          }s with evidence
-          5. Highlight how ${companyName}'s approach delivers superior results compared to alternatives
-          6. Account for the ${
-            location === "local"
-              ? `local market realities in ${country}`
-              : "international market landscape"
-          }
-
-        # Format
-        For each benefit:
-        1. Start with "**Benefit X: [Quantifiable Outcome]**" as a distinct header
-        2. Follow with a detailed paragraph that includes:
-          - Specific, measurable value with supporting data
-          - How this benefit addresses known priorities of ${
-            recommendation.role
-          }s
-          - Why this benefit matters in the context of ${
-            recommendation.industry
-          }
-          - How ${companyName} delivers this benefit in a differentiated way
-        3. End with a "Source:" line that specifies one of:
-          - "Company Website" if the information comes from their website
-          - The full name of the news outlet if from a news article
-          - The name of the industry report or research paper
-          - The name of the market research firm or analyst
-          - "LinkedIn" if from company LinkedIn data
-
-        Return the response in an array of JSON objects such as:
-        [
+            role: "system",
+            content:
+              "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
+          },
           {
-            "title": "Benefit 1: [Quantifiable Outcome]",
-            "description": "Detailed paragraph explaining the benefit",
-            "source": "Source: Company Website"
-          }
-        ]
-        USE REAL-WORLD DATA AND SPECIFIC METRICS THROUGHOUT THE RESPONSE.`;
-        }
-        console.log("Sending request to OpenAI API...");
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-            },
-            {
-              role: "user",
-              content: promptContent,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 1500,
-        });
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2048,
+      });
 
-        console.log("Successfully analyzed content with OpenAI");
-        const analysis = completion.choices[0].message.content;
-        console.log("OpenAI analysis:", analysis);
+      console.log("Successfully analyzed content with OpenAI");
+      const analysis = completion.choices[0].message.content;
+      console.log("OpenAI analysis:", analysis);
 
-        try {
-          const parsedAnalysis = parseOpenAIResponse(analysis);
-          console.log("Parsed analysis:", parsedAnalysis);
-          console.log("Parsed analysis type:", typeof parsedAnalysis);
-          console.log(
-            "Parsed analysis length:",
-            Array.isArray(parsedAnalysis)
-              ? parsedAnalysis.length
-              : "not an array"
-          );
-          insightAnalysis[insightType] = parsedAnalysis;
-        } catch (error) {
-          console.error("Error parsing JSON response:", error.message);
-          console.log("Raw response was:", analysis);
-          console.log("Response length:", analysis.length);
-          console.log("First 500 chars:", analysis.substring(0, 500));
-          return new Response(
-            JSON.stringify({ error: "Error parsing JSON response" }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 500,
-            }
-          );
-        }
+      console.log("Final 300 characters of raw output:", analysis.slice(-300));
+
+      let cleanAnalysis = analysis.trim();
+      if (cleanAnalysis.startsWith("```json")) {
+        cleanAnalysis = cleanAnalysis
+          .replace(/^```json\s*/, "")
+          .replace(/\s*```$/, "");
+      } else if (cleanAnalysis.startsWith("```")) {
+        cleanAnalysis = cleanAnalysis
+          .replace(/^```\s*/, "")
+          .replace(/\s*```$/, "");
       }
 
-      // Add the complete recommendation with all insights after processing all insight types
-      parsedRecommendations.push({
-        role,
-        industry,
-        country,
-        reasoning,
-        insights: insightAnalysis,
-      });
+      const parsedAnalysis = JSON.parse(cleanAnalysis);
+      console.log("Parsed analysis:", parsedAnalysis);
+      finalInsights.push(parsedAnalysis);
     }
 
     const new_latest_step = 7;
@@ -530,7 +496,7 @@ Deno.serve(async (req) => {
       .from("campaign_progress")
       .update({
         latest_step: new_latest_step,
-        step_7_result: parsedRecommendations,
+        step_7_result: finalInsights,
         ...cleanFurtherProgress,
       })
       .eq("id", campaignData.progress_id);
@@ -542,7 +508,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ data: parsedRecommendations }), {
+    return new Response(JSON.stringify({ data: finalInsights }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
