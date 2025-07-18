@@ -35,6 +35,31 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
   return user.id;
 };
 
+function cleanHtmlContent(html: string): string | null {
+  try {
+    const textContent = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const cleanedContent = textContent
+      .replace(/\b(undefined|null|NaN)\b/gi, "")
+      .replace(/[^\S\r\n]+/g, " ")
+      .replace(/\s*\n\s*/g, "\n")
+      .trim();
+    if (cleanedContent.length < 200) {
+      console.log("Content too short, might be invalid");
+      return null;
+    }
+    console.log(`Extracted ${cleanedContent.length} characters of content`);
+    return cleanedContent;
+  } catch (error) {
+    console.error("Error cleaning content:", error);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -127,37 +152,76 @@ Deno.serve(async (req) => {
     // Set location context based on local/international choice
     const locationContext = isLocal ? companyCountry : "international markets";
 
+    const params = new URLSearchParams({
+      url: campaignData.company_website,
+      apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
+    });
+
+    console.log("Scraping URL:", campaignData.company_website);
+    console.log(
+      "Using ZenRows API key:",
+      Deno.env.get("ZENROWS_API") ? "Present" : "Missing"
+    );
+
+    const response = await fetch(
+      `https://api.zenrows.com/v1/?${params.toString()}`
+    );
+
+    console.log("ZenRows response status:", response.status);
+    const html = await response.text();
+    console.log("Raw HTML length:", html.length);
+    console.log("Raw HTML preview:", html.substring(0, 500));
+
+    const zenrowsContent = cleanHtmlContent(html);
+
     const prompt = `
-      Generate 3-5 highly targeted audience segments for a company with these details:
+      You are a senior industry analyst at a global consultancy.
 
-      Company: ${name}
-      Description: ${description}
-      Company Country: ${companyCountry}
-      Location Focus: ${
-        isLocal
-          ? `Local (${companyCountry})`
-          : "International (outside of " + companyCountry + ")"
-      }
-      Language: ${language === "en" ? "English" : "Swedish"}
+      Based on the provided USPs, Benefits, and Problems Solved of ${name} - combined
+      with relevant industry trends, public customer information, and market positioning - identify 10
+      high-value target audiences that the company should reach out to in ${companyCountry} to acquire
+      new customers.
 
-      Company Insights:
-      ${
-        usps.length > 0
-          ? `USPs:\n${usps.map((usp) => `- ${usp}`).join("\n")}`
-          : ""
-      }
-      ${
-        problems.length > 0
-          ? `Problems Solved:\n${problems
-              .map((problem) => `- ${problem}`)
-              .join("\n")}`
-          : ""
-      }
-      ${
-        benefits.length > 0
-          ? `Benefits:\n${benefits.map((benefit) => `- ${benefit}`).join("\n")}`
-          : ""
-      }
+      Use the following sources for context:
+      - Company USPs, Benefits, and Problems Solved:
+        ${
+          usps.length > 0
+            ? `USPs:\n${usps.map((usp) => `- ${usp}`).join("\n")}`
+            : ""
+        }
+        ${
+          problems.length > 0
+            ? `Problems Solved:\n${problems
+                .map((problem) => `- ${problem}`)
+                .join("\n")}`
+            : ""
+        }
+        ${
+          benefits.length > 0
+            ? `Benefits:\n${benefits
+                .map((benefit) => `- ${benefit}`)
+                .join("\n")}`
+            : ""
+        }
+      - Website content and product pages:
+        ${zenrowsContent.substring(0, 8000)}
+      - Publicly known customer logos or partnerships
+      - Industry trends, common challenges, and adoption patterns in this sector
+      - Role-based decision-making dynamics in B2B sales
+
+      Each audience must:
+      - Be titled in the format: [Decision-Maker Title] at [Type of Company] in [Country] (e.g.,
+      “Legal General Counsel at Large B2B FinTech Companies in Sweden”)
+      - Include only job titles that are easily searchable via B2B tools like ZoomInfo, Lusha, Apollo, or
+      LinkedIn
+      - Be followed by one paragraph explaining why this is a relevant and high-potential audience,
+      using facts, figures, or market logic where available
+      - Reference how the company's solution connects directly to the pain points or goals of that
+      segment
+      - If possible, mention types of companies or examples that fall into that audience
+
+      If clear industry targets are not available, use related benchmarks and similar buyer patterns to
+      suggest logical alternatives.
 
       For each target audience segment, provide:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
@@ -168,15 +232,8 @@ Deno.serve(async (req) => {
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
       5. "country": The country of the target audience (e.g., "Sweden", "United States")
 
-      Geographic Focus: ${locationContext}
-      ${
-        isLocal
-          ? `IMPORTANT: The target audiences MUST be specific to ${companyCountry}'s market. ALWAYS include "${companyCountry}" at the end of the industry name.`
-          : `IMPORTANT: The target audiences should focus on markets OUTSIDE of ${companyCountry}. Do not include ${companyCountry} in the target audiences.`
-      }
-
       Format: JSON array of target audience objects.
-      `;
+    `;
 
     console.log("Sending request to OpenAI API...");
     const completion = await openai.chat.completions.create({
