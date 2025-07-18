@@ -182,6 +182,45 @@ Deno.serve(async (req) => {
         under the supervision of the Swedish Financial Supervisory Authority, Zimpler ensures
         compliance with stringent regulatory standards.
 
+      Example 4: Description Example for www.hedvig.com
+        Hedvig is a Stockholm-based digital insurance company founded in 2017, aiming to
+        simplify and modernize the insurance experience. Launched in 2018, Hedvig offers a
+        range of insurance products including home, car, pet, and accident insurance, all
+        managed through a user-friendly app that allows for quick claims and flexible coverage
+        without binding periods. The company has attracted over 130,000 customers and has
+        raised approximately $99 million in funding from investors like Obvious Ventures and
+        Adelis Equity Partners. In 2023, Hedvig formed a strategic partnership with SEB, further
+        solidifying its position in the Swedish market. With a focus on digital convenience and
+        customer-centric services, Hedvig continues to redefine insurance for the modern
+        consumer.
+
+      Example 5: Description Example for www.legora.com
+        Legora is a Stockholm-founded legal tech startup launched in 2023, offering a
+        collaborative AI platform that helps lawyers review, draft, and research more efficiently.
+        With offices in New York, London, and Stockholm, Legora serves over 250 clients across
+        20 countries, including top firms like Cleary Gottlieb, Goodwin, Bird & Bird, and
+        Mannheimer Swartling. Their standout features include a Microsoft Word add-in and a
+        "tabular review" tool that transforms document analysis into an interactive grid. In May
+        2025, Legora raised an $80 million Series B funding round led by ICONIQ and General
+        Catalyst, bringing its valuation to $675 million. The company, rebranded from Leya in
+        early 2025, is recognized for its user-friendly interface and deep collaboration with
+        clients, positioning itself as a strong competitor to established players like Harvey in the
+        legal AI space.
+
+      Example 6: Description Example for www.monday.com
+        Monday.com is a Tel Aviv-based work management platform founded in 2012 (originally
+        called dapulse) that enables teams to build custom workflows, manage projects, and
+        automate processes without writing code. Since its IPO in 2021, the company has grown
+        rapidly, serving over 245,000 customers worldwide across industries like marketing,
+        sales, HR, and IT. In Q1 2025, monday.com reported $282.3 million in revenue—a 30%
+        year-over-year increase - and reached $972 million in revenue for fiscal year 2024, with
+        a net dollar retention rate of 112% . The platform has expanded into enterprise service
+        management with AI-powered tools, including autonomous agents for incident
+        resolution, and continues to roll out features like AI Blocks, embedded Microsoft 365
+        integration, and live spreadsheets . With a global team of over 3,000 employees and a
+        strong push into the enterprise market, monday.com is positioning itself as a leading
+        “Work OS” for businesses of all sizes.
+
         Please analyze the content below and create a brief company profile following the above structure.
 
         ${content.substring(0, 8000)}
