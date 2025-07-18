@@ -32,6 +32,31 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
   return user.id;
 };
 
+function cleanHtmlContent(html: string): string | null {
+  try {
+    const textContent = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const cleanedContent = textContent
+      .replace(/\b(undefined|null|NaN)\b/gi, "")
+      .replace(/[^\S\r\n]+/g, " ")
+      .replace(/\s*\n\s*/g, "\n")
+      .trim();
+    if (cleanedContent.length < 200) {
+      console.log("Content too short, might be invalid");
+      return null;
+    }
+    console.log(`Extracted ${cleanedContent.length} characters of content`);
+    return cleanedContent;
+  } catch (error) {
+    console.error("Error cleaning content:", error);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -100,61 +125,225 @@ Deno.serve(async (req) => {
     console.log("Analyzing content with OpenAI...");
     console.log("Content being sent to OpenAI:", content.substring(0, 1000));
     const { company_name, company_website } = campaignData;
-    const prompt = `Write a brief but comprehensive analysis for ${company_name} based on the following content from their website ${company_website} and any other verifiable sources. Avoid unnecessary details or lengthy descriptions. Focus on the most important details while keeping it concise:
 
-    ${content.substring(0, 8000)}
+    const params = new URLSearchParams({
+      url: company_website,
+      apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
+    });
 
-    Cover these key points, but be selective and focus on the most significant verified information:
+    console.log("Scraping URL:", company_website);
+    console.log(
+      "Using ZenRows API key:",
+      Deno.env.get("ZENROWS_API") ? "Present" : "Missing"
+    );
 
-    1. **Unique Selling Points:**
-    2. **Problem Solved:**
-    3. **Benefits:**
+    const response = await fetch(
+      `https://api.zenrows.com/v1/?${params.toString()}`
+    );
 
-    Here are some examples for each category:
+    console.log("ZenRows response status:", response.status);
+    const html = await response.text();
+    console.log("Raw HTML length:", html.length);
+    console.log("Raw HTML preview:", html.substring(0, 500));
 
-    1. **Unique Selling Points:**
-      - year-over-year growth
-      - reduced project delivery times
+    const zenrowsContent = cleanHtmlContent(html);
 
-    2. **Problem Solved:**
-      - They solve the pain point of poor user experience in digital products through their specialized UI/UX
-      - helps companies struggling with outdated software systems by offering custom software solutions
+    const prompt = `
+      Write a brief but comprehensive analysis for ${company_name} based on the following content from their website ${company_website} and any other verifiable sources.
+      Avoid unnecessary details or lengthy descriptions.
+      Focus on the most important details while keeping it concise.
 
-    3. **Benefits:**
-      - reduce project development time
-      - increase in user engagement after revamping their digital interfaces
-      - demonstrated cost savings of approximately 20% in IT infrastructure expenses
+      This is the summary of the company thats been generated:
+      ${content.substring(0, 8000)}
 
-    Here are some examples of good concise company analysis:
+      This it the raw content from the website:
+      ${zenrowsContent.substring(0, 8000)}
 
-    Example 1 of unique selling points: Weekend Inc. has achieved a 40% year-over-year growth in client acquisition within the Southeast Asian market, highlighting their successful expansion strategy and expertise in digital product development, as reported in their latest earnings report.
+      Cover these key points, but be selective and focus on the most significant verified information:
 
-    Example 2 of unique selling points: According to a recent customer case study, Weekend Inc. reduced project delivery times by 25% on average for their clients through their proprietary agile development framework, setting them apart from competitors like Accenture and Deloitte Digital.
+      1. **Unique Selling Points:**
+      2. **Problem Solved:**
+      3. **Benefits:**
 
-    Example 3 of unique selling points: A press release from Weekend Inc. revealed that their tailored software solutions have led to a 30% increase in operational efficiency for clients in the IT services sector, demonstrating their capability in aligning technology roadmaps with business goals.
+      Here is the scenario for the unique selling points analysis:
 
-    Example 1 of problem solved: They solve the pain point of poor user experience in digital products through their specialized UI/UX research services, which have led to a 50% increase in user engagement for several clients after implementing their recommendations.
+      You are a senior industry analyst at a top global consultancy.
+      Your task is to identify 5 Unique Selling Propositions (USPs) of the company listed below.
+      Use only:
+      - The company's official website
+      - Verifiable, publicly available information (such as product pages, news, pricing, press
+      releases, customer logos, or use cases)
 
-    Example 2 of problem solved: Weekend Inc. helps companies struggling with outdated software systems by offering custom software solutions; this has enabled clients to reduce operational costs by up to 25% through improved efficiency and automation.
+      Only include what is explicitly stated or strongly supported by the company's materials. Do not
+      make assumptions or fabricate details.
+      Each USP must:
+      - Be specific and clearly grounded in facts
+      - Highlight what makes the company stand out from competitors
+      - Include any available figures, adoption stats, named customers, or technical differentiators
+      - Be useful for matching with other companies facing challenges this company can solve
+      Company: ${company_name}
 
-    Example 1 of benefits: Weekend Inc. has been shown to reduce project development time by up to 30% for their clients, as evidenced by a case study with a mid-sized tech firm that reported a reduction in their average project timeline from 10 months to 7 months after implementing Weekend Inc.'s tailor-made software solutions.
+      Respond in this format:
+      1. [USP Title]
+        Description...
 
-    Example 2 of benefits: Clients of Weekend Inc. have achieved a 25% increase in user engagement after revamping their digital interfaces using Weekend Inc.’s UI/UX research services. A specific example includes a client in the e-commerce sector that saw user engagement metrics, such as time spent on site and pages per session, increase significantly post-redesign.
+      Examples of USPs for www.legora.com:
+      USP 1: AI-Native “Tabular Review” That Transforms Legal Document Analysis
+      Legora's core innovation—“tabular review” - converts unstructured legal documents into
+      structured, sortable data tables. This allows legal professionals to analyze 50-100 contracts
+      simultaneously, reducing manual review time by up to 90%. In a sector where junior hours are
+      under cost pressure and partner margins are thinning, this feature transforms document-heavy
+      workflows like M&A and financing. Compared to AI summarization tools, Legora's data-first
+      approach offers measurable operational leverage, not just convenience.
 
-    Example 3 of benefits: Weekend Inc. has demonstrated cost savings of approximately 20% in IT infrastructure expenses for their clients by optimizing technology roadmaps and integrating cost-effective solutions. A financial services client reported saving $500,000 annually on IT costs after adopting Weekend Inc.’s strategic technology planning.
+      USP 2: Rapid Global Penetration Across Top-Tier Firms
+      Legora has secured 250+ law firms as customers across 20+ countries since its 2023 launch,
+      including industry heavyweights such as Cleary Gottlieb, Bird & Bird, and Mannheimer
+      Swartling. This pace of adoption—faster than Ironclad and rivaling Harvey—is exceptional in a
+      sector where procurement cycles typically range from 9 to 18 months. It signals high
+      product-market fit, trust in the underlying AI model, and strong early-stage GTM execution.
 
-    Key Guidelines:
-    - Keep it concise but informative (2-3 sentences maximum for each point)
-    - Each category should have around 2-3 points
-    - Focus on verified facts and specific details
-    - Emphasize unique aspects that differentiate the company
-    - If certain information isn't available, focus on what is known
-    - Add a source for each point, e.g. "Source: Research", "Source: Independent Client Reviews, "Source: Weekend Inc. Product Pages"
+      USP 3: Aggressively Funded with Strategic Backers and Deep Capital Access
+      With over $115M raised and a valuation of ~$675M as of May 2025, Legora is one of the
+      fastest-capitalized players in the legal tech sector. Investors include ICONIQ Growth, General
+      Catalyst, and unicorn founders from Klarna and Spotify. This not only validates the company's
+      strategic relevance but ensures multi-year runway to expand globally, invest in custom AI
+      tooling, and defend against emerging challengers in a consolidating space.
 
-    Please analyze the content and create a company analysis following this structure and dont forget the source for each point.
+      USP 4: Deep Workflow Embedding Through Word Add-Ins and Chat Interfaces
+      Unlike many competitors that remain siloed in their UI, Legora integrates directly into Microsoft
+      Word via a native add-in, allowing lawyers to access AI insights, clause suggestions, and data
+      extraction tools within the environment they already use daily. Combined with legal-specific
+      chatbots and AI agents, this lowers switching friction, drives daily active use, and creates
+      defensible workflow lock-in—critical in professional services where behavioral inertia is high.
 
-    Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
-    {
+      USP 5: Product-Led Growth Culture with a Lean, Cross-Disciplinary Team
+      Legora operates with a 100-person team distributed across Stockholm, London, and New York -
+      balancing legal domain expertise with world-class product and engineering talent from Spotify,
+      Klarna, and Google. This allows the company to ship rapidly, iterate directly with customers, and
+      avoid the bloated product timelines that plague legacy legal software vendors. The lean team
+      model is also capital-efficient, with high ROI per employee.
+
+      Here is the scenario for the problem solved analysis:
+
+      You are a senior industry analyst at a top global consultancy. Your task is to identify five
+      specific problems or inefficiencies that the company below helps its customers solve.
+      Use only verifiable and factual information from:
+      - The company's official website
+      - Public product documentation, feature pages, case studies, testimonials, or relevant press
+      coverage
+
+      Do not make assumptions or fabricate details. If a problem is implied but not backed by clear
+      evidence, include the note:
+      “The company does not provide specific figures or examples to support this claim.”
+      Each problem should:
+      - Be written in clear, practical business terms (e.g. manual workload, compliance complexity,
+      data visibility issues)
+      - Be directly linked to how the company's product or service addresses it
+      - Include real metrics, named customers, or outcome-based language where available
+      - Be tangible and actionable — avoid abstract or generic phrasing
+      Only include what is explicitly stated or strongly supported by the company's materials. Do not
+      make assumptions or fabricate details.
+      Company: ${company_name}
+
+      Format:
+        1. [Problem Title]
+          Description...
+
+      Examples of Problems Solved for www.legora.com:
+      Problems Solved 1: Manual Contract Review is a Bottleneck and Profitability Drag
+      Even at the most sophisticated firms, associates spend thousands of hours annually extracting
+      data from contracts - a task ripe for automation. Legora removes this bottleneck, freeing up
+      legal capacity for higher-margin work and reducing the need for document review outsourcing.
+      In fixed-fee environments, this improves project profitability by as much as 30 - 40% per
+      engagement.
+
+      Problems Solved 2: Legacy Legal Software Is Clunky, Fragmented, and Poorly Designed
+      Traditional legal tech tools -often developed 10+ years ago - prioritize function over usability,
+      resulting in steep learning curves and poor adoption. Legora's clean UI, intuitive UX, and
+      real-time collaboration tools are modeled on consumer-grade platforms (e.g. Notion, Airtable),
+      making onboarding faster and daily use more seamless. This is especially attractive to younger
+      associates and digital-native in-house counsel.
+
+      Problems Solved 3: Cross-Document Analysis is Practically Impossible at Scale
+      Legal teams frequently need to compare dozens of agreements for anomalies - yet no legacy
+      tool enables this natively. Legora's tabular comparison format allows clause-level analysis
+      across large document sets, replacing hours of toggling between PDFs with actionable insights.
+      This is particularly impactful in capital markets, real estate, and fund operations.
+
+      Problem Solved 4: Legal AI Adoption is Stifled by Trust and Risk Concerns
+      Many firms remain wary of AI “hallucination” in legal applications. Legora mitigates this risk by
+      focusing on extraction, not generation. Its model is deterministic - reading and structuring exact
+      contract language rather than inventing legal summaries - making it far more trustworthy in
+      regulated environments and under legal liability standards.
+      
+      Problem Solved 5: Legal Data Lives in Silos, Blocking Operational Insight
+      Most law firms and legal departments are sitting on thousands of documents with no searchable
+      structure. This blocks analytics, slows risk assessments, and creates audit complexity. Legora
+      solves this by making all uploaded documents queryable via tags, filters, and structured fields -
+      turning legal archives into living datasets.
+
+      Here is the scenario for the benefits analysis:
+      You are a senior industry analyst at a top global consultancy.
+      You are analyzing this company to understand what benefits it provides to its customers. Based
+      on the company's website and other public, verifiable sources (case studies, testimonials,
+      product descriptions), identify 5 tangible benefits customers receive.
+      Use only:
+      - The company's official website
+      - Verifiable, publicly available information (such as product pages, news, pricing, press
+      releases, customer logos, or use cases)
+      Only include what is explicitly stated or strongly supported by the company's materials. Do not
+      make assumptions or fabricate details.
+      Each benefit must:
+      - Be framed from the customer's perspective
+      - Focus on clear, measurable value (e.g. time saved, costs reduced, conversions increased)
+      - Include numbers, named customers, quotes, or feature references when available
+      - Be helpful for identifying companies that would value these outcomes
+      Company: ${company_name}
+
+      Respond in this format:
+      1. [Benefit Title]
+        Description...
+
+      Examples of Benefits for www.legora.com:
+      1. Material Time and Cost Reductions Across Core Legal Processes
+      Firms using Legora report time savings of up to 90% in contract review, especially in workflows
+      like due diligence, commercial lease reviews, and regulatory audits. This allows law firms to
+      either increase throughput without hiring or price more competitively in fixed-fee
+      engagements—a growing segment driven by client demand for cost predictability. For in-house
+      legal teams, it means faster decisions and leaner legal ops.
+
+      2. Structured Legal Data Enables Strategic, Not Just Operational, Value
+      By turning contracts into structured datasets, Legora moves legal teams from case-by-case
+      review to portfolio-level insight. This allows firms to identify systemic exposure (e.g. termination
+      clauses across leases) and gives in-house teams the ability to benchmark risks across
+      geographies or subsidiaries. Few platforms in legal tech provide this level of operational
+      intelligence without extensive post-processing.
+
+      3. High Client Involvement in Product Development Drives Relevance
+      Unlike traditional vendors that ship generic solutions, Legora co-develops features with clients
+      like Goodwin. This ensures its roadmap aligns with real-world legal workflows rather than
+      assumptions. The result: higher adoption, reduced churn risk, and increased customer lifetime
+      value. In consultancy terms, this “co-creation loop” is a moat in itself.
+
+      4. Enterprise-Grade Scalability for Global Legal Operations
+      Legora's architecture supports multilingual document review and deployment across multiple
+      legal jurisdictions. This enables global law firms and multinational legal departments to
+      consolidate tools across borders, reducing vendor fragmentation. The scalability is further
+      reinforced by API integrations with CRM, DMS, and e-billing systems - making Legora a system
+      of record, not just a tool.
+
+      5. Audit-Ready Outputs Support Governance and Compliance at Scale
+      Legora's structured exports - down to party names, payment triggers, and obligations—are
+      formatted for compliance reporting and internal audits. This eliminates the error-prone,
+      copy-paste approach common in Excel or Word and reduces downstream liability. For regulated
+      sectors like finance and energy, this transforms legal from a bottleneck to a strategic partner in
+      risk management.
+
+      Please analyze the content and create a company analysis following this structure and dont forget the source for each point.
+
+      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+      {
       "unique_selling_points": [
         {
           "value": "your analysis here",
@@ -173,7 +362,8 @@ Deno.serve(async (req) => {
           "source": "your source here"
         }
       ],
-    }`;
+      }
+    `;
 
     console.log("Sending request to OpenAI API...");
     const completion = await openai.chat.completions.create({
