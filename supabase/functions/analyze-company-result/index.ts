@@ -181,11 +181,6 @@ Deno.serve(async (req) => {
       - Highlight what makes the company stand out from competitors
       - Include any available figures, adoption stats, named customers, or technical differentiators
       - Be useful for matching with other companies facing challenges this company can solve
-      Company: ${company_name}
-
-      Respond in this format:
-      1. [USP Title]
-        Description...
 
       Examples of USPs for www.legora.com:
       USP 1: AI-Native “Tabular Review” That Transforms Legal Document Analysis
@@ -244,11 +239,6 @@ Deno.serve(async (req) => {
       - Be tangible and actionable — avoid abstract or generic phrasing
       Only include what is explicitly stated or strongly supported by the company's materials. Do not
       make assumptions or fabricate details.
-      Company: ${company_name}
-
-      Format:
-        1. [Problem Title]
-          Description...
 
       Examples of Problems Solved for www.legora.com:
       Problems Solved 1: Manual Contract Review is a Bottleneck and Profitability Drag
@@ -299,11 +289,6 @@ Deno.serve(async (req) => {
       - Focus on clear, measurable value (e.g. time saved, costs reduced, conversions increased)
       - Include numbers, named customers, quotes, or feature references when available
       - Be helpful for identifying companies that would value these outcomes
-      Company: ${company_name}
-
-      Respond in this format:
-      1. [Benefit Title]
-        Description...
 
       Examples of Benefits for www.legora.com:
       1. Material Time and Cost Reductions Across Core Legal Processes
@@ -341,27 +326,27 @@ Deno.serve(async (req) => {
       risk management.
 
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point.
-
+      Use the example above as a reference for the analysis and each point should be descriptive if possible having 2-3 sentences unless more are needed.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       {
-      "unique_selling_points": [
-        {
-          "value": "your analysis here",
-          "source": "your source here"
-        }
-      ],
-      "problem_solved": [
-        {
-          "value": "your analysis here",
-          "source": "your source here"
-        }
-      ],
-      "benefits": [
-        {
-          "value": "your analysis here",
-          "source": "your source here"
-        }
-      ],
+        "unique_selling_points": [
+          {
+            "value": "your analysis here",
+            "source": "your source here"
+          }
+        ],
+        "problem_solved": [
+          {
+            "value": "your analysis here",
+            "source": "your source here"
+          }
+        ],
+        "benefits": [
+          {
+            "value": "your analysis here",
+            "source": "your source here"
+          }
+        ],
       }
     `;
 
