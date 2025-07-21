@@ -182,6 +182,9 @@ Deno.serve(async (req) => {
       high-value target audiences that the company should reach out to in ${companyCountry} to acquire
       new customers.
 
+      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
+      FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
+
       Use the following sources for context:
       - Company USPs, Benefits, and Problems Solved:
         ${
@@ -223,7 +226,7 @@ Deno.serve(async (req) => {
       If clear industry targets are not available, use related benchmarks and similar buyer patterns to
       suggest logical alternatives.
 
-      For each target audience segment, provide:
+      For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
       2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
       3. "reasoning": Data-backed explanation of fit (2-3 sentences)
@@ -232,6 +235,7 @@ Deno.serve(async (req) => {
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
       5. "country": The country of the target audience (e.g., "Sweden", "United States")
 
+      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       Format: JSON array of target audience objects.
     `;
 
@@ -250,7 +254,7 @@ Deno.serve(async (req) => {
         },
       ],
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 2000,
     });
 
     console.log("Successfully analyzed content with OpenAI");
