@@ -226,8 +226,11 @@ Deno.serve(async (req) => {
       target audience. It should feel like you've spent years in their shoes - you know their daily
       challenges, how decisions are made, what tools they trust, and what pressures they're under.
 
+      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
+      FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
+
       Your task is to analyze how this company's previously identified USPs, Benefits, and
-      Problems Solved affect this specific target audience.
+      Problems Solved affect this specific target audience and return in the language code: ${language}.
 
       You'll break it down into three categories:
       USPs, Benefits, and Problems Solved.
@@ -411,6 +414,7 @@ Deno.serve(async (req) => {
         Escape all string values to comply with JSON format (no unescaped line breaks or illegal characters).
         Add more usps, problems, and benefits if there are more, the example is just for reference.
         Avoid markdown or explanations. Format strictly as a single valid JSON object.
+        Ensure the text is returned in the language code: ${language}.
         Respond with only the JSON object such as:
         {
           "role": "Example Role",
