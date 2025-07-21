@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     const { data: campaignProgressData, error: campaignProgressError } =
       await supabase
         .from("campaign_progress")
-        .select("step_2_result")
+        .select("*")
         .eq("id", campaignData.progress_id)
         .single();
 
@@ -109,6 +109,9 @@ Deno.serve(async (req) => {
     const openai = new OpenAI({
       apiKey: apiKey,
     });
+    const { step_1_result } = campaignProgressData;
+    const { language: language_code } = step_1_result;
+    console.log("Language code:", language_code);
     const content = campaignProgressData.step_2_result.summary;
 
     if (!content) {
@@ -152,6 +155,9 @@ Deno.serve(async (req) => {
       Write a brief but comprehensive analysis for ${company_name} based on the following content from their website ${company_website} and any other verifiable sources.
       Avoid unnecessary details or lengthy descriptions.
       Focus on the most important details while keeping it concise.
+
+      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language_code}.
+      FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
 
       This is the summary of the company thats been generated:
       ${content.substring(0, 8000)}
@@ -325,7 +331,7 @@ Deno.serve(async (req) => {
       sectors like finance and energy, this transforms legal from a bottleneck to a strategic partner in
       risk management.
 
-      Please analyze the content and create a company analysis following this structure and dont forget the source for each point.
+      Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
       Use the example above as a reference for the analysis and each point should be descriptive if possible having 2-3 sentences unless more are needed.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       {
