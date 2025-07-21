@@ -94,6 +94,39 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
+    if (campaignError) {
+      console.error("Error updating campaign:", campaignError);
+      return new Response(
+        JSON.stringify({ error: "Error updating campaign" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { data: campaignProgressData, error: campaignProgressError } =
+      await supabase
+        .from("campaign_progress")
+        .select("*")
+        .eq("id", campaignData.progress_id)
+        .single();
+
+    if (campaignProgressError) {
+      console.error("Error getting campaign progress:", campaignProgressError);
+      return new Response(
+        JSON.stringify({ error: "Error getting campaign progress" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { step_1_result } = campaignProgressData;
+    const { language: language_code } = step_1_result;
+    console.log("Language code:", language_code);
+
     const params = new URLSearchParams({
       url: company_website,
       apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
@@ -147,6 +180,9 @@ Deno.serve(async (req) => {
         - Notable partnerships or customers
         - Any recent news, launches, or updates
       Write it as a single, concise paragraph—not in bullet points.
+
+      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language_code}.
+      FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
 
       For reference, follow the style and level of detail in these examples:
 
@@ -226,7 +262,9 @@ Deno.serve(async (req) => {
 
         ${content.substring(0, 8000)}
 
-        Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know. Use data that is available in the content and make sure this information is accurate and not made up.
+        Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know.
+        Use data that is available in the content and make sure this information is accurate and not made up.
+        If the information is not available, use another point to interest to replace it.
 
         Return the name of the company and make sure it is accurate.
 
