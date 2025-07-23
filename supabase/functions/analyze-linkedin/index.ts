@@ -34,6 +34,26 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
   return user.id;
 };
 
+function getWords(str: string) {
+  return str
+    .toLowerCase()
+    .replace(/(inc|llc|ltd|corp|co|\.|,)/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function hasOverlap(a: string, b: string) {
+  const aWords = new Set(getWords(a));
+  const bWords = new Set(getWords(b));
+  for (const word of aWords) {
+    if (bWords.has(word) && word.length > 2) {
+      // ignore very short words
+      return true;
+    }
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -88,6 +108,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: progressData, error: progressError } = await supabase
+      .from("campaign_progress")
+      .select("*")
+      .eq("id", campaignData.progress_id)
+      .single();
+
+    if (progressError) {
+      return new Response(JSON.stringify({ error: progressError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
     const proxycurlApiKey = Deno.env.get("Proxycurl_API");
 
     if (!proxycurlApiKey) {
@@ -106,9 +139,9 @@ Deno.serve(async (req) => {
     const url = new URL("https://enrichlayer.com/api/v2/profile");
     url.searchParams.set("url", linkedin_url);
     url.searchParams.set("use_cache", "if-present");
-    
+
     console.log("Making request to:", url.toString());
-    
+
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
@@ -117,15 +150,18 @@ Deno.serve(async (req) => {
     });
 
     console.log("Response status:", response.status);
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+    console.log(
+      "Response headers:",
+      Object.fromEntries(response.headers.entries())
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Proxycurl API error:", errorText);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `Proxycurl API error: ${response.status} ${response.statusText}`,
-          details: errorText.substring(0, 500) // Limit error details
+          details: errorText.substring(0, 500), // Limit error details
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -140,10 +176,10 @@ Deno.serve(async (req) => {
       console.error("Unexpected response type:", contentType);
       console.error("Response body:", responseText.substring(0, 500));
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Proxycurl API returned non-JSON response",
           contentType: contentType,
-          details: responseText.substring(0, 500)
+          details: responseText.substring(0, 500),
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -155,6 +191,33 @@ Deno.serve(async (req) => {
     const data = await response.json();
     console.log("data", data);
 
+    const {
+      step_2_result: { company_name },
+    } = progressData;
+
+    if (
+      !company_name ||
+      !data.occupation ||
+      (!(
+        hasOverlap(company_name, data.occupation) ||
+        hasOverlap(data.occupation, company_name)
+      ) &&
+        !(
+          hasOverlap(company_name, data.headline) ||
+          hasOverlap(data.headline, company_name)
+        ))
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "User is not working in the same company as the campaign",
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+
     const new_latest_step = 5;
     const cleanFurtherProgress = {};
     for (let x = new_latest_step + 1; x <= 9; x++) {
@@ -162,7 +225,7 @@ Deno.serve(async (req) => {
       cleanFurtherProgress[keyName] = null;
     }
 
-    const { error: progressError } = await supabase
+    const { error: progressUpdateError } = await supabase
       .from("campaign_progress")
       .update({
         latest_step: new_latest_step,
@@ -174,11 +237,14 @@ Deno.serve(async (req) => {
       })
       .eq("id", campaignData.progress_id);
 
-    if (progressError) {
-      return new Response(JSON.stringify({ error: progressError.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
+    if (progressUpdateError) {
+      return new Response(
+        JSON.stringify({ error: progressUpdateError.message }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
     }
 
     return new Response(
