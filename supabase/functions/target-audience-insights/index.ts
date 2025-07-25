@@ -8,7 +8,7 @@ import {
   createClient,
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
-import OpenAI from "https://esm.sh/openai@4.20.1";
+import OpenAI from "npm:openai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
 
       Keep it fact-based, practical, and locally relevant. Write it like it's meant to be handed to
       someone working in that target audience.
+      Use the content below to create the analysis and also search the web for latest information about the company to add relevant points.
 
       Target Audience: ${role} at ${industry} in ${country}
 
@@ -411,6 +412,7 @@ Deno.serve(async (req) => {
         strategic partner - especially important in industries facing rising compliance expectations,
         like ESG, financial services, and energy.
 
+        Use the content above to create the analysis and also search the web for latest information about the company to add relevant points.
         Escape all string values to comply with JSON format (no unescaped line breaks or illegal characters).
         Add more usps, problems, and benefits if there are more, the example is just for reference.
         Avoid markdown or explanations. Format strictly as a single valid JSON object.
@@ -450,25 +452,31 @@ Deno.serve(async (req) => {
       console.log("Prompt:", prompt);
 
       console.log("Sending request to OpenAI API...");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 2048,
+      const openAiResponse = await openai.responses.create({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: prompt,
       });
 
+      // const completion = await openai.chat.completions.create({
+      //   model: "gpt-4o",
+      //   messages: [
+      //     {
+      //       role: "system",
+      //       content:
+      //         "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
+      //     },
+      //     {
+      //       role: "user",
+      //       content: prompt,
+      //     },
+      //   ],
+      //   temperature: 0.7,
+      //   max_tokens: 2048,
+      // });
+
       console.log("Successfully analyzed content with OpenAI");
-      const analysis = completion.choices[0].message.content;
+      const analysis = openAiResponse.output_text;
       console.log("OpenAI analysis:", analysis);
 
       console.log("Final 300 characters of raw output:", analysis.slice(-300));
