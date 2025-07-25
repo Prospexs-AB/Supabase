@@ -8,7 +8,7 @@ import {
   createClient,
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
-import OpenAI from "https://esm.sh/openai@4.20.1";
+import OpenAI from "npm:openai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -259,8 +259,9 @@ Deno.serve(async (req) => {
         “Work OS” for businesses of all sizes.
 
         Please analyze the content below and create a brief company profile following the above structure, make it around 1000 plus words, use more if needed.
+        The content below is from the company website, use the content to create the profile and also search for latest information about the company to add relevant points.
 
-        ${content.substring(0, 8000)}
+        ${content}
 
         Create 3 points of interest about the company such as founded year, location, number of employees, number of cutomers and other points similar to these that can be interesting to know.
         Use data that is available in the content and make sure this information is accurate and not made up.
@@ -284,25 +285,14 @@ Deno.serve(async (req) => {
     `;
 
     console.log("Sending request to OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a business analyst creating detailed company profiles. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
+    const openAiResponse = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: prompt,
     });
 
     console.log("Successfully analyzed content with OpenAI");
-    const analysis = completion.choices[0].message.content;
+    const analysis = openAiResponse.output_text;
     console.log("OpenAI analysis:", analysis);
 
     try {
