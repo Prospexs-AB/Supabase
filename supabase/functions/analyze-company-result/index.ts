@@ -160,10 +160,10 @@ Deno.serve(async (req) => {
       FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
 
       This is the summary of the company thats been generated:
-      ${content.substring(0, 8000)}
+      ${content}
 
       This it the raw content from the website:
-      ${zenrowsContent.substring(0, 8000)}
+      ${zenrowsContent0}
 
       Use the content above to create the analysis and also search the web for latest information about the company to add relevant points.
       Cover these key points, but be selective and focus on the most significant verified information:
@@ -365,22 +365,6 @@ Deno.serve(async (req) => {
       tools: [{ type: "web_search_preview" }],
       input: prompt,
     });
-    // const completion = await openai.chat.completions.create({
-    //   model: "gpt-4o",
-    //   messages: [
-    //     {
-    //       role: "system",
-    //       content:
-    //         "You are a business analyst creating detailed company analysis. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-    //     },
-    //     {
-    //       role: "user",
-    //       content: prompt,
-    //     },
-    //   ],
-    //   temperature: 0.7,
-    //   max_tokens: 1500,
-    // });
 
     console.log("Successfully analyzed content with OpenAI");
     const analysis = openAiResponse.output_text;
