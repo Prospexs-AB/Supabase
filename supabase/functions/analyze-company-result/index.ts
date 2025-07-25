@@ -5,7 +5,7 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import OpenAI from "https://esm.sh/openai@4.20.1";
+import OpenAI from "npm:openai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,6 +165,7 @@ Deno.serve(async (req) => {
       This it the raw content from the website:
       ${zenrowsContent.substring(0, 8000)}
 
+      Use the content above to create the analysis and also search the web for latest information about the company to add relevant points.
       Cover these key points, but be selective and focus on the most significant verified information:
 
       1. **Unique Selling Points:**
@@ -333,6 +334,8 @@ Deno.serve(async (req) => {
 
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
       Use the example above as a reference for the analysis and each point should be descriptive if possible having 2-3 sentences unless more are needed.
+      Each value should be more than 1 sentence.
+      The source should be the just the full url of the page where the information is from.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       {
         "unique_selling_points": [
@@ -357,25 +360,30 @@ Deno.serve(async (req) => {
     `;
 
     console.log("Sending request to OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a business analyst creating detailed company analysis. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
+    const openAiResponse = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: prompt,
     });
+    // const completion = await openai.chat.completions.create({
+    //   model: "gpt-4o",
+    //   messages: [
+    //     {
+    //       role: "system",
+    //       content:
+    //         "You are a business analyst creating detailed company analysis. Focus on extracting and presenting concrete metrics and specific details about the company's operations, scale, and achievements. Always prefer specific numbers over general statements.",
+    //     },
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    //   temperature: 0.7,
+    //   max_tokens: 1500,
+    // });
 
     console.log("Successfully analyzed content with OpenAI");
-    const analysis = completion.choices[0].message.content;
+    const analysis = openAiResponse.output_text;
     console.log("OpenAI analysis:", analysis);
 
     let cleanAnalysis = analysis.trim();
