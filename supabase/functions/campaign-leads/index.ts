@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       personas: [
         [targetAudience.role, [targetAudience.industry], [], [user_role]],
       ],
-      limit_by: 10,
+      limit_by: 100,
     };
 
     const generectResponse = await fetch(generectUrl, {
