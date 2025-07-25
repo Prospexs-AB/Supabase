@@ -428,21 +428,21 @@ Deno.serve(async (req) => {
               {
                 "title": "USP 1: Example USP",
                 "description": "Example USP Description",
-                "source": "Source: Example Source"
+                "source": "https://example.com"
               },
             ],
             "problems": [
               {
                 "title": "Problem 1: Example Problem",
                 "description": "Example Problem Description",
-                "source": "Source: Example Source"
+                "source": "https://example.com"
               },
             ],
             "benefits": [
               {
                 "title": "Benefit 1: Example Benefit",
                 "description": "Example Benefit Description",
-                "source": "Source: Example Source"
+                "source": "https://example.com"
               },
             ]
           }
