@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
     const step3Result = progressData.step_3_result || {};
     const step2Result = progressData.step_2_result || {};
     const step1Result = progressData.step_1_result || {};
+    const step5Result = progressData.step_5_result || {};
 
     const {
       unique_selling_points: usps = [],
@@ -139,18 +140,19 @@ Deno.serve(async (req) => {
     const {
       company_name: name = "Unknown Company",
       summary: description = "No description available",
-      country,
     } = step2Result;
 
     const { language = "en" } = step1Result;
     console.log("Language:", language);
 
-    // Get country context for location targeting
-    // Default to Sweden if not provided (for Sellpy specifically)
-    const companyCountry = country || "Sweden";
+    const {
+      linkedin_profile: { country_full_name },
+    } = step5Result;
+
+    const companyCountry = country_full_name || "Sweden";
     const isLocal = locale === "local";
-    // Set location context based on local/international choice
     const locationContext = isLocal ? companyCountry : "international markets";
+    console.log("Location context:", locationContext);
 
     const params = new URLSearchParams({
       url: campaignData.company_website,
