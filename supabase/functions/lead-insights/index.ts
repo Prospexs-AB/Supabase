@@ -646,7 +646,325 @@ Deno.serve(async (req) => {
       impactsOfSolutions.push(parsedImpactsOfSolutionsOutput);
     }
 
+    // STEP 4: Get objection handling
+    // console.log("===== Step 4: Getting objection handling =====");
+
+    // const objectionHandling = [];
+    // for (const challenge of parsedSolutionsWithChallengesOutput) {
+    //   const objectionHandlingPrompt = `
+    //     You are a senior business impact analyst at a top-tier consultancy.
+
+    //     Your task is to articulate the business impact of solving ${
+    //       challenge.problemTitle
+    //     } for ${lead_company_name}, using
+    //     company-specific goals when available, or falling back on relevant industry benchmarks when
+    //     needed.
+
+    //     Given the following context:
+    //     Company: ${lead_company_name}
+    //     Challenge title: ${challenge.problemTitle}
+    //     Challenge description: ${challenge.problemDescription}
+    //     Solutions (there are 4): ${challenge.solutions.map(
+    //       (solution) =>
+    //         `Title: ${solution.solutionTitle} Description: ${solution.solutionDescription}`
+    //     )}
+
+    //     Step 1: Search for public company goals or KPIs from sources like their website, annual
+    //     reports, press releases, or social media. Focus on areas like:
+    //     ● Growth
+    //     ● Cost reduction
+    //     ● Innovation
+    //     ● Operational efficiency
+    //     ● Sustainability
+    //     ● Hiring or retention
+    //     ● International expansion
+    //     If no specific goals are found, use relevant industry benchmarks for their sector and
+    //     geography.
+    //     If company-specific goals are not available, apply industry-standard goals and metrics relevant
+    //     to the company's sector and geography.
+
+    //     Step 2: Write a clear and specific impact statement (4-6 sentences) for each solution explaining
+    //     how solving the challenge with the given solution helps the company within the array of objects in the JSON format provided below:
+    //     ● Achieve one or more of its goals faster, more efficiently, or at lower cost
+    //     ● Improve a specific KPI (e.g. time-to-hire, CAC, churn rate, operational margin)
+    //     ● Strengthen competitive advantage, innovation capacity, or resilience
+    //     When possible, quantify the impact using real-world data or benchmarks (e.g. “could reduce
+    //     onboarding time by 30%” or “increase revenue per rep by 25%”).
+    //     Keep the tone confident and executive-level.
+
+    //     Do not repeat or explain the solution again - focus entirely on the outcome.
+    //     Important: Only use information that is explicitly available in the input data.
+    //     Do not assume, invent, or guess details about the lead, their company, or their situation.
+    //     If no relevant information is found, state that clearly.
+    //     You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+    //     and always label them clearly as general context, not lead-specific insight.
+
+    //     Example Detected Impact for www.teamtailor.com:
+
+    //     Example Impact 1: Monetizing Differentiation in a Saturated Market
+    //     By adopting Stripe's flexible billing and pricing infrastructure, Teamtailor could shift from flat-rate
+    //     models to usage- or outcome-based billing—better aligning pricing with customer-perceived
+    //     value. This enables pricing experiments that match specific segments (e.g. hyper-growth
+    //     startups vs. slower-moving corporates), reducing churn and improving average revenue per
+    //     account (ARPA). Industry benchmarks show that value-based pricing can boost SaaS revenue
+    //     by 20-40%. For a platform competing in a saturated ATS market, this change could help unlock
+    //     new monetization paths and increase customer lifetime value—without adding product
+    //     complexity.
+
+    //     Example Impact 2: Unlocking Enterprise Sales Through Frictionless Finance
+    //     Infrastructure
+    //     As Teamtailor expands into the enterprise segment, Stripe's localized invoicing, tax compliance,
+    //     and flexible payment rails (ACH, SEPA, etc.) remove friction from procurement and finance
+    //     flows that often delay large deals. This enables faster deal closure, aligns with enterprise
+    //     procurement standards, and reduces sales cycle length—critical for B2B SaaS businesses
+    //     aiming to land larger contracts. Accelerating time-to-close by even 15-20% could meaningfully
+    //     boost quarterly recurring revenue (QRR) and help Teamtailor compete more effectively against
+    //     enterprise-focused vendors like SAP SuccessFactors.
+
+    //     Example Impact 3: Monetizing AI Add-Ons Without Backend Friction
+    //     As Teamtailor builds AI capabilities (e.g. for candidate ranking or smart scheduling), Stripe
+    //     enables the monetization of those features via add-ons or usage-based pricing—without
+    //     engineering bottlenecks. This flexibility allows the product team to test go-to-market strategies
+    //     (freemium vs. paid AI tiers) without overhauling infrastructure. Benchmarks suggest companies
+    //     that successfully monetize AI functionality can grow ARPA by 10-30% within 12 months. For
+    //     Teamtailor, this could mean turning innovation into a scalable revenue engine instead of a cost
+    //     center.
+
+    //     Example Impact 4: Scaling Internationally with Built-In Global Payment Compliance
+    //     With customers in over 90 countries, Teamtailor faces the ongoing challenge of managing taxes,
+    //     currency conversions, and localized payment methods. Stripe's global payments and tax
+    //     automation stack helps ensure fast, compliant billing across regions—cutting down legal risk,
+    //     reducing overhead, and speeding up collections. This directly supports Teamtailor's goal of
+    //     expanding its footprint in Europe and beyond, while also ensuring its finance ops scale with
+    //     minimal overhead. Reducing regional friction could shorten time-to-revenue in new markets by
+    //     several months—critical in hyper-competitive SaaS growth cycles.
+
+    //     Example Detected Impact for www.remote.com:
+
+    //     Example Impact 1: Reducing Compliance Risk and Manual Overhead in Global Billing
+    //     By implementing Stripe Tax and Billing, Remote.com can automate global invoicing and tax
+    //     compliance across 180+ countries, significantly reducing operational risk and the burden on
+    //     legal and finance teams. This infrastructure would allow Remote to support complex tax rules
+    //     (like VAT, GST, and reverse charges) at scale—while minimizing manual reconciliation and
+    //     compliance errors. For a global EOR provider, streamlining financial compliance not only
+    //     improves audit readiness but also accelerates expansion into regulated or complex markets.
+    //     Industry benchmarks suggest companies using automated tax solutions reduce
+    //     compliance-related errors and costs by up to 30%, freeing up internal teams to focus on
+    //     higher-value work.
+
+    //     Example Impact 2: Improving Customer Acquisition and Conversion Velocity
+    //     Stripe's Identity and Connect tools can help Remote onboard businesses and contractors faster
+    //     and with fewer drop-offs, which is crucial for winning enterprise deals and scaling B2B platform
+    //     usage. Reducing KYC friction and payment setup complexity translates to faster time-to-value
+    //     for clients—directly improving Remote's onboarding KPIs and reducing sales cycle times. In
+    //     highly competitive segments (with Deel, Rippling, and Oyster aggressively expanding), faster
+    //     onboarding could become a deciding factor. Industry data shows that reducing user onboarding
+    //     friction can increase conversion by up to 35% and improve first-month retention—giving Remote
+    //     a competitive edge.
+
+    //     Example Impact 3: Lowering Contractor Payout Risk While Increasing Speed
+    //     By integrating Stripe Treasury and Instant Payouts, Remote can offer global contractors
+    //     near-instant access to earned wages through localized, compliant disbursement flows. This
+    //     adds value for contractors—many of whom prioritize payment reliability and speed—while
+    //     helping Remote stay ahead of misclassification risks and legal scrutiny. Providing real-time
+    //     payout transparency also improves customer trust and reduces the likelihood of support
+    //     escalations related to payroll. The result: a more resilient and scalable contractor infrastructure
+    //     that supports both user retention and compliance.
+
+    //     Example Impact 4: Accelerating Market Expansion Without Adding Finance Headcount
+    //     Stripe's global payment rails and multi-currency support allow Remote to accept and process
+    //     payments in 135+ currencies, offer localized payment methods (e.g. ACH, SEPA, PIX), and
+    //     generate regionally compliant invoices. This removes the need for custom finance logic and
+    //     tooling each time Remote enters a new country. As Remote targets rapid global expansion,
+    //     Stripe becomes a force multiplier—enabling entry into new markets with minimal overhead.
+    //     Reducing localization costs by even 40-50% per market can significantly compress the timeline
+    //     for international growth and make global ARR targets more attainable.
+
+    //     IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+
+    //     Return the answers in the following JSON format:
+    //     {
+    //       "title": "The problem title will be here",
+    //       "description": "Description of problem",
+    //       "solutions": [
+    //         {
+    //           "solutionTitle": "Solution 1 for challenge 1",
+    //           "solutionDescription": "Description of solution 1 for challenge 1",
+    //           "impactTitle": "Impact for challenge 1",
+    //           "impactDescription": "Description of impact of solution 1 for challenge 1"
+    //         },
+    //         {
+    //           "solutionTitle": "Solution 2 for challenge 1",
+    //           "solutionDescription": "Description of solution 2 for challenge 1",
+    //           "impactTitle": "Impact for challenge 1",
+    //           "impactDescription": "Description of impact of solution 2 for challenge 1"
+    //         }
+    //       ]
+    //     }
+    //   `;
+
+    //   const objectionHandlingOutput = await openai.responses.create({
+    //     model: "gpt-4.1",
+    //     tools: [{ type: "web_search_preview" }],
+    //     input: objectionHandlingPrompt,
+    //   });
+
+    //   let cleanObjectionHandlingOutput =
+    //     objectionHandlingOutput.output_text.trim();
+    //   if (cleanObjectionHandlingOutput.startsWith("```json")) {
+    //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //       .replace(/^```json\s*/, "")
+    //       .replace(/\s*```$/, "");
+    //   } else if (cleanObjectionHandlingOutput.startsWith("```")) {
+    //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //       .replace(/^```\s*/, "")
+    //       .replace(/\s*```$/, "");
+    //   }
+
+    //   const parsedObjectionHandlingOutput = JSON.parse(
+    //     cleanObjectionHandlingOutput
+    //   );
+
+    //   objectionHandling.push(parsedObjectionHandlingOutput);
+    // }
+
+    // TODO: Change this to have objection handling
     result.businessInsights.challengesWithSolutions = impactsOfSolutions;
+
+    // STEP 5: Get Conversation Starter
+    console.log("===== Step 5: Getting conversation starter =====");
+    const conversationStarterPrompt = `
+      You are a senior B2B strategist at a top-tier consultancy preparing for high-level outreach or
+      networking with a senior stakeholder (VP, C-level, or strategic buyer).
+      Prospexs has already analyzed the target company's:
+      - Product or service
+      - Position in the market
+      - Business model and GTM strategy
+      - Challenges, growth areas, and recent developments
+
+      These are the challenges that Prospexs has identified from the target company in JSON format:
+      ${JSON.stringify(
+        result.businessInsights.challengesWithSolutions,
+        null,
+        2
+      )}
+
+      Your task is to generate 3-4 insight-driven conversation starters, each rooted in recent
+      company news, product announcements, market moves, or strategic updates.
+      For each one:
+      - Start with a short title (4-6 words max)
+      - Then write a 2-3 sentence conversation starter
+      Each question should:
+      - Reference a specific public update, launch, or trend relevant to the company
+      - Tie that update to a broader strategic question or point of curiosity
+      - Be framed in a smart, consultative, and respectful tone
+      - Invite thoughtful conversation—not yes/no answers or surface-level reactions
+      Avoid generic or cliché questions. Prioritize context, timeliness, and relevance.
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Conversation Starters for www.teamtailor.com
+
+      Example Conversation Starters 1: Doubling Down on Skills-Based Hiring - Teamtailor recently
+      introduced skill-based filtering, giving recruiters more control in shortlisting candidates based on
+      specific competencies rather than just resumes. As more companies shift toward
+      competency-first hiring to tackle role misalignment and reduce bias, how are you positioning this
+      feature to serve both tech-savvy scaleups and more traditional hiring teams who may still rely on
+      gut feel or CVs?
+
+      Example Conversation Starters 2: Cleaning Up Candidate Data at Scale - The new
+      LinkedIn-based duplicate detection feature is a smart move for teams juggling high volumes of
+      applications across multiple roles. In what ways are you planning to use this to improve data
+      quality and reduce recruiter time spent on administrative filtering—especially as your mid-market
+      and enterprise clients demand faster time-to-hire with cleaner pipelines?
+
+      Example Conversation Starters 3: Hiring Workflows Are Getting Smarter—But Are Hiring
+      Managers Ready? - Teamtailor's recent updates hint at more powerful, automated
+      workflows—including more advanced filters, evaluations, and automated actions. Are you
+      seeing friction from hiring managers who may find the increasing complexity overwhelming?
+      And how are you thinking about education or UI design to keep adoption high as the product
+      becomes more intelligent?
+
+      Example Conversation Starters 4: AI vs. Human-Centric Hiring - There's been a lot of hype
+      around AI-driven hiring, but Teamtailor has always stood out for human-centered UX and strong
+      employer brand tools. As more competitors lean into 'AI-first' messaging, how do you see that
+      narrative fitting into Teamtailor's growth story - especially in markets that still value
+      personalization and candidate experience?
+
+      Example Conversation Starters for www.stripe.com
+
+      Example Conversation Starters 1: AI Foundation Model for Payment Intelligence - Stripe
+      recently unveiled its own AI foundation model, trained on over 100 billion data points from global
+      payment flows. It's already being deployed to improve fraud detection, risk modeling, and
+      checkout personalization. For a platform with Stripe's scale, this represents a shift from reactive
+      tooling to proactive, intelligent infrastructure. How is Stripe thinking about expanding the impact
+      of this model—not just in fraud prevention, but also in things like conversion optimization,
+      dynamic pricing, or dispute resolution?
+
+      Example Conversation Starters 2: Stablecoin Financial Accounts and Treasury
+      Transformation - With its new stablecoin financial accounts, Stripe now lets businesses hold
+      balances in digital dollars (USDC), use them to pay vendors, and eventually integrate them into
+      their own financial stack. The service is live in 101 countries—positioning Stripe not just as a
+      payments provider but as a programmable treasury layer for modern internet businesses. What
+      kind of feedback is Stripe seeing from SaaS or marketplace platforms that are trying to reduce
+      FX fees, shorten settlement times, or simplify cross-border reconciliation using this feature?
+
+      Example Conversation Starters 3: Payment Orchestration as a Strategic Wedge - Stripe's
+      new Orchestration feature allows merchants to route payments through multiple providers within
+      the Stripe environment—without rebuilding internal logic. This is a big move in a market where
+      enterprises increasingly want multi-PSP setups for reliability, optimization, and global flexibility.
+      Is Stripe seeing this as a way to deepen enterprise lock-in, or more as an open architecture
+      move to win over companies that historically avoided single-provider risk?
+
+      Example Conversation Starters 4: Checkout Optimization Through Real-Time AI
+      Personalization - Stripe has upgraded its Optimized Checkout Suite with AI-driven logic that
+      dynamically personalizes the checkout flow per user, based on thousands of micro-signals (e.g.
+      geography, device, past behavior). Early testing has shown conversion lifts of over 2%-a big
+      delta at enterprise scale. As Stripe continues to lean into data-led infrastructure, what are the
+      downstream implications for merchants who might want to own this layer themselves? Is there a
+      play here for Stripe to become the de facto optimization layer, not just the processor?
+
+      IMPORTANT: Directly respond in the JSON format provided below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "title": "The title of the conversation starter will be here",
+          "description": "Description of the conversation starter",
+        },
+        {
+          "title": "The title of the conversation starter will be here",
+          "description": "Description of the conversation starter",
+        }
+      ]
+    `;
+
+    const conversationStarterOutput = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: conversationStarterPrompt,
+    });
+
+    let cleanConversationStarterOutput =
+      conversationStarterOutput.output_text.trim();
+    if (cleanConversationStarterOutput.startsWith("```json")) {
+      cleanConversationStarterOutput = cleanConversationStarterOutput
+        .replace(/^```json\s*/, "")
+        .replace(/\s*```$/, "");
+    } else if (cleanConversationStarterOutput.startsWith("```")) {
+      cleanConversationStarterOutput = cleanConversationStarterOutput
+        .replace(/^```\s*/, "")
+        .replace(/\s*```$/, "");
+    }
+
+    const parsedConversationStarterOutput = JSON.parse(
+      cleanConversationStarterOutput
+    );
+
+    result.businessInsights.conversationStarters =
+      parsedConversationStarterOutput;
 
     // TODO: Handle save for multiple leads
     const { error: updateError } = await supabase
