@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    // TODO: Return value if already in DB
+
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
       apiKey: apiKey,
@@ -486,6 +488,8 @@ Deno.serve(async (req) => {
           (solution) =>
             `Title: ${solution.solutionTitle} Description: ${solution.solutionDescription}`
         )}
+        
+        IMPORTANT! RETURN THE RESPONSE IN A JSON FORMAT USING THE FORMAT BELOW. DO NOT INCLUDE ANY EXPLANATORY TEXT, MARKDOWN FORMATTING, OR ADDITIONAL CONTENT OUTSIDE THE JSON STRUCTURE.
 
         Step 1: Search for public company goals or KPIs from sources like their website, annual
         reports, press releases, or social media. Focus on areas like:
@@ -599,7 +603,6 @@ Deno.serve(async (req) => {
         for international growth and make global ARR targets more attainable.
 
         IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
-
         Return the answers in the following JSON format:
         {
           "title": "The problem title will be here",
@@ -704,8 +707,6 @@ Deno.serve(async (req) => {
 
     result.businessInsights.challengesWithSolutions = impactsOfSolutions;
 
-    // STEP 5: Get Conversation Starter
-    console.log("===== Step 5: Getting conversation starter =====");
     const conversationStarterPrompt = `
       You are a senior B2B strategist at a top-tier consultancy preparing for high-level outreach or
       networking with a senior stakeholder (VP, C-level, or strategic buyer).
@@ -738,6 +739,8 @@ Deno.serve(async (req) => {
       If no relevant information is found, state that clearly.
       You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
       and always label them clearly as general context, not lead-specific insight.
+
+      IMPORTANT! RETURN THE RESPONSE IN A JSON FORMAT USING THE FORMAT BELOW. DO NOT INCLUDE ANY EXPLANATORY TEXT, MARKDOWN FORMATTING, OR ADDITIONAL CONTENT OUTSIDE THE JSON STRUCTURE.
 
       Example Conversation Starters for www.teamtailor.com
 
@@ -800,7 +803,7 @@ Deno.serve(async (req) => {
       downstream implications for merchants who might want to own this layer themselves? Is there a
       play here for Stripe to become the de facto optimization layer, not just the processor?
 
-      IMPORTANT: Directly respond in the JSON format provided below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
         {
@@ -813,34 +816,6 @@ Deno.serve(async (req) => {
         }
       ]
     `;
-
-    const conversationStarterOutput = await openai.responses.create({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: conversationStarterPrompt,
-    });
-
-    let cleanConversationStarterOutput =
-      conversationStarterOutput.output_text.trim();
-    if (cleanConversationStarterOutput.startsWith("```json")) {
-      cleanConversationStarterOutput = cleanConversationStarterOutput
-        .replace(/^```json\s*/, "")
-        .replace(/\s*```$/, "");
-    } else if (cleanConversationStarterOutput.startsWith("```")) {
-      cleanConversationStarterOutput = cleanConversationStarterOutput
-        .replace(/^```\s*/, "")
-        .replace(/\s*```$/, "");
-    }
-
-    const parsedConversationStarterOutput = JSON.parse(
-      cleanConversationStarterOutput
-    );
-
-    result.businessInsights.conversationStarters =
-      parsedConversationStarterOutput;
-
-    // STEP 6: Get commonalities
-    console.log("===== Step 6: Getting commonalities =====");
 
     const {
       step_2_result: { company_name },
@@ -877,6 +852,8 @@ Deno.serve(async (req) => {
       If no relevant information is found, state that clearly.
       You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
       and always label them clearly as general context, not lead-specific insight.
+
+      IMPORTANT! RETURN THE RESPONSE IN A JSON FORMAT USING THE FORMAT BELOW. DO NOT INCLUDE ANY EXPLANATORY TEXT, MARKDOWN FORMATTING, OR ADDITIONAL CONTENT OUTSIDE THE JSON STRUCTURE.
 
       Example Detected Similarities Between www.teamtailor.com and www.stripe.com:
 
@@ -948,7 +925,7 @@ Deno.serve(async (req) => {
       companies are winning in the decentralized operations economy—where business is global
       from day one, and infrastructure needs to be borderless, automated, and compliant.
 
-      IMPORTANT: Directly respond in the JSON format provided below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
         {
@@ -962,33 +939,80 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    const commonalitiesOutput = await openai.responses.create({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: commonalitiesPrompt,
-    });
+    const additionalPrompts = [
+      {
+        prompt: conversationStarterPrompt,
+        fieldName: "conversationStarters",
+      },
+      {
+        prompt: commonalitiesPrompt,
+        fieldName: "commonalities",
+      },
+    ];
 
-    let cleanCommonalitiesOutput = commonalitiesOutput.output_text.trim();
-    if (cleanCommonalitiesOutput.startsWith("```json")) {
-      cleanCommonalitiesOutput = cleanCommonalitiesOutput
-        .replace(/^```json\s*/, "")
-        .replace(/\s*```$/, "");
-    } else if (cleanCommonalitiesOutput.startsWith("```")) {
-      cleanCommonalitiesOutput = cleanCommonalitiesOutput
-        .replace(/^```\s*/, "")
-        .replace(/\s*```$/, "");
+    const promises = additionalPrompts.map(
+      async ({ prompt, fieldName }, index) => {
+        console.log(`===== Step ${index + 5}: Getting ${fieldName} =====`);
+
+        const response = await openai.responses.create({
+          model: "gpt-4.1",
+          tools: [{ type: "web_search_preview" }],
+          input: prompt,
+        });
+
+        console.log("Response:", response.output_text.trim());
+
+        let cleanResponse = response.output_text.trim();
+
+        // Look for ```json marker and extract everything after it
+        const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanResponse = jsonMatch[1].trim();
+        } else if (cleanResponse.startsWith("```json")) {
+          cleanResponse = cleanResponse
+            .replace(/^```json\s*/, "")
+            .replace(/\s*```$/, "");
+        } else if (cleanResponse.startsWith("```")) {
+          cleanResponse = cleanResponse
+            .replace(/^```\s*/, "")
+            .replace(/\s*```$/, "");
+        }
+
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(cleanResponse);
+        } catch (error) {
+          console.error(`Failed to parse ${fieldName} output:`, error);
+          throw new Error(`Failed to parse AI response for ${fieldName}`);
+        }
+
+        result.businessInsights[fieldName] = parsedResponse;
+
+        return parsedResponse;
+      }
+    );
+
+    await Promise.all(promises);
+
+    let { step_9_result } = progressData;
+    if (!step_9_result) {
+      step_9_result = [];
     }
 
-    const parsedCommonalitiesOutput = JSON.parse(cleanCommonalitiesOutput);
+    const leadExists = step_9_result.some(
+      (savedLead) =>
+        savedLead.unformatted_full_name === lead.unformatted_full_name
+    );
 
-    result.businessInsights.commonalities = parsedCommonalitiesOutput;
+    if (!leadExists) {
+      step_9_result.push({ ...lead, insights: result });
+    }
 
-    // TODO: Handle save for multiple leads
     const { error: updateError } = await supabase
       .from("campaign_progress")
       .update({
         latest_step: 9,
-        step_9_result: result,
+        step_9_result: step_9_result,
       })
       .eq("id", campaignData.progress_id);
 
@@ -1000,9 +1024,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ lead, insights: result }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        message: "Successfully generated business insights",
+        data: { ...lead, insights: result },
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
