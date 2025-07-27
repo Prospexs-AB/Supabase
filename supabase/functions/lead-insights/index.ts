@@ -647,188 +647,502 @@ Deno.serve(async (req) => {
     }
 
     // STEP 4: Get objection handling
-    // console.log("===== Step 4: Getting objection handling =====");
+    console.log("===== Step 4: Getting objection handling =====");
 
-    // const objectionHandling = [];
-    // for (const challenge of parsedSolutionsWithChallengesOutput) {
-    //   const objectionHandlingPrompt = `
-    //     You are a senior business impact analyst at a top-tier consultancy.
+    // Handle each challenge
+    // for (const challenge of impactsOfSolutions) {
+    //   const objectionHandlingPerChallenge = [];
 
-    //     Your task is to articulate the business impact of solving ${
-    //       challenge.problemTitle
-    //     } for ${lead_company_name}, using
-    //     company-specific goals when available, or falling back on relevant industry benchmarks when
-    //     needed.
+    //   // Handle each solution for the challenge
+    //   // for (const solution of challenge.solutions) {
+    //   //   const objectionHandlingPrompt = `
+    //   //     You are a senior B2B strategist at a top consultancy, preparing a sales or success team for
+    //   //     high-stakes outreach.
 
-    //     Given the following context:
-    //     Company: ${lead_company_name}
-    //     Challenge title: ${challenge.problemTitle}
-    //     Challenge description: ${challenge.problemDescription}
-    //     Solutions (there are 4): ${challenge.solutions.map(
-    //       (solution) =>
-    //         `Title: ${solution.solutionTitle} Description: ${solution.solutionDescription}`
-    //     )}
+    //   //     Prospexs has already identified:
+    //   //     - The lead company's current business challenges: ${challenge.description}.
+    //   //     - The user's proposed solution: ${solution.solutionDescription}.
+    //   //     - The projected impact of implementing that solution: ${solution.impactDescription}.
 
-    //     Step 1: Search for public company goals or KPIs from sources like their website, annual
-    //     reports, press releases, or social media. Focus on areas like:
-    //     ● Growth
-    //     ● Cost reduction
-    //     ● Innovation
-    //     ● Operational efficiency
-    //     ● Sustainability
-    //     ● Hiring or retention
-    //     ● International expansion
-    //     If no specific goals are found, use relevant industry benchmarks for their sector and
-    //     geography.
-    //     If company-specific goals are not available, apply industry-standard goals and metrics relevant
-    //     to the company's sector and geography.
+    //   //     Now, your task is to anticipate 4 realistic objections the lead company might raise - even when
+    //   //     the impact is strong.
 
-    //     Step 2: Write a clear and specific impact statement (4-6 sentences) for each solution explaining
-    //     how solving the challenge with the given solution helps the company within the array of objects in the JSON format provided below:
-    //     ● Achieve one or more of its goals faster, more efficiently, or at lower cost
-    //     ● Improve a specific KPI (e.g. time-to-hire, CAC, churn rate, operational margin)
-    //     ● Strengthen competitive advantage, innovation capacity, or resilience
-    //     When possible, quantify the impact using real-world data or benchmarks (e.g. “could reduce
-    //     onboarding time by 30%” or “increase revenue per rep by 25%”).
-    //     Keep the tone confident and executive-level.
+    //   //     For each objection, follow this format:
+    //   //     1. Objection: Write it exactly as a stakeholder might say it
+    //   //     2. Why it's valid: Briefly explain the business logic or concern behind it (timing, budget,
+    //   //     legacy systems, priorities, etc.)
+    //   //     3. How to work around it: Offer a clear, strategic workaround (e.g. phased rollout, pilot
+    //   //     approach, reframing ROI, using existing internal champions, or connecting to an ongoing
+    //   //     initiative)
 
-    //     Do not repeat or explain the solution again - focus entirely on the outcome.
-    //     Important: Only use information that is explicitly available in the input data.
-    //     Do not assume, invent, or guess details about the lead, their company, or their situation.
-    //     If no relevant information is found, state that clearly.
-    //     You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
-    //     and always label them clearly as general context, not lead-specific insight.
+    //   //     Use a tone that is sharp, strategic, and empathetic. You're not just selling—you're helping the
+    //   //     buyer get unstuck and move forward confidently.
+    //   //     Important: Only use information that is explicitly available in the input data.
+    //   //     Do not assume, invent, or guess details about the lead, their company, or their situation.
+    //   //     If no relevant information is found, state that clearly.
+    //   //     You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+    //   //     and always label them clearly as general context, not lead-specific insight.
 
-    //     Example Detected Impact for www.teamtailor.com:
+    //   //     Example Detected Objection Handling for www.teamtailor.com:
 
-    //     Example Impact 1: Monetizing Differentiation in a Saturated Market
-    //     By adopting Stripe's flexible billing and pricing infrastructure, Teamtailor could shift from flat-rate
-    //     models to usage- or outcome-based billing—better aligning pricing with customer-perceived
-    //     value. This enables pricing experiments that match specific segments (e.g. hyper-growth
-    //     startups vs. slower-moving corporates), reducing churn and improving average revenue per
-    //     account (ARPA). Industry benchmarks show that value-based pricing can boost SaaS revenue
-    //     by 20-40%. For a platform competing in a saturated ATS market, this change could help unlock
-    //     new monetization paths and increase customer lifetime value—without adding product
-    //     complexity.
+    //   //     Example Objection 1:
+    //   //     "We're not ready to overhaul our billing and pricing infrastructure—our current system works
+    //   //     well enough."
+    //   //     Why it's valid:
+    //   //     Teamtailor likely runs a lean ops team focused on product and GTM. Introducing a new billing
+    //   //     system—especially one tied to pricing models—can feel risky and time-consuming, especially
+    //   //     when core revenue is stable.
+    //   //     Workaround:
+    //   //     Position Stripe as a tool to layer in monetization experiments, not replace the core system.
+    //   //     Suggest piloting usage-based pricing for one product line, region, or customer
+    //   //     segment—without disrupting the rest. This frames Stripe as a way to unlock revenue innovation
+    //   //     rather than a system overhaul.
 
-    //     Example Impact 2: Unlocking Enterprise Sales Through Frictionless Finance
-    //     Infrastructure
-    //     As Teamtailor expands into the enterprise segment, Stripe's localized invoicing, tax compliance,
-    //     and flexible payment rails (ACH, SEPA, etc.) remove friction from procurement and finance
-    //     flows that often delay large deals. This enables faster deal closure, aligns with enterprise
-    //     procurement standards, and reduces sales cycle length—critical for B2B SaaS businesses
-    //     aiming to land larger contracts. Accelerating time-to-close by even 15-20% could meaningfully
-    //     boost quarterly recurring revenue (QRR) and help Teamtailor compete more effectively against
-    //     enterprise-focused vendors like SAP SuccessFactors.
+    //   //     Example Objection 2:
+    //   //     "We sell to SMBs—enterprise-level billing capabilities and compliance tools feel excessive for
+    //   //     our current customer base."
+    //   //     Why it's valid:
+    //   //     Most of Teamtailor's historic growth has been SMB-driven, where simple billing and flat pricing
+    //   //     are usually enough. Enterprise features may seem like overkill or too forward-looking.
+    //   //     Workaround:
+    //   //     Tie Stripe's enterprise-grade features to Teamtailor's strategic move upmarket. Emphasize
+    //   //     that larger deals often stall due to procurement issues (e.g. payment methods, invoicing
+    //   //     standards, tax handling)—all of which Stripe can solve without headcount. Show how Stripe
+    //   //     helps them remove friction before it becomes a revenue blocker.
 
-    //     Example Impact 3: Monetizing AI Add-Ons Without Backend Friction
-    //     As Teamtailor builds AI capabilities (e.g. for candidate ranking or smart scheduling), Stripe
-    //     enables the monetization of those features via add-ons or usage-based pricing—without
-    //     engineering bottlenecks. This flexibility allows the product team to test go-to-market strategies
-    //     (freemium vs. paid AI tiers) without overhauling infrastructure. Benchmarks suggest companies
-    //     that successfully monetize AI functionality can grow ARPA by 10-30% within 12 months. For
-    //     Teamtailor, this could mean turning innovation into a scalable revenue engine instead of a cost
-    //     center.
+    //   //     Example Objection 3:
+    //   //     "Adding AI-based pricing or feature gating sounds interesting—but we're still figuring out our AI
+    //   //     roadmap."
+    //   //     Why it's valid:
+    //   //     Teamtailor is likely early in productizing AI, and monetization is probably not yet prioritized. They
+    //   //     might worry that billing logic will outpace feature readiness.
+    //   //     Workaround:
+    //   //     Position Stripe's usage-based billing as a future-proofing move—built to support AI features
+    //   //     when they launch. Offer to co-develop pricing models (e.g. pay-per-insight, pay-per-screened
+    //   //     candidate) so the GTM strategy is ready when product is—shortening time-to-monetization.
 
-    //     Example Impact 4: Scaling Internationally with Built-In Global Payment Compliance
-    //     With customers in over 90 countries, Teamtailor faces the ongoing challenge of managing taxes,
-    //     currency conversions, and localized payment methods. Stripe's global payments and tax
-    //     automation stack helps ensure fast, compliant billing across regions—cutting down legal risk,
-    //     reducing overhead, and speeding up collections. This directly supports Teamtailor's goal of
-    //     expanding its footprint in Europe and beyond, while also ensuring its finance ops scale with
-    //     minimal overhead. Reducing regional friction could shorten time-to-revenue in new markets by
-    //     several months—critical in hyper-competitive SaaS growth cycles.
+    //   //     Example Objection 4:
+    //   //     "Global payments and tax tools sound great, but we already have local finance workflows set up
+    //   //     for most regions."
+    //   //     Why it's valid:
+    //   //     They've already made the investment—local teams, accountants, and manual workarounds are
+    //   //     in place. Replacing them might feel like sunk cost waste or unnecessary disruption.
+    //   //     Workaround:
+    //   //     Position Stripe as a scaling tool, not a replacement. Highlight that as they expand to new
+    //   //     regions, Stripe lets them avoid building more localized finance ops. Stripe becomes the
+    //   //     default engine for net-new countries, giving them optionality and reducing marginal cost of
+    //   //     expansion.
 
-    //     Example Detected Impact for www.remote.com:
+    //   //     Example Detected Objection Handling for www.remote.com:
 
-    //     Example Impact 1: Reducing Compliance Risk and Manual Overhead in Global Billing
-    //     By implementing Stripe Tax and Billing, Remote.com can automate global invoicing and tax
-    //     compliance across 180+ countries, significantly reducing operational risk and the burden on
-    //     legal and finance teams. This infrastructure would allow Remote to support complex tax rules
-    //     (like VAT, GST, and reverse charges) at scale—while minimizing manual reconciliation and
-    //     compliance errors. For a global EOR provider, streamlining financial compliance not only
-    //     improves audit readiness but also accelerates expansion into regulated or complex markets.
-    //     Industry benchmarks suggest companies using automated tax solutions reduce
-    //     compliance-related errors and costs by up to 30%, freeing up internal teams to focus on
-    //     higher-value work.
+    //   //     Example Objection 1:
+    //   //     "We've already built our own global payments and invoicing flows—it's deeply embedded in our
+    //   //     ops."
+    //   //     Why it's valid:
+    //   //     Remote likely spent significant engineering and compliance resources to build custom
+    //   //     infrastructure for invoicing, multi-currency payments, and tax handling. Replacing or
+    //   //     supplementing it feels like technical debt or wasted investment.
+    //   //     Workaround:
+    //   //     Frame Stripe as a selective abstraction layer—not a replacement. Suggest starting with Stripe
+    //   //     in new markets or new customer segments (e.g. SMB self-serve or fast-growing emerging
+    //   //     markets). This allows Remote to avoid repeating internal buildouts while keeping control over
+    //   //     core systems.
 
-    //     Example Impact 2: Improving Customer Acquisition and Conversion Velocity
-    //     Stripe's Identity and Connect tools can help Remote onboard businesses and contractors faster
-    //     and with fewer drop-offs, which is crucial for winning enterprise deals and scaling B2B platform
-    //     usage. Reducing KYC friction and payment setup complexity translates to faster time-to-value
-    //     for clients—directly improving Remote's onboarding KPIs and reducing sales cycle times. In
-    //     highly competitive segments (with Deel, Rippling, and Oyster aggressively expanding), faster
-    //     onboarding could become a deciding factor. Industry data shows that reducing user onboarding
-    //     friction can increase conversion by up to 35% and improve first-month retention—giving Remote
-    //     a competitive edge.
+    //   //     Example Objection 2:
+    //   //     "Honestly, our biggest internal bottleneck right now isn't billing — it's legal and compliance. We're
+    //   //     expanding into more countries and dealing with increasingly complex regulatory environments.
+    //   //     Most of our internal resources, budget, and leadership attention are focused on scaling those
+    //   //     teams and keeping us audit-ready. Billing improvements sound useful, but they're not what's
+    //   //     keeping us up at night.
 
-    //     Example Impact 3: Lowering Contractor Payout Risk While Increasing Speed
-    //     By integrating Stripe Treasury and Instant Payouts, Remote can offer global contractors
-    //     near-instant access to earned wages through localized, compliant disbursement flows. This
-    //     adds value for contractors—many of whom prioritize payment reliability and speed—while
-    //     helping Remote stay ahead of misclassification risks and legal scrutiny. Providing real-time
-    //     payout transparency also improves customer trust and reduces the likelihood of support
-    //     escalations related to payroll. The result: a more resilient and scalable contractor infrastructure
-    //     that supports both user retention and compliance.
+    //   //     Why it's valid:
+    //   //     Remote operates across dozens of jurisdictions, each with its own employment laws, tax
+    //   //     regulations, and compliance obligations. As they grow, especially in emerging or complex
+    //   //     markets, ensuring compliance isn't just a cost issue—it's a risk mitigation priority. Legal and
+    //   //     compliance hires are often the gatekeepers for launching in new countries, onboarding clients,
+    //   //     or staying audit-ready. Compared to that, billing may seem secondary or at least less urgent.
 
-    //     Example Impact 4: Accelerating Market Expansion Without Adding Finance Headcount
-    //     Stripe's global payment rails and multi-currency support allow Remote to accept and process
-    //     payments in 135+ currencies, offer localized payment methods (e.g. ACH, SEPA, PIX), and
-    //     generate regionally compliant invoices. This removes the need for custom finance logic and
-    //     tooling each time Remote enters a new country. As Remote targets rapid global expansion,
-    //     Stripe becomes a force multiplier—enabling entry into new markets with minimal overhead.
-    //     Reducing localization costs by even 40-50% per market can significantly compress the timeline
-    //     for international growth and make global ARR targets more attainable.
+    //   //     Workaround:
+    //   //     Acknowledge that priority—but reposition billing as an enabler of scale, not a distraction.
+    //   //     Manual or rigid billing processes create friction for legal/compliance too: delays in localized
+    //   //     contracts, invoice errors across tax zones, or disputes from misaligned billing terms often land
+    //   //     on legal's desk. Streamlining billing reduces internal escalations, contract exceptions, and
+    //   //     compliance firefighting.
+    //   //     Suggest a pilot in one region with the most billing/legal crossover pain. Or link to existing
+    //   //     compliance initiatives: "Let's make billing a zero-escalation zone while legal scales up."
+    //   //     Also, if Remote is currently focused on hiring, positioning the billing upgrade as a way to delay
+    //   //     headcount pressure (fewer finance hires needed) can align with their broader goals.
 
-    //     IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+    //   //     Example Objection 3:
+    //   //     "We've had real challenges using Stripe in several of the markets where we operate. It's not just
+    //   //     about collecting payments—Stripe doesn't fully support some of the countries or local rails we
+    //   //     rely on, especially in regions like Africa or Southeast Asia. For us, that creates friction with
+    //   //     compliance, FX, and even payroll in certain cases. We can't afford to patch things together or
+    //   //     risk legal exposure just because the billing system can't handle a country's local infrastructure.
+    //   //     Until Stripe expands coverage, it's hard to make it core to our stack in these regions."
 
-    //     Return the answers in the following JSON format:
-    //     {
-    //       "title": "The problem title will be here",
-    //       "description": "Description of problem",
-    //       "solutions": [
-    //         {
-    //           "solutionTitle": "Solution 1 for challenge 1",
-    //           "solutionDescription": "Description of solution 1 for challenge 1",
-    //           "impactTitle": "Impact for challenge 1",
-    //           "impactDescription": "Description of impact of solution 1 for challenge 1"
-    //         },
-    //         {
-    //           "solutionTitle": "Solution 2 for challenge 1",
-    //           "solutionDescription": "Description of solution 2 for challenge 1",
-    //           "impactTitle": "Impact for challenge 1",
-    //           "impactDescription": "Description of impact of solution 2 for challenge 1"
-    //         }
-    //       ]
+    //   //     Why it's valid:
+    //   //     Remote's value prop hinges on enabling compliant employment in 180+ countries. That means
+    //   //     every part of their infrastructure—HR, payroll, invoicing, and tax—must function smoothly across
+    //   //     borders. If Stripe lacks coverage in key regions (e.g., no local rails, unsupported currencies,
+    //   //     delayed payouts), it forces Remote to implement workaround systems that increase compliance
+    //   //     risk and operational complexity. At their scale, this isn't just an inconvenience—it's a direct
+    //   //     threat to trust, delivery, and customer experience in high-growth markets
+
+    //   //     Workaround:
+    //   //     Position Stripe not as a replacement, but as a complement to their existing stack—starting in
+    //   //     high-volume or low-risk regions where Stripe does offer full support. Emphasize that Stripe can
+    //   //     help standardize and streamline billing in ~80% of their covered markets, freeing up internal
+    //   //     resources to focus on the legal edge cases. Also highlight existing Stripe partners and
+    //   //     integrators (e.g. Paystack for Africa, or local PSP bridges) to extend regional coverage
+    //   //     without building custom infrastructure. If relevant, propose a sandbox or pilot rollout tied
+    //   //     to one region or product line where billing complexity is stalling growth—but compliance
+    //   //     concerns are minimal.
+    //   //     The goal isn't to replace everything—just to remove friction where possible, so legal and
+    //   //     finance teams can focus where they're truly needed.
+
+    //   //     Example Objection 4:
+    //   //     "Our finance and ops teams are already stretched. We're onboarding new markets, adapting to
+    //   //     local tax and employment laws, and supporting rapid headcount growth. Adding another
+    //   //     integration project—especially one that touches billing, invoicing, and reporting—just isn't
+    //   //     something we can absorb right now. Even if the long-term value is clear, we simply don't have
+    //   //     the bandwidth in this quarter."
+
+    //   //     Why it's valid:
+    //   //     In hypergrowth companies like Remote, finance and operations teams are often the last to
+    //   //     scale, even as complexity explodes. Every integration means competing for limited dev cycles,
+    //   //     reconciling multiple systems, and retraining teams already operating at capacity. Even small
+    //   //     billing changes can cascade into legal, reporting, payroll, and customer support—so the
+    //   //     hesitation isn't resistance to improvement, it's a real capacity constraint and risk-aversion in
+    //   //     critical internal workflows.
+
+    //   //     Workaround:
+    //   //     Reframe the Stripe integration as low-lift and high-leverage, not another burden. Offer a
+    //   //     phased rollout that starts with a single market, client segment, or product line—minimizing
+    //   //     operational disruption while proving value. Emphasize how automating billing can actually
+    //   //     reduce the load on ops by eliminating manual reconciliations, late payments, and internal
+    //   //     support escalations.
+    //   //     If available, highlight plug-and-play integrations, pre-built Stripe connectors, or support from
+    //   //     Stripe's Solutions Engineers who can shoulder the technical heavy lifting. You can also point to
+    //   //     comparable companies that shipped a similar setup in under X weeks with minimal ops
+    //   //     involvement.
+    //   //     The key is shifting the perception from "one more project" to "one fewer headache."
+
+    //   //     IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+    //   //     Return the answers in the following JSON format:
+    //   //     {
+    //   //       "solutionTitle": "Solution for challenge",
+    //   //       "solutionDescription": "Description of solution for challenge",
+    //   //       "impactTitle": "Impact for challenge",
+    //   //       "impactDescription": "Description of impact of solution for challenge",
+    //   //       "objectionHandling": [
+    //   //         {
+    //   //           "objection": "Objection 1 for challenge",
+    //   //           "whyItsValid": "Description of objection 1 for challenge",
+    //   //           "howToWorkAroundIt": "Description of how to work around objection 1 for challenge"
+    //   //         }
+    //   //       ]
+    //   //     }
+    //   //   `;
+
+    //   //   const objectionHandlingOutput = await openai.responses.create({
+    //   //     model: "gpt-4.1",
+    //   //     tools: [{ type: "web_search_preview" }],
+    //   //     input: objectionHandlingPrompt,
+    //   //   });
+
+    //   //   let cleanObjectionHandlingOutput =
+    //   //     objectionHandlingOutput.output_text.trim();
+    //   //   if (cleanObjectionHandlingOutput.startsWith("```json")) {
+    //   //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //   //       .replace(/^```json\s*/, "")
+    //   //       .replace(/\s*```$/, "");
+    //   //   } else if (cleanObjectionHandlingOutput.startsWith("```")) {
+    //   //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //   //       .replace(/^```\s*/, "")
+    //   //       .replace(/\s*```$/, "");
+    //   //   }
+
+    //   //   const parsedObjectionHandlingOutput = JSON.parse(
+    //   //     cleanObjectionHandlingOutput
+    //   //   );
+
+    //   //   objectionHandlingPerChallenge.push(parsedObjectionHandlingOutput);
+    //   // }
+
+    //   const promises = challenge.solutions.map(async (solution) => {
+    //     const objectionHandlingPrompt = `
+    //       You are a senior B2B strategist at a top consultancy, preparing a sales or success team for
+    //       high-stakes outreach.
+
+    //       Prospexs has already identified:
+    //       - The lead company's current business challenges: ${challenge.description}.
+    //       - The user's proposed solution: ${solution.solutionDescription}.
+    //       - The projected impact of implementing that solution: ${solution.impactDescription}.
+
+    //       Now, your task is to anticipate 4 realistic objections the lead company might raise - even when
+    //       the impact is strong.
+
+    //       For each objection, follow this format:
+    //       1. Objection: Write it exactly as a stakeholder might say it
+    //       2. Why it's valid: Briefly explain the business logic or concern behind it (timing, budget,
+    //       legacy systems, priorities, etc.)
+    //       3. How to work around it: Offer a clear, strategic workaround (e.g. phased rollout, pilot
+    //       approach, reframing ROI, using existing internal champions, or connecting to an ongoing
+    //       initiative)
+
+    //       Use a tone that is sharp, strategic, and empathetic. You're not just selling—you're helping the
+    //       buyer get unstuck and move forward confidently.
+    //       Important: Only use information that is explicitly available in the input data.
+    //       Do not assume, invent, or guess details about the lead, their company, or their situation.
+    //       If no relevant information is found, state that clearly.
+    //       You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+    //       and always label them clearly as general context, not lead-specific insight.
+
+    //       Example Detected Objection Handling for www.teamtailor.com:
+
+    //       Example Objection 1:
+    //       "We're not ready to overhaul our billing and pricing infrastructure—our current system works
+    //       well enough."
+    //       Why it's valid:
+    //       Teamtailor likely runs a lean ops team focused on product and GTM. Introducing a new billing
+    //       system—especially one tied to pricing models—can feel risky and time-consuming, especially
+    //       when core revenue is stable.
+    //       Workaround:
+    //       Position Stripe as a tool to layer in monetization experiments, not replace the core system.
+    //       Suggest piloting usage-based pricing for one product line, region, or customer
+    //       segment—without disrupting the rest. This frames Stripe as a way to unlock revenue innovation
+    //       rather than a system overhaul.
+
+    //       Example Objection 2:
+    //       "We sell to SMBs—enterprise-level billing capabilities and compliance tools feel excessive for
+    //       our current customer base."
+    //       Why it's valid:
+    //       Most of Teamtailor's historic growth has been SMB-driven, where simple billing and flat pricing
+    //       are usually enough. Enterprise features may seem like overkill or too forward-looking.
+    //       Workaround:
+    //       Tie Stripe's enterprise-grade features to Teamtailor's strategic move upmarket. Emphasize
+    //       that larger deals often stall due to procurement issues (e.g. payment methods, invoicing
+    //       standards, tax handling)—all of which Stripe can solve without headcount. Show how Stripe
+    //       helps them remove friction before it becomes a revenue blocker.
+
+    //       Example Objection 3:
+    //       "Adding AI-based pricing or feature gating sounds interesting—but we're still figuring out our AI
+    //       roadmap."
+    //       Why it's valid:
+    //       Teamtailor is likely early in productizing AI, and monetization is probably not yet prioritized. They
+    //       might worry that billing logic will outpace feature readiness.
+    //       Workaround:
+    //       Position Stripe's usage-based billing as a future-proofing move—built to support AI features
+    //       when they launch. Offer to co-develop pricing models (e.g. pay-per-insight, pay-per-screened
+    //       candidate) so the GTM strategy is ready when product is—shortening time-to-monetization.
+
+    //       Example Objection 4:
+    //       "Global payments and tax tools sound great, but we already have local finance workflows set up
+    //       for most regions."
+    //       Why it's valid:
+    //       They've already made the investment—local teams, accountants, and manual workarounds are
+    //       in place. Replacing them might feel like sunk cost waste or unnecessary disruption.
+    //       Workaround:
+    //       Position Stripe as a scaling tool, not a replacement. Highlight that as they expand to new
+    //       regions, Stripe lets them avoid building more localized finance ops. Stripe becomes the
+    //       default engine for net-new countries, giving them optionality and reducing marginal cost of
+    //       expansion.
+
+    //       Example Detected Objection Handling for www.remote.com:
+
+    //       Example Objection 1:
+    //       "We've already built our own global payments and invoicing flows—it's deeply embedded in our
+    //       ops."
+    //       Why it's valid:
+    //       Remote likely spent significant engineering and compliance resources to build custom
+    //       infrastructure for invoicing, multi-currency payments, and tax handling. Replacing or
+    //       supplementing it feels like technical debt or wasted investment.
+    //       Workaround:
+    //       Frame Stripe as a selective abstraction layer—not a replacement. Suggest starting with Stripe
+    //       in new markets or new customer segments (e.g. SMB self-serve or fast-growing emerging
+    //       markets). This allows Remote to avoid repeating internal buildouts while keeping control over
+    //       core systems.
+
+    //       Example Objection 2:
+    //       "Honestly, our biggest internal bottleneck right now isn't billing — it's legal and compliance. We're
+    //       expanding into more countries and dealing with increasingly complex regulatory environments.
+    //       Most of our internal resources, budget, and leadership attention are focused on scaling those
+    //       teams and keeping us audit-ready. Billing improvements sound useful, but they're not what's
+    //       keeping us up at night.
+
+    //       Why it's valid:
+    //       Remote operates across dozens of jurisdictions, each with its own employment laws, tax
+    //       regulations, and compliance obligations. As they grow, especially in emerging or complex
+    //       markets, ensuring compliance isn't just a cost issue—it's a risk mitigation priority. Legal and
+    //       compliance hires are often the gatekeepers for launching in new countries, onboarding clients,
+    //       or staying audit-ready. Compared to that, billing may seem secondary or at least less urgent.
+
+    //       Workaround:
+    //       Acknowledge that priority—but reposition billing as an enabler of scale, not a distraction.
+    //       Manual or rigid billing processes create friction for legal/compliance too: delays in localized
+    //       contracts, invoice errors across tax zones, or disputes from misaligned billing terms often land
+    //       on legal's desk. Streamlining billing reduces internal escalations, contract exceptions, and
+    //       compliance firefighting.
+    //       Suggest a pilot in one region with the most billing/legal crossover pain. Or link to existing
+    //       compliance initiatives: "Let's make billing a zero-escalation zone while legal scales up."
+    //       Also, if Remote is currently focused on hiring, positioning the billing upgrade as a way to delay
+    //       headcount pressure (fewer finance hires needed) can align with their broader goals.
+
+    //       Example Objection 3:
+    //       "We've had real challenges using Stripe in several of the markets where we operate. It's not just
+    //       about collecting payments—Stripe doesn't fully support some of the countries or local rails we
+    //       rely on, especially in regions like Africa or Southeast Asia. For us, that creates friction with
+    //       compliance, FX, and even payroll in certain cases. We can't afford to patch things together or
+    //       risk legal exposure just because the billing system can't handle a country's local infrastructure.
+    //       Until Stripe expands coverage, it's hard to make it core to our stack in these regions."
+
+    //       Why it's valid:
+    //       Remote's value prop hinges on enabling compliant employment in 180+ countries. That means
+    //       every part of their infrastructure—HR, payroll, invoicing, and tax—must function smoothly across
+    //       borders. If Stripe lacks coverage in key regions (e.g., no local rails, unsupported currencies,
+    //       delayed payouts), it forces Remote to implement workaround systems that increase compliance
+    //       risk and operational complexity. At their scale, this isn't just an inconvenience—it's a direct
+    //       threat to trust, delivery, and customer experience in high-growth markets
+
+    //       Workaround:
+    //       Position Stripe not as a replacement, but as a complement to their existing stack—starting in
+    //       high-volume or low-risk regions where Stripe does offer full support. Emphasize that Stripe can
+    //       help standardize and streamline billing in ~80% of their covered markets, freeing up internal
+    //       resources to focus on the legal edge cases. Also highlight existing Stripe partners and
+    //       integrators (e.g. Paystack for Africa, or local PSP bridges) to extend regional coverage
+    //       without building custom infrastructure. If relevant, propose a sandbox or pilot rollout tied
+    //       to one region or product line where billing complexity is stalling growth—but compliance
+    //       concerns are minimal.
+    //       The goal isn't to replace everything—just to remove friction where possible, so legal and
+    //       finance teams can focus where they're truly needed.
+
+    //       Example Objection 4:
+    //       "Our finance and ops teams are already stretched. We're onboarding new markets, adapting to
+    //       local tax and employment laws, and supporting rapid headcount growth. Adding another
+    //       integration project—especially one that touches billing, invoicing, and reporting—just isn't
+    //       something we can absorb right now. Even if the long-term value is clear, we simply don't have
+    //       the bandwidth in this quarter."
+
+    //       Why it's valid:
+    //       In hypergrowth companies like Remote, finance and operations teams are often the last to
+    //       scale, even as complexity explodes. Every integration means competing for limited dev cycles,
+    //       reconciling multiple systems, and retraining teams already operating at capacity. Even small
+    //       billing changes can cascade into legal, reporting, payroll, and customer support—so the
+    //       hesitation isn't resistance to improvement, it's a real capacity constraint and risk-aversion in
+    //       critical internal workflows.
+
+    //       Workaround:
+    //       Reframe the Stripe integration as low-lift and high-leverage, not another burden. Offer a
+    //       phased rollout that starts with a single market, client segment, or product line—minimizing
+    //       operational disruption while proving value. Emphasize how automating billing can actually
+    //       reduce the load on ops by eliminating manual reconciliations, late payments, and internal
+    //       support escalations.
+    //       If available, highlight plug-and-play integrations, pre-built Stripe connectors, or support from
+    //       Stripe's Solutions Engineers who can shoulder the technical heavy lifting. You can also point to
+    //       comparable companies that shipped a similar setup in under X weeks with minimal ops
+    //       involvement.
+    //       The key is shifting the perception from "one more project" to "one fewer headache."
+
+    //       IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+    //       Return the answers in the following JSON format:
+    //       {
+    //         "solutionTitle": "Solution for challenge",
+    //         "solutionDescription": "Description of solution for challenge",
+    //         "impactTitle": "Impact for challenge",
+    //         "impactDescription": "Description of impact of solution for challenge",
+    //         "objectionHandling": [
+    //           {
+    //             "objection": "Objection 1 for challenge",
+    //             "whyItsValid": "Description of objection 1 for challenge",
+    //             "howToWorkAroundIt": "Description of how to work around objection 1 for challenge"
+    //           }
+    //         ]
+    //       }
+    //     `;
+
+    //     const objectionHandlingOutput = await openai.responses.create({
+    //       model: "gpt-4.1",
+    //       tools: [{ type: "web_search_preview" }],
+    //       input: objectionHandlingPrompt,
+    //     });
+
+    //     let cleanObjectionHandlingOutput =
+    //       objectionHandlingOutput.output_text.trim();
+    //     if (cleanObjectionHandlingOutput.startsWith("```json")) {
+    //       cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //         .replace(/^```json\s*/, "")
+    //         .replace(/\s*```$/, "");
+    //     } else if (cleanObjectionHandlingOutput.startsWith("```")) {
+    //       cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
+    //         .replace(/^```\s*/, "")
+    //         .replace(/\s*```$/, "");
     //     }
-    //   `;
 
-    //   const objectionHandlingOutput = await openai.responses.create({
-    //     model: "gpt-4.1",
-    //     tools: [{ type: "web_search_preview" }],
-    //     input: objectionHandlingPrompt,
-    //   });
+    //     const parsedObjectionHandlingOutput = JSON.parse(
+    //       cleanObjectionHandlingOutput
+    //     );
 
-    //   let cleanObjectionHandlingOutput =
-    //     objectionHandlingOutput.output_text.trim();
-    //   if (cleanObjectionHandlingOutput.startsWith("```json")) {
-    //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
-    //       .replace(/^```json\s*/, "")
-    //       .replace(/\s*```$/, "");
-    //   } else if (cleanObjectionHandlingOutput.startsWith("```")) {
-    //     cleanObjectionHandlingOutput = cleanObjectionHandlingOutput
-    //       .replace(/^```\s*/, "")
-    //       .replace(/\s*```$/, "");
-    //   }
-
-    //   const parsedObjectionHandlingOutput = JSON.parse(
-    //     cleanObjectionHandlingOutput
+    //     objectionHandlingPerChallenge.push(parsedObjectionHandlingOutput);
     //   );
+    //   const results = await Promise.all(promises);
 
-    //   objectionHandling.push(parsedObjectionHandlingOutput);
+    //   challenge.solutions = results;
     // }
 
-    // TODO: Change this to have objection handling
+    for (const challenge of impactsOfSolutions) {
+      const promises = challenge.solutions.map(async (solution) => {
+        const objectionHandlingPrompt = `
+          You are a senior B2B strategist at a top consultancy, preparing a sales or success team for high-stakes outreach.
+          Prospexs has already identified:
+          - The lead company's current business challenges: ${challenge.description}.
+          - The user's proposed solution: ${solution.solutionDescription}.
+          - The projected impact of implementing that solution: ${solution.impactDescription}.
+    
+          Now, your task is to anticipate 4 realistic objections the lead company might raise—even when the impact is strong.
+    
+          For each objection, follow this format:
+          1. Objection
+          2. Why it's valid
+          3. How to work around it
+    
+          Return ONLY valid JSON like this:
+          {
+            "solutionTitle": "Solution for challenge",
+            "solutionDescription": "...",
+            "impactTitle": "Impact for challenge",
+            "impactDescription": "...",
+            "objectionHandling": [
+              {
+                "objection": "...",
+                "whyItsValid": "...",
+                "howToWorkAroundIt": "..."
+              }
+            ]
+          }
+        `;
+
+        const response = await openai.responses.create({
+          model: "gpt-4.1",
+          tools: [{ type: "web_search_preview" }],
+          input: objectionHandlingPrompt,
+        });
+
+        let text = response.output_text.trim();
+
+        if (text.startsWith("```json")) {
+          text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+        } else if (text.startsWith("```")) {
+          text = text.replace(/^```\s*/, "").replace(/\s*```$/, "");
+        }
+
+        return JSON.parse(text);
+      });
+
+      const results = await Promise.all(promises);
+      challenge.solutions = results;
+    }
+
     result.businessInsights.challengesWithSolutions = impactsOfSolutions;
 
     // STEP 5: Get Conversation Starter
@@ -965,6 +1279,14 @@ Deno.serve(async (req) => {
 
     result.businessInsights.conversationStarters =
       parsedConversationStarterOutput;
+
+    // STEP 6: Get commonalities
+    console.log("===== Step 6: Getting commonalities =====");
+
+    const commonalitiesPrompt = `
+      You are a senior business strategist at a top-tier consultancy.
+      Prospexs has already analyzed the target company's:
+    `;
 
     // TODO: Handle save for multiple leads
     const { error: updateError } = await supabase
