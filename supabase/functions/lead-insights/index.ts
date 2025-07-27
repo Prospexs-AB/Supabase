@@ -1283,10 +1283,146 @@ Deno.serve(async (req) => {
     // STEP 6: Get commonalities
     console.log("===== Step 6: Getting commonalities =====");
 
+    const {
+      step_2_result: { company_name },
+    } = progressData;
+
     const commonalitiesPrompt = `
-      You are a senior business strategist at a top-tier consultancy.
-      Prospexs has already analyzed the target company's:
+      You are a senior B2B strategist at a top global consultancy.
+
+      Prospexs has already analyzed the business models, value propositions, and go-to-market
+      strategies of both companies listed below.
+
+      Your task is to identify 4 deep, strategic similarities between the two companies. These
+      similarities should help the user ${company_name} build trust, relevance, or credibility when reaching
+      out to ${lead_company_name}.
+
+      Focus on real, non-obvious business commonalities, such as:
+      - Monetization model (e.g. usage-based, seat-based)
+      - Customer acquisition strategy (e.g. PLG, direct sales, ecosystem-led)
+      - Target buyer persona (e.g. devs, recruiters, CFOs)
+      - Technical architecture (API-first, ecosystem integrations, modularity)
+      - Internationalization strategy
+      - Unit economics (e.g. high NRR, expansion revenue, LTV/CAC logic)
+
+      Use data or market logic where possible (e.g. based on company size, funding stage, product
+      motion, reported NRR benchmarks, etc.).
+
+      Format each similarity as a short, insight-rich paragraph. Write with the tone of a strategist or
+      investor—not a marketer.
+      Do not include generic similarities like "both are SaaS companies." Focus on what's strategically
+      interesting or commercially relevant.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Detected Similarities Between www.teamtailor.com and www.stripe.com:
+
+      Example Similarities 1: ExamUsage-Based, Scalable SaaS Models Designed for High LTV
+      Stripe and Teamtailor both monetize through usage-aligned pricing models—Stripe via
+      transaction volume and modular APIs, Teamtailor via seats, brand modules, and usage tiers.
+      This results in high NRR (net revenue retention)—a critical SaaS metric. Stripe's NRR has been
+      estimated north of 125%, while Teamtailor's customer retention and upsell motion (across
+      10,000+ companies) reflects similar unit economics: land small, expand over time. Both are
+      structured to grow with their customers' success.
+
+      Example Similarities 2: Dominant in PLG-Friendly Buyer Personas
+      Stripe sells to developers and product teams. Teamtailor sells to in-house recruiters and
+      employer branding leads. These are bottom-up buyers, historically underserved by legacy
+      systems like Oracle or SAP. According to OpenView's PLG benchmark report, 61% of
+      top-performing SaaS companies use a PLG strategy to land SMB and mid-market accounts
+      before moving into enterprise—a playbook both Stripe and Teamtailor have mastered.
+
+      Example Similarities 3: International Growth With Localized Infrastructure
+      Stripe supports payments in 135+ currencies across 45+ countries with localized compliance,
+      tax, and payout logic. Teamtailor operates in 90+ countries, offering localized career pages,
+      language support, and hiring workflows. Both face the same challenge: enabling regional depth
+      at global scale. Their international expansions rely not on HQ-based assumptions but on
+      platform customization at the local level—a rare operational capability in SaaS.
+
+      Example Similarities 4: API-Centric, Extensible Platforms Built for Ecosystem Scale
+      Stripe's API-first approach led to 3rd-party adoption across 100K+ startups and platforms (e.g.
+      Shopify, Amazon, GitHub). Teamtailor, while not an API company, has built one of the most
+      integrated ATS platforms, with over 100 plug-and-play integrations including Slack, Zapier,
+      LinkedIn, and scheduling tools. Both companies treat extensibility as a strategic moat—reducing
+      churn by embedding deeper into the workflows of their users and ecosystems.
+
+      Example Detected Similarities Between www.remote.com and www.stripe.com:
+
+      Example Similarities 1: Global Compliance Infrastructure at Scale
+      Stripe and Remote.com both operate as regulatory infrastructure companies in their respective
+      verticals. Stripe manages complex global financial compliance across 135+ currencies and 45+
+      countries, including KYC, AML, tax automation, and payment licensing. Remote operates legal
+      entities in 180+ countries, handling employment law, payroll tax compliance, and contractor
+      classification. Both companies reduce regulatory overhead and legal exposure for fast-scaling
+      businesses, allowing them to enter new markets in days instead of months. This shared
+      positioning as a "compliance shield" makes them part of the modern international expansion
+      stack.
+
+      Example Similarities 2: API-Centric Growth Engines Driving Embedded Revenue
+      Stripe generates a significant portion of its revenue via API-led integrations with platforms like
+      Shopify, Amazon, and Notion—powering embedded finance flows. Similarly, Remote is building
+      embedded HR infrastructure, with public partnerships and integrations (e.g. Greenhouse,
+      BambooHR) and a growing API product to let platforms offer payroll and compliance as a
+      service. Both companies are transitioning from SaaS to "platform revenue" models, where third
+      parties generate and own the customer relationship, while Stripe/Remote operate quietly
+      underneath. This shift supports exponential distribution and monetization without linear sales
+      headcount growth.
+
+      Example Similarities 3: Usage-Based Monetization With Exceptional Net Revenue
+      Retention
+      Stripe's NRR has been reported to exceed 125-130%, largely due to transactional pricing.
+      Remote uses a similar model, charging per employee or contractor managed, with expansion
+      into value-added services like benefits, stock options, and local compliance advisory. In markets
+      with high CAC and long sales cycles, usage-based expansion is a moat—it boosts LTV,
+      minimizes churn, and aligns growth with customer success. Stripe and Remote are both
+      designed to win land-and-expand motions in tech-forward B2B segments.
+
+      Example Similarities 4: Dominating in Decentralized, Post-COVID Workflows
+      Post-2020, the rise of remote work and international commerce made Stripe and Remote
+      indispensable. Stripe's adoption skyrocketed as businesses went digital—facilitating payments
+      for Shopify, Amazon, Notion, and 100k+ others. Remote grew by over 10x between 2020 and
+      2022, driven by the need to hire talent globally without establishing foreign subsidiaries. Both
+      companies are winning in the decentralized operations economy—where business is global
+      from day one, and infrastructure needs to be borderless, automated, and compliant.
+
+      IMPORTANT: Directly respond in the JSON format provided below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "title": "The title of the similarity will be here",
+          "description": "Description of the similarity",
+        },
+        {
+          "title": "The title of the similarity will be here",
+          "description": "Description of the similarity",
+        }
+      ]
     `;
+
+    const commonalitiesOutput = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: commonalitiesPrompt,
+    });
+
+    let cleanCommonalitiesOutput = commonalitiesOutput.output_text.trim();
+    if (cleanCommonalitiesOutput.startsWith("```json")) {
+      cleanCommonalitiesOutput = cleanCommonalitiesOutput
+        .replace(/^```json\s*/, "")
+        .replace(/\s*```$/, "");
+    } else if (cleanCommonalitiesOutput.startsWith("```")) {
+      cleanCommonalitiesOutput = cleanCommonalitiesOutput
+        .replace(/^```\s*/, "")
+        .replace(/\s*```$/, "");
+    }
+
+    const parsedCommonalitiesOutput = JSON.parse(cleanCommonalitiesOutput);
+
+    result.businessInsights.commonalities = parsedCommonalitiesOutput;
 
     // TODO: Handle save for multiple leads
     const { error: updateError } = await supabase
@@ -1305,7 +1441,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ lead, insights: result }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
