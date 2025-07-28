@@ -77,7 +77,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // TODO: Return value if already in DB
+    let { step_9_result } = progressData;
+    if (!step_9_result) {
+      step_9_result = [];
+    }
+
+    const leadExists = step_9_result.find(
+      (savedLead) =>
+        savedLead.unformatted_full_name === lead.unformatted_full_name
+    );
+
+    // if (leadExists) {
+    //   return new Response(JSON.stringify(leadExists), {
+    //     headers: { ...corsHeaders, "Content-Type": "application/json" },
+    //     status: 200,
+    //   });
+    // }
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
@@ -939,6 +954,425 @@ Deno.serve(async (req) => {
       ]
     `;
 
+    const insightsPrompt = `
+      You are a senior business analyst at a top-tier consultancy.
+
+      Your task is to generate 4 recent and insight-rich updates about ${lead_company_name}, focused on product development, strategic direction, or key company moves.
+      
+      Each insight should:
+      - Be based on publicly available sources (e.g. blog posts, press releases, product pages, news articles, update logs)
+      - Be 3-5 sentences long
+      - Include business context and explain why the update matters strategically (not just what happened)
+      - Avoid speculation—only use confirmed developments or directly attributable content
+      - End with a reliable source link (company blog or press, not random third parties)
+
+      Do not include generic company overviews or old funding news. Focus on product launches,
+      feature updates, platform changes, new capabilities, or go-to-market shifts from the last 6-12
+      months.
+      
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Insights About X for www.stripe.com
+
+      Example Insights about X 1: Stripe's AI Foundation Model Enhances Payment Intelligence - In
+      April 2025, Stripe announced the deployment of a proprietary AI foundation model trained on
+      over 100 billion payment events. This model, already integrated into Radar, has improved fraud
+      detection rates by 64% for card-testing attacks. More significantly, it signals Stripe's broader
+      move toward intelligent infrastructure—not just for security, but also for optimizing checkout
+      flows, predicting conversion behavior, and powering real-time decisions across the platform.
+      Stripe is positioning this model not as a standalone AI feature, but as a core enabler of every
+      part of the payment lifecycle.
+
+      Example Insights about X 2: Stablecoin Financial Accounts Expand Global Reach - Stripe
+      launched Stablecoin Financial Accounts, giving businesses the ability to hold and move money
+      in USDC across 100+ markets. This unlocks faster global transfers, hedges against local
+      currency volatility, and reduces dependence on traditional banking rails. Especially for platforms
+      operating in emerging markets or with remote contractors, this could become a key advantage
+      in cost control and payment flexibility. The move deepens Stripe's position as a global treasury
+      layer—not just a processor.
+
+      Example Insights about X 3: Stripe Orchestration Introduces Multi-PSP Routing Flexibility -
+      The new Stripe Orchestration product gives merchants the ability to route payments between
+      multiple providers within the Stripe environment, including fallback logic and smart retries. For
+      global businesses, this solves a growing need for redundancy and optimization without requiring
+      deep engineering investments. It's also a strategic play by Stripe to stay embedded even in
+      setups that traditionally favored PSP diversification.
+
+      Example Insights about X 4: Optimized Checkout Suite Delivers Real-Time Personalization
+      with AI - Stripe's checkout product has been enhanced with AI that adjusts checkout layout,
+      payment methods, and UI components in real time—based on location, device, past behavior,
+      and over 100 contextual signals. Early results show significant uplifts in conversion, particularly
+      for mobile and international traffic. This pushes Stripe deeper into the merchant-side
+      optimization stack—blurring the lines between infrastructure and customer experience.
+
+      Example Insights About X for www.teamtailor.com
+
+      Example Insights about X 1: AI-Driven Co-pilot Enhances Recruitment Efficiency -
+      Teamtailor's introduction of the AI-powered Co-pilot marks a significant advancement in
+      streamlining recruitment processes. Co-pilot assists recruiters by automating tasks such as
+      drafting job advertisements, summarizing resumes, and suggesting interview questions tailored
+      to specific roles. This integration of AI not only accelerates the hiring process but also ensures
+      consistency and reduces manual errors, allowing HR teams to focus more on strategic
+      decision-making and candidate engagement.
+      
+      Example Insights about X 2: Comprehensive Onboarding Module Bridges Pre-Hire to Day
+      One - Recognizing the importance of a seamless transition from candidate to employee,
+      Teamtailor has launched a robust onboarding feature. This module enables HR teams to
+      automate tasks, assign responsibilities across departments, and centralize essential documents
+      and communications. By customizing onboarding templates for different roles or departments,
+      organizations can ensure a consistent and welcoming experience for new hires, thereby
+      improving retention rates and employee satisfaction from the outset.
+
+      Example Insights about X 3: Enhanced Skills-Based Hiring with Integrated Evaluation Tools -
+      In response to the growing emphasis on competency-based recruitment, Teamtailor has
+      upgraded its evaluation features. The platform now offers a unified evaluation system that
+      combines scorecards, interview kits, and job match scores, allowing recruiters to assess
+      candidates based on specific skills and traits. This structured approach minimizes unconscious
+      bias and ensures that hiring decisions are grounded in objective criteria, aligning with best
+      practices in modern talent acquisition.
+
+      Example Insights about X 4: Dynamic Application Forms Improve Candidate Experience -
+      Teamtailor has introduced conditional questions in application forms, enabling a more
+      personalized and efficient candidate experience. By tailoring subsequent questions based on
+      previous answers, applicants are presented with relevant queries, reducing redundancy and
+      form fatigue. This dynamic approach not only enhances the user experience but also ensures
+      that recruiters gather pertinent information, streamlining the screening process and improving
+      the quality of applicant data.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "title": "The title of the insight will be here",
+          "description": "Description of the insight",
+        },
+        {
+          "title": "The title of the insight will be here",
+          "description": "Description of the insight",
+        }
+      ]
+    `;
+
+    const discoveryPrompt = `
+      You are a senior B2B strategist and solutions consultant at a top global firm.
+
+      Prospexs has already identified:
+      - The company facing the challenge (${lead_company_name})
+      - The strategic challenges they're dealing with (${parsedDetailsWithChallengesOutput.challenges})
+      - The solution provider offering a relevant product or service (${company_name})
+      - The potential solution and impact already mapped to each challenge
+
+      Your task is to generate 5 sharp, strategic discovery questions for each challenge that the
+      solution provider should ask the target company.
+
+      For each question, include:
+      - The exact question (clear and consultative in tone)
+      - A short explanation (1-2 sentences) of why this question matters and what it will uncover
+
+      These questions should:
+      - Sound like they're coming from a seasoned enterprise AE, strategist, or product lead
+      - Help uncover internal context, blockers, or workflows tied to the challenge
+      - Prepare the provider to better scope, pitch, or implement their solution
+
+      Avoid generic questions (like "What keeps you up at night?"). Make every question feel
+      customized to the company's situation and the solution's capabilities.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Discovery Questions for www.teamtailor.com
+
+      Example Discovery Questions for X 1:
+
+      Challenge 1: Standing Out in a Crowded ATS Market:
+      Teamtailor is in a saturated market with competitors bundling AI, sourcing, and CRM features.
+      Differentiation is getting harder - especially when price pressure and feature parity are
+      increasing.
+
+      Stripe's Discovery Questions (and Why They Matter):
+
+      1. "What are the most common reasons your prospects choose a competitor over
+      Teamtailor today?"
+      Helps identify where Teamtailor may be perceived as lacking — price, features,
+      enterprise depth, or brand.
+
+      2. "Have you run any pricing experiments or packaging changes in the last 12
+      months?"
+      If they haven't, Stripe could offer flexible billing infrastructure to support rapid testing
+      of pricing models (usage-based, modular, role-based).
+
+      3. "How do you currently align pricing with perceived customer value across SMB
+      vs. enterprise?"
+      Reveals if Stripe's billing tools can help match value delivery with revenue capture
+      (e.g. ARPA lift via tiering).
+
+      4. "How often do you iterate on GTM messaging to reflect product evolution?"
+      Could inform whether Stripe's insight tooling could help Teamtailor adjust
+      product-market positioning faster.
+
+      5. "Are you tracking expansion revenue or usage data to inform how you package or
+      sell features?"
+      If not, Stripe's tools can help track feature adoption and power smarter monetization
+      decisions.
+
+      Example Discovery Questions for X 2:
+
+      Challenge 2: Scaling Into Enterprise Without Losing Simplicity
+      Teamtailor wants to move upmarket, but enterprise deals bring long sales cycles, compliance
+      demands, and billing complexity—while they still need to preserve a UX-friendly core product.
+
+      Stripe's Discovery Questions:
+
+      1. "What friction points have you encountered in procurement or compliance when
+      selling to larger organizations?"
+      Uncovers opportunity for Stripe to reduce procurement delays via localized invoicing,
+      tax handling, or payment terms.
+
+      2. "How are enterprise clients currently billed differently from your core SMB base?"
+      Reveals if Stripe Billing or Invoicing can streamline complex enterprise payment
+      plans or pricing agreements.
+
+      3. "Do you currently offer contract flexibility (e.g. usage-based pricing or annual
+      commits) for large clients?"
+      Stripe can help Teamtailor support different contract models within a single billing
+      stack.
+
+      4. "Are you seeing demand for integrations with internal finance systems (e.g.
+      Netsuite, SAP, Workday) during the sales cycle?"
+      Indicates whether Stripe's enterprise APIs or financial reporting features can drive
+      stickiness or accelerate implementation.
+
+      5. "How do you maintain product simplicity while adapting to custom enterprise
+      workflows?"
+      Opens a conversation around Stripe's modular product architecture—only offer
+      what's needed, when it's needed.
+
+      Example Discovery Questions for X 3:
+
+      Challenge 3: Falling Behind in AI-Driven Talent Tech Arms Race
+      Competitors are embedding AI in matching, outreach, and screening. Teamtailor is strong in UX,
+      but risks falling behind if it doesn't demonstrate innovation in hiring intelligence.
+
+      Stripe's Discovery Questions:
+
+      1. "What parts of the hiring journey are you actively exploring for AI-driven
+      optimization?"
+      Pinpoints where AI is being explored (e.g. candidate matching vs. interview scoring)
+      and where Stripe data tools may support monetization.
+
+      2. "Do you expect to charge for future AI-powered features, or bundle them into
+      existing tiers?"
+      Helps Stripe shape a billing model (add-on, usage-based, bundled) and prepare the
+      infrastructure.
+
+      3. "What metrics would define success for an AI feature in your platform—efficiency,
+      accuracy, NPS?"
+      Reveals Teamtailor's north star for innovation, and how Stripe's analytics tooling can
+      help validate or monetize those outcomes.
+
+      4. "How do you currently experiment with feature rollouts across different user
+      segments?"
+      Shows if Stripe's billing logic can support gated rollouts, feature flags, or user-level
+      feature access.
+
+      5. "Is there a monetization or revenue model attached to your AI roadmap today?"
+      If not, Stripe can offer strategy + infrastructure to capture future AI value from day
+      one.
+
+      Example Discovery Questions for X 4:
+
+      Challenge 4: Complexity in International Expansion
+      Teamtailor is active in 90+ countries. That means multi-currency support, tax compliance,
+      localization, and financial operations complexity—all of which Stripe is built to simplify.
+
+      Stripe's Discovery Questions:
+
+      1. "Which geographies are currently the most painful in terms of financial operations
+      or compliance?"
+      Lets Stripe recommend localized billing, currency support, and compliance services
+      based on Teamtailor's priority markets.
+      
+      2. "Do you have internal resources managing tax and VAT handling across
+      markets—or is it mostly manual?"
+      Stripe Tax could immediately reduce overhead here if they're handling this with
+      spreadsheets or external advisors.
+
+      3. "Are you offering local payment methods in every region where you operate?"
+      Stripe supports 50+ methods; this reveals if they can help increase conversion or
+      reduce cart abandonment.
+
+      4. "What's your approach to pricing localization—do you adapt plans by market?"
+      Stripe's flexible pricing tools could let them dynamically adapt pricing based on
+      region, without custom dev work.
+
+      5. "How do you forecast or report on revenue by country or currency?"
+      Stripe can help simplify multi-currency revenue recognition and offer richer financial
+      dashboards, especially for CFO-level reporting.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "challenge": "The challenge that the solution provider should ask the target company about",
+          "discovery_questions": [
+            {
+              "question": "The title of the discovery question will be here",
+              "answer": "Description of the discovery question",
+            },
+            {
+              "question": "The title of the discovery question will be here",
+              "answer": "Description of the discovery question",
+            }
+          ]
+        }
+      ]
+    `;
+
+    const whyNotPrompt = `
+      You are a senior GTM strategist and industry analyst at a top global consultancy.
+
+      Prospexs has already identified:
+      - The company facing strategic challenges (${lead_company_name})
+      - The challenges they're dealing with:
+      ${parsedDetailsWithChallengesOutput.challenges
+        .map(
+          (challenge) => `
+          challenge title: ${challenge.title}
+          challenge description: ${challenge.description}
+        `
+        )
+        .join("\n")}
+      - The solution provider (${company_name}) and what they offer:
+      ${parsedSolutionsWithChallengesOutput
+        .map(
+          (challenge) => `
+          solution title: ${challenge.solutions.map(
+            (solution) => solution.solutionTitle
+          )}
+          solution description: ${challenge.solutions.map(
+            (solution) => solution.solutionDescription
+          )}
+        `
+        )
+        .join("\n")}
+
+      Your task is to generate a "Why Now?" analysis explaining why the solution provider should
+      reach out and engage the company right now.
+
+      For each challenge, explain:
+      - Why this challenge is increasing in urgency right now (e.g. trends, competitor moves,
+      regulatory shifts)
+      - How the solution provider is uniquely positioned to address it
+
+      - Include data points, industry insights, and analyst predictions (e.g. G2 trends, Gartner
+      forecasts, growth benchmarks)
+
+      Conclude with a short summary that ties together urgency, fit, and impact.
+
+      Use a clear, confident tone — like you're writing a deal brief for a senior sales or partnerships
+      leader.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Why Now Insights for www.teamtailor.com
+
+      Why Now Example 1: The ATS market is hitting feature parity—pricing innovation is becoming
+      the new battleground.
+      According to G2 and Productboard, over 60% of mid-market ATS buyers now consider “pricing
+      model flexibility” a top decision factor, up from 34% in 2022. Platforms like Ashby and Lever are
+      moving toward modular or usage-based pricing to reflect actual customer value. Teamtailor,
+      which has historically leaned on flat-rate simplicity, risks commoditization unless it can
+      differentiate on how it sells—not just what it sells. Stripe's flexible billing APIs and product-tiered
+      infrastructure can enable Teamtailor to launch, A/B test, and localize monetization models
+      without a backend overhaul.
+
+      Why Now Example 2: Teamtailor's enterprise expansion will strain their current finance and
+      billing stack.
+      As more ATS vendors like Workable and SmartRecruiters shift toward enterprise accounts (with
+      ARPA > $20K), buyer expectations around procurement infrastructure have hardened.
+      Enterprise clients now demand things like ACH, SEPA, localized invoicing, VAT-compliant tax
+      handling, and contract-based billing terms. If Teamtailor continues to grow in markets like
+      Germany, the UK, and the Nordics, a modernized billing and finance ops layer is no longer
+      optional. Stripe's enterprise-grade billing, invoicing, and tax stack can be deployed
+      modularly—giving them global readiness without enterprise bloat.
+
+      Why Now Example 3: The AI race in HR tech is accelerating—and monetization is lagging
+      behind.
+      Gartner predicts that by 2026, over 75% of hiring platforms will embed AI scoring, filtering, and
+      auto-matching tools. But only 18% of them have a revenue model tied to these features.
+      Teamtailor has already launched AI-driven workflows and evaluation tools—but it hasn't yet
+      attached monetization logic. Stripe can help Teamtailor price these features as add-ons,
+      usage-based modules, or higher-tier differentiators, turning AI investment into scalable revenue.
+
+      Why Now Example 4: International expansion is increasing operational drag—and Stripe can
+      remove it.
+      Teamtailor now operates in 90+ countries. This means more currencies, localized payment
+      methods, tax rules, and region-specific compliance headaches. Companies that don't solve for
+      this early see slower rollout velocity and higher cost of finance ops. Stripe supports payments in
+      135+ currencies, automates tax compliance across 40+ markets, and offers programmable
+      payouts—letting Teamtailor expand faster without increasing headcount in back-office teams.
+      
+      Example Why Now Insights for www.remote.com
+
+      Why Now Example 1: Navigating Global Compliance and Tax Complexity
+      Remote is live in 180+ countries and growing fast—but this scale brings enormous financial
+      compliance pressure. As regulators crack down on contractor misclassification and cross-border
+      tax compliance, EOR and global payroll companies are under the microscope. In 2024, both
+      Deel and Papaya Global faced intensified audits in high-risk markets. Remote must minimize
+      exposure while maintaining speed. Stripe's tax and billing stack automates region-specific rules,
+      cutting compliance overhead by up to 30% and enabling safe expansion into new markets
+      without headcount bloat.
+
+      Why Now Example 2: Slowing Onboarding and Conversion Velocity
+      With competitors like Rippling and Deel investing heavily in onboarding UX and speed-to-hire,
+      Remote risks falling behind. According to OpenView's 2024 SaaS benchmark, reducing
+      onboarding friction increases activation rates by 25-40% in B2B platforms. Stripe's modular
+      onboarding stack lets Remote securely verify users, accept payments globally, and automate
+      account creation—all while staying compliant. The longer Remote delays UX-level
+      optimizations, the more volume shifts to faster competitors.
+
+      Why Now Example 3: Increasing Risk in Contractor Payouts and Regulatory Scrutiny
+      The freelance and contractor economy is booming—but so is the risk. Inconsistent payout logic
+      and KYC gaps can trigger financial and legal headaches, especially in markets like India, Brazil,
+      and Nigeria. With platforms under pressure to pay faster and more transparently, Stripe's payout
+      stack offers programmable wallets, automated AML/KYC, and real-time transfers. Remote can
+      stay ahead of scrutiny and deliver a best-in-class contractor experience—before local fintech
+      competitors fill that gap.
+
+      Why Now Example 4: Managing Financial Complexity at Global Scale
+      Remote is no longer just a startup—it's infrastructure for other companies' infrastructure. That
+      means more expectations around stable, transparent financial systems. As they expand,
+      operating costs grow linearly unless finance infrastructure improves. Stripe helps break that
+      tradeoff—offering instant support for 135+ currencies, 50+ local payment methods, and clean
+      financial data by region. If Remote waits, it risks ballooning ops costs and missing expansion
+      targets in regions where payment preferences matter.
+
+      
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "challenge": "The challenge that the solution provider should ask the target company about",
+          "why_now": "The why now analysis for the challenge",
+        },
+        {
+          "challenge": "The challenge that the solution provider should ask the target company about",
+          "why_now": "The why now analysis for the challenge",
+        }
+      ]
+    `;
+
     const additionalPrompts = [
       {
         prompt: conversationStarterPrompt,
@@ -947,6 +1381,18 @@ Deno.serve(async (req) => {
       {
         prompt: commonalitiesPrompt,
         fieldName: "commonalities",
+      },
+      {
+        prompt: insightsPrompt,
+        fieldName: "insights",
+      },
+      {
+        prompt: discoveryPrompt,
+        fieldName: "discovery",
+      },
+      {
+        prompt: whyNotPrompt,
+        fieldName: "whyNow",
       },
     ];
 
@@ -964,7 +1410,6 @@ Deno.serve(async (req) => {
 
         let cleanResponse = response.output_text.trim();
 
-        // Look for ```json marker and extract everything after it
         const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
         if (jsonMatch) {
           cleanResponse = jsonMatch[1].trim();
@@ -993,16 +1438,6 @@ Deno.serve(async (req) => {
     );
 
     await Promise.all(promises);
-
-    let { step_9_result } = progressData;
-    if (!step_9_result) {
-      step_9_result = [];
-    }
-
-    const leadExists = step_9_result.some(
-      (savedLead) =>
-        savedLead.unformatted_full_name === lead.unformatted_full_name
-    );
 
     if (!leadExists) {
       step_9_result.push({ ...lead, insights: result });
