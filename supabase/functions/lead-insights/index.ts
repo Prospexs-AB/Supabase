@@ -1373,67 +1373,708 @@ Deno.serve(async (req) => {
       ]
     `;
 
+    const { lead_simple_sales_link } = lead;
+
+    // TODO: Change linkedin url
+    const awardsPrompt = `
+      You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
+      context, signals, and intent.
+
+      Your task is to review the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of
+      clear, concise, and notable achievements, such as:
+      - Awards (e.g. “Leader of the Year 2022”)
+      - Major milestones (e.g. “Promoted 3 times in 5 years”, “Worked at X for 10+ years”)
+      - Public recognitions (e.g. “Featured in Forbes 30 Under 30”)
+      - Career longevity highlights (e.g. “8 years at Google”, “Built first APAC office”)
+      - Certifications only if they are prestigious or well-known (e.g. PMP, CFA, Google Developer
+      Expert)
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Output should be a bullet point list, with 1-2 lines per item max.
+      Do not include generic responsibilities or role descriptions. Only include standout achievements
+      that differentiate this person from others.
+
+      Use the tone of a high-end recruiter or executive search analyst summarizing why this person is
+      notable.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Award & Recognitions About X:
+      Example Award & Recognition 1: Winner of 'Leader of the Year' at Telia Company in 2022.
+      Example Award & Recognition 2: Promoted 3 times in 6 years at Klarna — from Analyst to
+      Head of Growth.
+      Example Award & Recognition 3: Named in Forbes 30 Under 30 - Technology, Europe list.
+      Example Award & Recognition 4: Spent 10+ years at Ericsson.
+      Example Award & Recognition 5: Built and scaled Spotify's first LATAM marketing team from
+      0 to 40 people.
+      Example Award & Recognition 6: Selected for McKinsey & Company's internal 'Top 1%
+      Future Partner' program.
+      Example Award & Recognition 7: Featured speaker at Web Summit 2024 on AI in
+      e-commerce.
+      Example Award & Recognition 8: Certified Google Developer Expert in Machine Learning
+      since 2021.
+      Example Award & Recognition 9: Led the product team behind the 'App of the Year' at the
+      Swedish Tech Awards (2022).
+      Example Award & Recognition 10: Received CEO's Performance Award at H&M Group.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "award": "The award or recognition",
+          "description": "The description of the award or recognition",
+        }
+      ]
+    `;
+
+    // TODO: Change linkedin url
+    const interestsPrompt = `
+      You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
+      context, signals, and intent.
+      Analyze the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of personal
+      interests and hobbies.
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Focus on:
+      - What they mention in their "About" section
+      - Volunteering, extracurriculars, or activity feed
+      - Any personal mentions in job descriptions (e.g. "Outside of work I...")
+      Return the output as a bullet-point list of short, lowercase items, such as:
+      - yoga
+      - hiking
+      - sci-fi
+      - climate tech
+      - volunteering
+      Do not use full sentences. Do not add descriptions or context.
+      Only include clear, humanizing interests that reflect the person's personality or lifestyle.
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Interests & Hobbies:
+      - Trail running
+      - Youth football coaching
+      - Sci-fi books
+      - Volunteering
+      - Language learning
+      - Startup mentoring
+      - Yoga
+      - Climate tech
+      - Productivity apps
+      - Hiking & camping
+
+      If there are no interests or hobbies, return an empty array.
+        
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        "interest 1",
+        "interest 2",
+        "interest 3",
+        "interest 4",
+      ]
+    `;
+
+    // TODO: Change linkedin url
+    const educationPrompt = `
+      You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
+      context, signals, and intent.
+
+      Analyze the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of the educational
+      institutions this person has attended.
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Focus only on:
+      - Universities
+      - Business schools
+      - Colleges
+      - Recognized institutions of higher education
+
+      Output format:
+      - One bullet per school
+      - Only include school names (e.g. "Lund University", "KTH Royal Institute of Technology")
+      - No degrees, dates, or locations unless explicitly requested
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Interests & Hobbies:
+      - Stockholm University
+      - Lund University
+      - Uppsala University
+      - KTH Royal Institute of Technology
+      - Chalmers University of Technology
+      - London School of Economics
+      - INSEAD
+      - Harvard Business School
+      - Copenhagen Business School
+      - HEC Paris
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        "school 1",
+        "school 2",
+    `;
+
+    // TODO: Change linkedin url
+    const relevantInsightsPrompt = `
+      You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
+      context, signals, and intent.
+
+      Your job is to uncover relevant, human insights about a specific lead based on their LinkedIn
+      profile and broader digital footprint (including posts, interviews, articles, public activity, and
+      interactions).
+
+      Your goal is to help a sales or partnership team quickly understand:
+      - What this person cares about
+      - What they're likely focused on right now
+      - What topics, events, or trends they're publicly engaging with
+      - Any subtle personal interests or behavioral cues that can make outreach or meetings
+      more relevant
+
+      Input sources may include:
+      - LinkedIn bio, work history, posts, shares, comments, likes
+      - Interviews, panels, podcasts
+      - Company articles they're quoted in
+      - Conferences or events they've attended
+      - Anything else from their public presence
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Keep it tight, real, and usable in a cold email or intro call.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly.
+      You may use industry benchmarks, role-specific patterns, or known trends only as a fallback —
+      and always label them clearly as general context, not lead-specific insight.
+
+      Example Relevant Insights:
+      - Title: Launch of AI features
+      Recently posted about the launch of their AI-driven onboarding feature and shared a
+      case study on reducing churn—likely focused on activation and retention right now.
+      Attended Slush 2024 and shared photos from the 'Future of Work' stage—shows interest
+      in workplace innovation. Also reposted multiple content pieces from Deel and Remote,
+      suggesting they follow global employment trends closely.
+
+      - Title: Team Culture
+      Often comments on posts about team culture and internal communication. In a podcast
+      last year, they mentioned scaling pains as a first-time VP—likely sensitive to tools that
+      reduce internal friction. Also shared a personal post about running their first
+      ultramarathon—possible tie-in to resilience, discipline, or health-focused narratives.
+
+      - Title: Female Leadership & Diversity
+      Liked a number of posts related to female leadership and diversity hiring in the past
+      month. Was featured in a 'Meet the CMO' interview where she talked about the shift
+      toward data-led decision-making in marketing. Attended INBOUND 2023 and tagged
+      three product leaders from her team - possibly open to solutions that tighten
+      marketing-product alignment.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "title": "The title of the insight",
+          "description": "The description of the insight",
+        },
+        {
+          "title": "The title of the insight",
+          "description": "The description of the insight",
+        },
+      ]
+    `;
+
+    const {
+      step_5_result: { linkedin_profile },
+    } = progressData;
+
+    // TODO: Change linkedin url
+    const similaritiesPrompt = `
+      You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
+      context, signals, and intent.
+      Your task is to identify genuine similarities between two people based on their LinkedIn
+      profiles:
+      - X = the user of Prospexs (Linkedin URL: https://www.linkedin.com/in/patrick-soe)
+      - Y = the lead (Linkedin URL: https://www.linkedin.com/in/patrick-soe)
+
+      This is the linkedin data for "X" (the user of Prospexs): ${linkedin_profile}
+
+      This is the linkedin data for "Y" (the lead): {linkedin_data}
+
+      You will be given both LinkedIn profiles (including bios, work history, posts, education, interests,
+      etc.).
+      Your goal is to surface credible and natural connection points that the user could use to build
+      rapport, open a conversation, or establish common ground.
+      These may include:
+      - Shared industries, roles, or company types
+      - Similar career paths or titles
+      - Common tools, technologies, or methodologies
+      - Overlapping events, certifications, or regions
+      - Shared causes, interests, or values (if publicly stated)
+
+      Output Instructions:
+      - List 4 high-quality similarities.
+      - Use complete sentences.
+      - Avoid generic or forced connections (e.g. “both work in tech” unless meaningful)
+      - If no clear similarities are found, say so and do not guess.
+
+      Important: Only use information that is explicitly available in the input data.
+      Do not assume, invent, or guess details about the lead, their company, or their situation.
+      If no relevant information is found, state that clearly. You may use industry benchmarks,
+      role-specific patterns, or known trends only as a fallback — and always label them clearly as
+      general context, not lead-specific insight. If no direct similarities are found, clearly state that —
+      then provide 4 relevant role-based or industry-level commonalities based on their current titles,
+      company types, or sectors.
+
+      Clearly label these as professional context overlaps, not personal insights.
+
+      Example Similarities Between X & Y:
+      - Both X and Y have held commercial leadership roles at early-stage SaaS companies
+      targeting mid-market clients. Their profiles reflect a strong bias toward product-led
+      growth, with multiple posts referencing self-serve onboarding, usage-based pricing, or
+      activation metrics.
+      - While they've never worked at the same company, both transitioned from individual
+      contributor roles into team lead positions during high-growth phases—likely sharing
+      similar experiences around team-building under pressure.
+      - Both X and Y are based in Europe but lead globally distributed teams. X is currently
+      managing a remote RevOps team across 3 time zones, while Y recently posted about
+      the operational challenges of async communication and building team culture across
+      borders.
+      - Their careers show a pattern of working in companies between 50-300
+      employees—often the stage where processes break and operators are forced to build
+      structure. It's likely they both value pragmatic, systems-driven solutions.
+      - Y recently celebrated their 5-year company anniversary with a post about "resilience
+      over hype," which aligns with X's earlier writing on long-term thinking vs. fundraising
+      hype cycles. This shared founder mindset could lead to instant rapport.
+      - Each has shown public interest in low-code tooling: Y recently liked several posts about
+      Airtable and Notion automations, while X commented on how they've built internal
+      systems to reduce reliance on engineering. This operational pragmatism is a shared
+      trait.
+
+      Replace X and Y with the actual names of the user of Prospexs and the lead.
+      X name: ${linkedin_profile.full_name}
+      Y name: ${lead.full_name}
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        "similarity 1",
+        "similarity 2",
+    `;
+
+    // TODO: Change linkedin url
+    const onlineMentionsPrompt = `
+      You are a strategic research analyst within a B2B prospecting engine.
+      Your task is to find relevant mentions or signals connected to a specific lead, based on the
+      following input:
+      - Name: ${lead.full_name}
+      - Job Title: ${lead.job_title}
+      - Company: ${lead.lead_company_name}
+
+      TIER 1 - Mentions of the Lead (First Priority)
+      Search for:
+      - Recent quotes, interviews, or media appearances by the lead
+      - Mentions of the lead in company press releases, blogs, or events
+      - LinkedIn posts where the lead is tagged or publicly commented
+
+      If any mentions are found, summarize:
+      - The nature of the mention (e.g. quote, panelist, author)
+      - The topic covered
+      - Why it may be relevant for outreach or context
+
+      TIER 2 - Mentions of Their Company (Fallback)
+
+      If no lead-specific mentions are available, look for:
+      - Company press releases, major announcements, or funding news
+      - Mentions in case studies, customer stories, or third-party blogs
+      - Comments or reactions to the company's product, hiring, or performance
+
+      Summarize the mention and what it signals about the company's current focus or perception.
+
+      TIER 3 - Mentions of Industry or Competitors (Last Resort)
+      If no mentions of the lead or their company are found, provide:
+      - A short summary of recent trends, challenges, or opportunities relevant to their industry
+      or segment
+      - Mentions of 1-2 close competitors or peers (if available)
+      - Why these trends or competitor actions might be top-of-mind for the lead
+      No relevant mentions were found for the lead or their company.
+      Only use information that is explicitly available in the input data. Do not fabricate mentions or
+      speculate. Clearly indicate which tier was used: Lead, Company, or Industry. If nothing relevant
+      is found at any tier, say so.
+
+      Example Online Mentions:
+      - Mention Type: Podcast Interview
+      Summary: In a recent podcast episode of SaaS GTM Deep Dives, Sarah Lindqvist (VP
+      of Sales at Flowly) discussed how her team shifted from SDR-led to marketing-led
+      pipeline generation in Q1 2024. She emphasized attribution challenges, cross-team
+      alignment, and her team’s focus on increasing average deal size.
+      Link: https://example.com/sarah-lindqvist-podcast
+      
+      - Mention Type: TechCrunch Article
+      Summary: Flowly was featured in a TechCrunch piece announcing its $12M Series A,
+      led by Index Ventures. The article quotes the CEO discussing expansion into France and
+      doubling the GTM team by the end of the year. No direct quote from Sarah, but as VP
+      Sales, she will likely be involved in hiring and sales team growth.
+      Link: https://example.com/flowly-seriesa
+
+      - Mention Type: Industry Report
+      Summary: A recent Forrester report titled “2024 SaaS Buying Trends in Europe”
+      highlights that 64% of mid-market buyers now prefer product-led onboarding with
+      minimal sales rep involvement. This trend could directly impact how companies like
+      Flowly position their sales motion, especially given their expansion plans.
+      Link: https://example.com/2024-saas-buying-trends
+
+      - Mention Type: Panel Discussion
+      Summary: Nabil El-Fahkri, Head of Product at Mindbeam, appeared as a speaker on a
+      panel titled “AI Ethics in Enterprise Software” during Nordic Tech Week 2024. He spoke
+      about balancing speed of deployment with regulatory alignment, especially in B2B SaaS.
+      His comments suggest a strong interest in AI governance and responsible innovation.
+      Link: https://example.com/nabil-panel-ai-ethics
+
+      - Mention Type: Customer Case Study (Company Blog)
+      Summary: Mindbeam recently published a case study highlighting how pharmaceutical
+      company Axxira improved workflow compliance by 48% after switching to Mindbeam’s
+      platform. Although Nabil is not quoted directly, the project falls under his product team,
+      suggesting relevance to his current priorities.
+      Link: https://example.com/nabil-mindbeam-casestudy
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "mention_type": "The type of mention",
+          "summary": "The summary of the mention",
+          "link": "The link to the mention",
+        },
+        {
+          "mention_type": "The type of mention",
+          "summary": "The summary of the mention",
+          "link": "The link to the mention",
+        },
+      ]
+    `;
+
+    // TODO: Change linkedin url
+    const relevantActivitiesPrompt = `
+      You are a senior outbound strategist inside a B2B prospecting platform.
+      Your task is to analyze a specific lead's recent LinkedIn activity to surface signals that could be
+      useful for sales outreach or meeting prep.
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Focus on surfacing:
+      - Posts authored by the lead
+      - Comments they've made on relevant topics
+      - Content they've liked or reshared
+      - Mentions or tags by other people
+      - Changes in profile headline or role
+      - Event RSVPs, certifications, or feature badges
+
+      The activity should reflect:
+      - What the lead is currently thinking about, engaging with, or promoting
+      - Topics that align with their strategic focus or personal interests
+      - Cues that suggest timing or mindset (e.g., hiring, launching, exploring tools)
+
+      Output Format:
+      For each insight you find, include:
+      - A summary of the activity (2-3 sentences)
+      - The type of interaction (e.g., post, comment, like, reshare, profile update)
+      - A link to the post or profile section (if available)
+      - The date or time frame (e.g., “2 weeks ago”)
+      - Optional: Why this may be relevant to outreach
+
+      Example Relevant LinkedIn Activity:
+      - Summary: Posted a job opening for two Enterprise Account Executives in the DACH
+      region, emphasizing experience in AI/ML products.
+      Type: Authored post
+      Link: https://linkedin.com/posts/anne-hartmann_eae-hiring-ai
+      When: 6 days ago
+      Relevance: Indicates current hiring focus and possible pipeline expansion in Germany
+      — good timing for outreach around GTM enablement or recruiting efficiency.
+
+      - Summary: Liked a post from a competitor (DocuMate) announcing their new e-signature
+      integration with Microsoft Teams.
+      Type: Like
+      Link: https://linkedin.com/feed/update/documate-teams
+      When: 1 week ago
+      Relevance: Suggests interest in adjacent products or keeping tabs on market trends —
+      could signal a focus on integrations or product roadmap updates.
+
+      - Summary: Commented “This is the biggest pain point in onboarding right now” on a post
+      discussing slow customer implementation cycles in B2B SaaS.
+      Type: Comment
+      Link: https://linkedin.com/feed/update/slow-onboarding-thread
+      When: 2 weeks ago
+      Relevance: Signals frustration with onboarding speed — could open the door for
+      workflow automation, CS tooling, or faster deployment solutions.
+
+      - Summary: Shared an article from Harvard Business Review titled "Why CFOs Are
+      Becoming Product Influencers” with the caption “Seeing this trend firsthand.”
+      Type: Reshare
+      Link: https://linkedin.com/share/cfo-trend-hbr
+      When: 5 days ago
+      Relevance: Suggests the lead may be a financially-minded decision-maker with
+      influence beyond pure finance — good for positioning ROI-driven tools.
+
+      - Summary: Updated their LinkedIn title from “Growth Advisor” to “VP, Strategic
+      Partnerships” at Klara Health.
+      Type: Profile Update
+      Link: https://linkedin.com/in/sofia-karlsen
+      When: 3 weeks ago
+      Relevance: Signals a new role and likely open priorities — perfect window to introduce
+      new tools or explore co-marketing, integrations, or partnerships.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "summary": "The summary of the activity",
+          "type": "The type of interaction",
+          "link": "The link to the post or profile section",
+          "when": "The date or time frame",
+          "relevance": "The relevance of the activity",
+        },
+      ]
+    `;
+
+    // TODO: Change linkedin url
+    const personConversationalStarterPrompt = `
+      You are a senior outbound strategist inside a B2B prospecting engine.
+      Your task is to generate relevant, natural, and timely conversation starters for ${lead.full_name}
+      based on all available data.
+
+      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin data: {linkedin_data}
+
+      Input Context May Include:
+      - The lead's LinkedIn activity (posts, likes, profile updates, comments)
+      - Any recent mentions of the lead in media, panels, podcasts, or interviews
+      - Their company's latest news, funding, hiring, or product launches
+      - Industry shifts or competitor activity that might be top-of-mind for someone in their
+      role
+      - Known challenges, solutions, and impact statements previously identified by
+      Prospexs
+
+      Your job is to:
+      - Combine 1-2 relevant signals into each friendly, human-level prompt
+      - Avoid generic or templated phrasing (“Saw your role, thought I'd reach out”)
+      - Focus on curiosity, relevance, and shared interest to spark a reply or discussion
+      - Use a tone that is personable, warm, and professionally casual
+      Output Format:
+      - Generate 3-4 short conversation starters, each 2-3 sentences max.
+      - Important: Only use signals that are explicitly present in the input data. Do not assume or
+      fabricate insights. If few signals are available, you may fall back on role-specific or industry-level
+      cues — but clearly anchor them to the lead's function, not imagined details.
+
+      Example Relevant LinkedIn Activity:
+      - Title: Fixing Onboarding Friction
+      I saw your post about navigating long onboarding cycles and the impact on revenue
+      recognition — feels like something a lot of GTM teams are quietly battling. Curious if
+      you've tried anything new to streamline that process, especially now that you're leading
+      both sales and CS under one roof.
+
+      - Title: Scaling After Funding
+      Congrats on the Series B — with that kind of growth, I imagine aligning product, sales,
+      and ops just got a whole lot more interesting. I'd love to hear how you're thinking about
+      scaling the GTM motion without letting complexity creep in.
+
+      - Title: AI for Reps: Real or Hype?
+      Noticed you commented on a post about AI not replacing reps, but making them sharper
+      — couldn't agree more. In your role, are you seeing any tools actually live up to that
+      promise, or is it still mostly buzz?
+
+      - Title: Product vs. Sales Mindset
+      You and I both seem to follow folks like Kyle Coleman and Lenny Rachitsky — always
+      find their takes useful for keeping GTM grounded. Given your background in both
+      product and sales, I'm curious how you're balancing top-down strategy with bottom-up
+      activation these days.
+
+      - Title: Competitor PLG Moves
+      I saw that one of your close competitors just launched in the DACH region with a very
+      PLG-heavy push. Wondering if that's affecting how your team's thinking about customer
+      acquisition strategy or if you're doubling down on something totally different.
+
+      IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: Return the answers in the following JSON format:
+      [
+        {
+          "title": "The title of the conversation starter",
+          "content": "The content of the conversation starter",
+        },
+        {
+          "title": "The title of the conversation starter",
+          "content": "The content of the conversation starter",
+        },
+      ]
+    `;
+
     const additionalPrompts = [
       {
         prompt: conversationStarterPrompt,
         fieldName: "conversationStarters",
+        category: "businessInsights",
       },
       {
         prompt: commonalitiesPrompt,
         fieldName: "commonalities",
+        category: "businessInsights",
       },
       {
         prompt: insightsPrompt,
         fieldName: "insights",
+        category: "businessInsights",
       },
       {
         prompt: discoveryPrompt,
         fieldName: "discovery",
+        category: "businessInsights",
       },
       {
         prompt: whyNotPrompt,
         fieldName: "whyNow",
+        category: "businessInsights",
+      },
+      {
+        prompt: awardsPrompt,
+        fieldName: "awards",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: interestsPrompt,
+        fieldName: "interests",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: educationPrompt,
+        fieldName: "education",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: relevantInsightsPrompt,
+        fieldName: "relevantInsights",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: similaritiesPrompt,
+        fieldName: "similarities",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: onlineMentionsPrompt,
+        fieldName: "onlineMentions",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: relevantActivitiesPrompt,
+        fieldName: "relevantActivities",
+        category: "personInsights",
+        getLinkedinData: true,
+      },
+      {
+        prompt: personConversationalStarterPrompt,
+        fieldName: "personConversationalStarters",
+        category: "personInsights",
+        getLinkedinData: true,
       },
     ];
 
     const promises = additionalPrompts.map(
-      async ({ prompt, fieldName }, index) => {
-        console.log(`===== Step ${index + 5}: Getting ${fieldName} =====`);
-
-        const response = await openai.responses.create({
-          model: "gpt-4.1",
-          tools: [{ type: "web_search_preview" }],
-          input: prompt,
-        });
-
-        console.log("Response:", response.output_text.trim());
-
-        let cleanResponse = response.output_text.trim();
-
-        const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-          cleanResponse = jsonMatch[1].trim();
-        } else if (cleanResponse.startsWith("```json")) {
-          cleanResponse = cleanResponse
-            .replace(/^```json\s*/, "")
-            .replace(/\s*```$/, "");
-        } else if (cleanResponse.startsWith("```")) {
-          cleanResponse = cleanResponse
-            .replace(/^```\s*/, "")
-            .replace(/\s*```$/, "");
-        }
-
-        let parsedResponse;
+      async ({ prompt, fieldName, category, getLinkedinData }, index) => {
         try {
-          parsedResponse = JSON.parse(cleanResponse);
+          console.log(`===== Step ${index + 5}: Getting ${fieldName} =====`);
+
+          if (getLinkedinData) {
+            const proxycurlApiKey = Deno.env.get("Proxycurl_API");
+            const url = new URL("https://enrichlayer.com/api/v2/profile");
+
+            // TODO: Change linkedin url
+            url.searchParams.set(
+              "url",
+              "https://www.linkedin.com/in/patrick-soe"
+            );
+            url.searchParams.set("use_cache", "if-present");
+
+            console.log("Making request to:", url.toString());
+
+            const response = await fetch(url.toString(), {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${proxycurlApiKey}`,
+              },
+            });
+
+            const linkedinData = await response.json();
+            prompt = prompt.replace(
+              "{linkedin_data}",
+              JSON.stringify(linkedinData)
+            );
+          }
+
+          const response = await openai.responses.create({
+            model: "gpt-4.1",
+            tools: [{ type: "web_search_preview" }],
+            input: prompt,
+          });
+
+          console.log(
+            `Response for ${fieldName}:`,
+            response.output_text.trim()
+          );
+
+          let cleanResponse = response.output_text.trim();
+
+          const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            cleanResponse = jsonMatch[1].trim();
+          } else if (cleanResponse.startsWith("```json")) {
+            cleanResponse = cleanResponse
+              .replace(/^```json\s*/, "")
+              .replace(/\s*```$/, "");
+          } else if (cleanResponse.startsWith("```")) {
+            cleanResponse = cleanResponse
+              .replace(/^```\s*/, "")
+              .replace(/\s*```$/, "");
+          }
+
+          let parsedResponse;
+          try {
+            parsedResponse = JSON.parse(cleanResponse);
+          } catch (error) {
+            console.error(`Failed to parse ${fieldName} output:`, error);
+            throw new Error(`Failed to parse AI response for ${fieldName}`);
+          }
+
+          result[category][fieldName] = parsedResponse;
+
+          return parsedResponse;
         } catch (error) {
-          console.error(`Failed to parse ${fieldName} output:`, error);
-          throw new Error(`Failed to parse AI response for ${fieldName}`);
+          result[category][fieldName] = [];
+          console.error(`---- Error getting ${fieldName}:`, error);
         }
-
-        result.businessInsights[fieldName] = parsedResponse;
-
-        return parsedResponse;
       }
     );
 
