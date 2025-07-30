@@ -77,12 +77,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    let { step_9_result } = progressData;
-    if (!step_9_result) {
-      step_9_result = [];
+    let { step_10_result } = progressData;
+    if (!step_10_result) {
+      step_10_result = [];
     }
 
-    const leadExists = step_9_result.find(
+    const leadExists = step_10_result.find(
       (savedLead) =>
         savedLead.unformatted_full_name === lead.unformatted_full_name
     );
@@ -2081,14 +2081,14 @@ Deno.serve(async (req) => {
     await Promise.all(promises);
 
     if (!leadExists) {
-      step_9_result.push({ ...lead, insights: result });
+      step_10_result.push({ ...lead, insights: result });
     }
 
     const { error: updateError } = await supabase
       .from("campaign_progress")
       .update({
-        latest_step: 9,
-        step_9_result: step_9_result,
+        latest_step: 10,
+        step_10_result: step_10_result,
       })
       .eq("id", campaignData.progress_id);
 
