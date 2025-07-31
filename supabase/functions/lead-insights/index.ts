@@ -1526,7 +1526,8 @@ Deno.serve(async (req) => {
       IMPORTANT: Return the answers in the following JSON format:
       [
         "school 1",
-        "school 2",
+        "school 2"
+      ]
     `;
 
     const relevantInsightsPrompt = `
@@ -1671,7 +1672,8 @@ Deno.serve(async (req) => {
       IMPORTANT: Return the answers in the following JSON format:
       [
         "similarity 1",
-        "similarity 2",
+        "similarity 2"
+      ]
     `;
 
     const onlineMentionsPrompt = `
