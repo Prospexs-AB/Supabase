@@ -87,12 +87,12 @@ Deno.serve(async (req) => {
         savedLead.unformatted_full_name === lead.unformatted_full_name
     );
 
-    // if (leadExists) {
-    //   return new Response(JSON.stringify(leadExists), {
-    //     headers: { ...corsHeaders, "Content-Type": "application/json" },
-    //     status: 200,
-    //   });
-    // }
+    if (leadExists) {
+      return new Response(JSON.stringify(leadExists), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
@@ -334,8 +334,8 @@ Deno.serve(async (req) => {
       user's offering directly addresses the lead company's challenges.
       Each solution should be written as a standalone paragraph (3-5 sentences) and should:
       - Clearly link the lead's pain point to the user's strength
-      - Use business-relevant language (e.g. “reduce compliance risk,” “increase lead conversion,”
-      “cut onboarding time”)
+      - Use business-relevant language (e.g. "reduce compliance risk," "increase lead conversion,"
+      "cut onboarding time")
       - Hint at what value or outcome this solution could unlock for the lead
       Do not explain or describe the user's company—only focus on how their product solves the
       lead's problems.
@@ -1479,7 +1479,7 @@ Deno.serve(async (req) => {
         "interest 1",
         "interest 2",
         "interest 3",
-        "interest 4",
+        "interest 4"
       ]
     `;
 
@@ -1845,8 +1845,8 @@ Deno.serve(async (req) => {
           "type": "The type of interaction",
           "link": "The link to the post or profile section",
           "when": "The date or time frame",
-          "relevance": "The relevance of the activity",
-        },
+          "relevance": "The relevance of the activity"
+        }
       ]
     `;
 
