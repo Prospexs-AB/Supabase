@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       apiKey: apiKey,
     });
 
-    const { lead_company_name } = lead;
+    const { lead_company_name, linkedin_url: lead_linkedin_url } = lead;
     const { step_3_result } = progressData;
 
     // STEP 1: Get details with challenges
@@ -1375,12 +1375,11 @@ Deno.serve(async (req) => {
 
     const { lead_simple_sales_link } = lead;
 
-    // TODO: Change linkedin url
     const awardsPrompt = `
       You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
       context, signals, and intent.
 
-      Your task is to review the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of
+      Your task is to review the following LinkedIn profile: ${lead_linkedin_url} data and extract a list of
       clear, concise, and notable achievements, such as:
       - Awards (e.g. “Leader of the Year 2022”)
       - Major milestones (e.g. “Promoted 3 times in 5 years”, “Worked at X for 10+ years”)
@@ -1389,7 +1388,7 @@ Deno.serve(async (req) => {
       - Certifications only if they are prestigious or well-known (e.g. PMP, CFA, Google Developer
       Expert)
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Output should be a bullet point list, with 1-2 lines per item max.
@@ -1433,14 +1432,13 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    // TODO: Change linkedin url
     const interestsPrompt = `
       You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
       context, signals, and intent.
-      Analyze the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of personal
+      Analyze the following LinkedIn profile: ${lead_linkedin_url} data and extract a list of personal
       interests and hobbies.
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Focus on:
@@ -1485,15 +1483,14 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    // TODO: Change linkedin url
     const educationPrompt = `
       You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
       context, signals, and intent.
 
-      Analyze the following LinkedIn profile: https://www.linkedin.com/in/patrick-soe data and extract a list of the educational
+      Analyze the following LinkedIn profile: ${lead_linkedin_url} data and extract a list of the educational
       institutions this person has attended.
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Focus only on:
@@ -1532,7 +1529,6 @@ Deno.serve(async (req) => {
         "school 2",
     `;
 
-    // TODO: Change linkedin url
     const relevantInsightsPrompt = `
       You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
       context, signals, and intent.
@@ -1555,7 +1551,7 @@ Deno.serve(async (req) => {
       - Conferences or events they've attended
       - Anything else from their public presence
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Keep it tight, real, and usable in a cold email or intro call.
@@ -1602,17 +1598,16 @@ Deno.serve(async (req) => {
     `;
 
     const {
-      step_5_result: { linkedin_profile },
+      step_5_result: { linkedin_url: user_linkedin_url, linkedin_profile },
     } = progressData;
 
-    // TODO: Change linkedin url
     const similaritiesPrompt = `
       You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
       context, signals, and intent.
       Your task is to identify genuine similarities between two people based on their LinkedIn
       profiles:
-      - X = the user of Prospexs (Linkedin URL: https://www.linkedin.com/in/patrick-soe)
-      - Y = the lead (Linkedin URL: https://www.linkedin.com/in/patrick-soe)
+      - X = the user of Prospexs (Linkedin URL: ${user_linkedin_url})
+      - Y = the lead (Linkedin URL: ${lead_linkedin_url})
 
       This is the linkedin data for "X" (the user of Prospexs): ${linkedin_profile}
 
@@ -1679,7 +1674,6 @@ Deno.serve(async (req) => {
         "similarity 2",
     `;
 
-    // TODO: Change linkedin url
     const onlineMentionsPrompt = `
       You are a strategic research analyst within a B2B prospecting engine.
       Your task is to find relevant mentions or signals connected to a specific lead, based on the
@@ -1724,7 +1718,7 @@ Deno.serve(async (req) => {
       Summary: In a recent podcast episode of SaaS GTM Deep Dives, Sarah Lindqvist (VP
       of Sales at Flowly) discussed how her team shifted from SDR-led to marketing-led
       pipeline generation in Q1 2024. She emphasized attribution challenges, cross-team
-      alignment, and her team’s focus on increasing average deal size.
+      alignment, and her team's focus on increasing average deal size.
       Link: https://example.com/sarah-lindqvist-podcast
       
       - Mention Type: TechCrunch Article
@@ -1750,7 +1744,7 @@ Deno.serve(async (req) => {
 
       - Mention Type: Customer Case Study (Company Blog)
       Summary: Mindbeam recently published a case study highlighting how pharmaceutical
-      company Axxira improved workflow compliance by 48% after switching to Mindbeam’s
+      company Axxira improved workflow compliance by 48% after switching to Mindbeam's
       platform. Although Nabil is not quoted directly, the project falls under his product team,
       suggesting relevance to his current priorities.
       Link: https://example.com/nabil-mindbeam-casestudy
@@ -1771,13 +1765,12 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    // TODO: Change linkedin url
     const relevantActivitiesPrompt = `
       You are a senior outbound strategist inside a B2B prospecting platform.
       Your task is to analyze a specific lead's recent LinkedIn activity to surface signals that could be
       useful for sales outreach or meeting prep.
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Focus on surfacing:
@@ -1855,13 +1848,12 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    // TODO: Change linkedin url
     const personConversationalStarterPrompt = `
       You are a senior outbound strategist inside a B2B prospecting engine.
       Your task is to generate relevant, natural, and timely conversation starters for ${lead.full_name}
       based on all available data.
 
-      This is the linkedin url: https://www.linkedin.com/in/patrick-soe
+      This is the linkedin url: ${lead_linkedin_url}
       This is the linkedin data: {linkedin_data}
 
       Input Context May Include:
@@ -2011,11 +2003,7 @@ Deno.serve(async (req) => {
             const proxycurlApiKey = Deno.env.get("Proxycurl_API");
             const url = new URL("https://enrichlayer.com/api/v2/profile");
 
-            // TODO: Change linkedin url
-            url.searchParams.set(
-              "url",
-              "https://www.linkedin.com/in/patrick-soe"
-            );
+            url.searchParams.set("url", lead_linkedin_url);
             url.searchParams.set("use_cache", "if-present");
 
             console.log("Making request to:", url.toString());
