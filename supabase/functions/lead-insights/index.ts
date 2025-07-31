@@ -2106,7 +2106,7 @@ Deno.serve(async (req) => {
         data: { ...lead, insights: result },
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
