@@ -723,6 +723,10 @@ Deno.serve(async (req) => {
         Add more usps, problems, and benefits if there are more, the example is just for reference.
         Avoid markdown or explanations. Format strictly as a single valid JSON object.
         Ensure the text is returned in the language code: ${language}.
+        Ensure that strings in the json object have proper quotes and are not escaped.
+
+        IMPORTANT: USE THE JSON FORMAT BELOW AND MAKE SURE ITS A VALID JSON OBJECT.
+        IMPORTANT: Make sure that the link for sources are not shown in the actual analysis description but put in the source array.
         Respond with only the JSON object such as:
         {
           "role": "Example Role",
@@ -734,21 +738,21 @@ Deno.serve(async (req) => {
               {
                 "title": "USP 1: Example USP",
                 "description": "Example USP Description",
-                "source": "https://example.com"
+                "source": ["https://example.com"]
               },
             ],
             "problems": [
               {
                 "title": "Problem 1: Example Problem",
                 "description": "Example Problem Description",
-                "source": "https://example.com"
+                "source": ["https://example.com"]
               },
             ],
             "benefits": [
               {
                 "title": "Benefit 1: Example Benefit",
                 "description": "Example Benefit Description",
-                "source": "https://example.com"
+                "source": ["https://example.com"]
               },
             ]
           }
@@ -767,6 +771,14 @@ Deno.serve(async (req) => {
       console.log("Successfully analyzed content with OpenAI");
       const analysis = openAiResponse.output_text;
       console.log("OpenAI analysis:", analysis);
+      console.log(
+        "OpenAI analysis preview:",
+        analysis.substring(0, analysis.length)
+      );
+      console.log(
+        "OpenAI analysis end:",
+        analysis.substring(analysis.length - 500)
+      );
 
       let cleanAnalysis = analysis.trim();
       if (cleanAnalysis.startsWith("```json")) {
@@ -778,6 +790,23 @@ Deno.serve(async (req) => {
           .replace(/^```\s*/, "")
           .replace(/\s*```$/, "");
       }
+
+      // Check if the JSON is properly closed
+      if (!cleanAnalysis.endsWith("}")) {
+        console.log("JSON appears to be truncated, attempting to fix...");
+        // Find the last complete object by looking for the last closing brace
+        const lastBraceIndex = cleanAnalysis.lastIndexOf("}");
+        if (lastBraceIndex > 0) {
+          cleanAnalysis = cleanAnalysis.substring(0, lastBraceIndex + 1);
+          console.log("Truncated JSON to last complete object");
+        }
+      }
+
+      // Fix incomplete source arrays
+      cleanAnalysis = cleanAnalysis.replace(
+        /"source":\s*\[([^\]]*?)(?:\n|$)/g,
+        '"source": [$1]'
+      );
 
       const parsedAnalysis = JSON.parse(cleanAnalysis);
       console.log("Parsed analysis:", parsedAnalysis);
