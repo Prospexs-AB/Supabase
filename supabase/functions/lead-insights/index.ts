@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
     const leadExists = step_10_result.find(
       (savedLead) =>
-        savedLead.unformatted_full_name === lead.unformatted_full_name
+        savedLead.unformatted_full_name === lead.full_name
     );
 
     // if (leadExists) {
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       apiKey: apiKey,
     });
 
-    const { lead_company_name, linkedin_url: lead_linkedin_url } = lead;
+    const { company_name: lead_company_name, linkedin_url: lead_linkedin_url } = lead;
     const { step_3_result } = progressData;
 
     // STEP 1: Get details with challenges
@@ -1378,8 +1378,6 @@ Deno.serve(async (req) => {
     //     }
     //   ]
     // `;
-
-    const { lead_simple_sales_link } = lead;
 
     // const awardsPrompt = `
     //   You are a senior strategist specializing in analyzing LinkedIn profiles to uncover business
