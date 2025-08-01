@@ -151,214 +151,6 @@ Deno.serve(async (req) => {
 
     const zenrowsContent = cleanHtmlContent(html);
 
-    // const prompt = `
-    //   Write a brief but comprehensive analysis for ${company_name} based on the following content from their website ${company_website} and any other verifiable sources.
-    //   Avoid unnecessary details or lengthy descriptions.
-    //   Focus on the most important details while keeping it concise.
-
-    //   MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language_code}.
-    //   FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
-
-    //   This is the summary of the company thats been generated:
-    //   ${content}
-
-    //   This it the raw content from the website:
-    //   ${zenrowsContent}
-
-    //   Use the content above to create the analysis and also search the web for latest information about the company to add relevant points.
-    //   Cover these key points, but be selective and focus on the most significant verified information:
-
-    //   1. **Unique Selling Points:**
-    //   2. **Problem Solved:**
-    //   3. **Benefits:**
-
-    //   Here is the scenario for the unique selling points analysis:
-
-    //   You are a senior industry analyst at a top global consultancy.
-    //   Your task is to identify 5 Unique Selling Propositions (USPs) of the company listed below.
-    //   Use only:
-    //   - The company's official website
-    //   - Verifiable, publicly available information (such as product pages, news, pricing, press
-    //   releases, customer logos, or use cases)
-
-    //   Only include what is explicitly stated or strongly supported by the company's materials. Do not
-    //   make assumptions or fabricate details.
-    //   Each USP must:
-    //   - Be specific and clearly grounded in facts
-    //   - Highlight what makes the company stand out from competitors
-    //   - Include any available figures, adoption stats, named customers, or technical differentiators
-    //   - Be useful for matching with other companies facing challenges this company can solve
-
-    //   Examples of USPs for www.legora.com:
-    //   USP 1: AI-Native “Tabular Review” That Transforms Legal Document Analysis
-    //   Legora's core innovation—“tabular review” - converts unstructured legal documents into
-    //   structured, sortable data tables. This allows legal professionals to analyze 50-100 contracts
-    //   simultaneously, reducing manual review time by up to 90%. In a sector where junior hours are
-    //   under cost pressure and partner margins are thinning, this feature transforms document-heavy
-    //   workflows like M&A and financing. Compared to AI summarization tools, Legora's data-first
-    //   approach offers measurable operational leverage, not just convenience.
-
-    //   USP 2: Rapid Global Penetration Across Top-Tier Firms
-    //   Legora has secured 250+ law firms as customers across 20+ countries since its 2023 launch,
-    //   including industry heavyweights such as Cleary Gottlieb, Bird & Bird, and Mannheimer
-    //   Swartling. This pace of adoption—faster than Ironclad and rivaling Harvey—is exceptional in a
-    //   sector where procurement cycles typically range from 9 to 18 months. It signals high
-    //   product-market fit, trust in the underlying AI model, and strong early-stage GTM execution.
-
-    //   USP 3: Aggressively Funded with Strategic Backers and Deep Capital Access
-    //   With over $115M raised and a valuation of ~$675M as of May 2025, Legora is one of the
-    //   fastest-capitalized players in the legal tech sector. Investors include ICONIQ Growth, General
-    //   Catalyst, and unicorn founders from Klarna and Spotify. This not only validates the company's
-    //   strategic relevance but ensures multi-year runway to expand globally, invest in custom AI
-    //   tooling, and defend against emerging challengers in a consolidating space.
-
-    //   USP 4: Deep Workflow Embedding Through Word Add-Ins and Chat Interfaces
-    //   Unlike many competitors that remain siloed in their UI, Legora integrates directly into Microsoft
-    //   Word via a native add-in, allowing lawyers to access AI insights, clause suggestions, and data
-    //   extraction tools within the environment they already use daily. Combined with legal-specific
-    //   chatbots and AI agents, this lowers switching friction, drives daily active use, and creates
-    //   defensible workflow lock-in—critical in professional services where behavioral inertia is high.
-
-    //   USP 5: Product-Led Growth Culture with a Lean, Cross-Disciplinary Team
-    //   Legora operates with a 100-person team distributed across Stockholm, London, and New York -
-    //   balancing legal domain expertise with world-class product and engineering talent from Spotify,
-    //   Klarna, and Google. This allows the company to ship rapidly, iterate directly with customers, and
-    //   avoid the bloated product timelines that plague legacy legal software vendors. The lean team
-    //   model is also capital-efficient, with high ROI per employee.
-
-    //   Here is the scenario for the problem solved analysis:
-
-    //   You are a senior industry analyst at a top global consultancy. Your task is to identify five
-    //   specific problems or inefficiencies that the company below helps its customers solve.
-    //   Use only verifiable and factual information from:
-    //   - The company's official website
-    //   - Public product documentation, feature pages, case studies, testimonials, or relevant press
-    //   coverage
-
-    //   Do not make assumptions or fabricate details. If a problem is implied but not backed by clear
-    //   evidence, include the note:
-    //   “The company does not provide specific figures or examples to support this claim.”
-    //   Each problem should:
-    //   - Be written in clear, practical business terms (e.g. manual workload, compliance complexity,
-    //   data visibility issues)
-    //   - Be directly linked to how the company's product or service addresses it
-    //   - Include real metrics, named customers, or outcome-based language where available
-    //   - Be tangible and actionable — avoid abstract or generic phrasing
-    //   Only include what is explicitly stated or strongly supported by the company's materials. Do not
-    //   make assumptions or fabricate details.
-
-    //   Examples of Problems Solved for www.legora.com:
-    //   Problems Solved 1: Manual Contract Review is a Bottleneck and Profitability Drag
-    //   Even at the most sophisticated firms, associates spend thousands of hours annually extracting
-    //   data from contracts - a task ripe for automation. Legora removes this bottleneck, freeing up
-    //   legal capacity for higher-margin work and reducing the need for document review outsourcing.
-    //   In fixed-fee environments, this improves project profitability by as much as 30 - 40% per
-    //   engagement.
-
-    //   Problems Solved 2: Legacy Legal Software Is Clunky, Fragmented, and Poorly Designed
-    //   Traditional legal tech tools -often developed 10+ years ago - prioritize function over usability,
-    //   resulting in steep learning curves and poor adoption. Legora's clean UI, intuitive UX, and
-    //   real-time collaboration tools are modeled on consumer-grade platforms (e.g. Notion, Airtable),
-    //   making onboarding faster and daily use more seamless. This is especially attractive to younger
-    //   associates and digital-native in-house counsel.
-
-    //   Problems Solved 3: Cross-Document Analysis is Practically Impossible at Scale
-    //   Legal teams frequently need to compare dozens of agreements for anomalies - yet no legacy
-    //   tool enables this natively. Legora's tabular comparison format allows clause-level analysis
-    //   across large document sets, replacing hours of toggling between PDFs with actionable insights.
-    //   This is particularly impactful in capital markets, real estate, and fund operations.
-
-    //   Problem Solved 4: Legal AI Adoption is Stifled by Trust and Risk Concerns
-    //   Many firms remain wary of AI “hallucination” in legal applications. Legora mitigates this risk by
-    //   focusing on extraction, not generation. Its model is deterministic - reading and structuring exact
-    //   contract language rather than inventing legal summaries - making it far more trustworthy in
-    //   regulated environments and under legal liability standards.
-
-    //   Problem Solved 5: Legal Data Lives in Silos, Blocking Operational Insight
-    //   Most law firms and legal departments are sitting on thousands of documents with no searchable
-    //   structure. This blocks analytics, slows risk assessments, and creates audit complexity. Legora
-    //   solves this by making all uploaded documents queryable via tags, filters, and structured fields -
-    //   turning legal archives into living datasets.
-
-    //   Here is the scenario for the benefits analysis:
-    //   You are a senior industry analyst at a top global consultancy.
-    //   You are analyzing this company to understand what benefits it provides to its customers. Based
-    //   on the company's website and other public, verifiable sources (case studies, testimonials,
-    //   product descriptions), identify 5 tangible benefits customers receive.
-    //   Use only:
-    //   - The company's official website
-    //   - Verifiable, publicly available information (such as product pages, news, pricing, press
-    //   releases, customer logos, or use cases)
-    //   Only include what is explicitly stated or strongly supported by the company's materials. Do not
-    //   make assumptions or fabricate details.
-    //   Each benefit must:
-    //   - Be framed from the customer's perspective
-    //   - Focus on clear, measurable value (e.g. time saved, costs reduced, conversions increased)
-    //   - Include numbers, named customers, quotes, or feature references when available
-    //   - Be helpful for identifying companies that would value these outcomes
-
-    //   Examples of Benefits for www.legora.com:
-    //   1. Material Time and Cost Reductions Across Core Legal Processes
-    //   Firms using Legora report time savings of up to 90% in contract review, especially in workflows
-    //   like due diligence, commercial lease reviews, and regulatory audits. This allows law firms to
-    //   either increase throughput without hiring or price more competitively in fixed-fee
-    //   engagements—a growing segment driven by client demand for cost predictability. For in-house
-    //   legal teams, it means faster decisions and leaner legal ops.
-
-    //   2. Structured Legal Data Enables Strategic, Not Just Operational, Value
-    //   By turning contracts into structured datasets, Legora moves legal teams from case-by-case
-    //   review to portfolio-level insight. This allows firms to identify systemic exposure (e.g. termination
-    //   clauses across leases) and gives in-house teams the ability to benchmark risks across
-    //   geographies or subsidiaries. Few platforms in legal tech provide this level of operational
-    //   intelligence without extensive post-processing.
-
-    //   3. High Client Involvement in Product Development Drives Relevance
-    //   Unlike traditional vendors that ship generic solutions, Legora co-develops features with clients
-    //   like Goodwin. This ensures its roadmap aligns with real-world legal workflows rather than
-    //   assumptions. The result: higher adoption, reduced churn risk, and increased customer lifetime
-    //   value. In consultancy terms, this “co-creation loop” is a moat in itself.
-
-    //   4. Enterprise-Grade Scalability for Global Legal Operations
-    //   Legora's architecture supports multilingual document review and deployment across multiple
-    //   legal jurisdictions. This enables global law firms and multinational legal departments to
-    //   consolidate tools across borders, reducing vendor fragmentation. The scalability is further
-    //   reinforced by API integrations with CRM, DMS, and e-billing systems - making Legora a system
-    //   of record, not just a tool.
-
-    //   5. Audit-Ready Outputs Support Governance and Compliance at Scale
-    //   Legora's structured exports - down to party names, payment triggers, and obligations—are
-    //   formatted for compliance reporting and internal audits. This eliminates the error-prone,
-    //   copy-paste approach common in Excel or Word and reduces downstream liability. For regulated
-    //   sectors like finance and energy, this transforms legal from a bottleneck to a strategic partner in
-    //   risk management.
-
-    //   Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-    //   Use the example above as a reference for the analysis and each point should be descriptive if possible having 2-3 sentences unless more are needed.
-    //   Each value should be more than 1 sentence.
-    //   The source should be the just the full url of the page where the information is from.
-    //   Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
-    //   {
-    //     "unique_selling_points": [
-    //       {
-    //         "value": "your analysis here",
-    //         "source": "your source here"
-    //       }
-    //     ],
-    //     "problem_solved": [
-    //       {
-    //         "value": "your analysis here",
-    //         "source": "your source here"
-    //       }
-    //     ],
-    //     "benefits": [
-    //       {
-    //         "value": "your analysis here",
-    //         "source": "your source here"
-    //       }
-    //     ],
-    //   }
-    // `;
-
     const uspPrompt = `
       You are a senior industry analyst at a top global consultancy.
 
@@ -398,7 +190,7 @@ Deno.serve(async (req) => {
       - Comparative framing: Where possible, compare to industry averages or competitors to
       make the USP stand out.
 
-      Citations: Provide the source name + URL for every figure or named claim.
+      Citations: Provide the source URL for every figure or named claim.
       No generic claims: Avoid unverified statements or vague marketing copy. Every assertion must
       be backed by evidence.
       
@@ -407,7 +199,7 @@ Deno.serve(async (req) => {
       - [Paragraph 1: Context + core USP + metrics]
       - [Paragraph 2: Supporting data + customer example + differentiation]
       - [Paragraph 3: Market implications + strategic insight]
-      Sources: [Name + URL]
+      Sources: [URL]
       (Repeat for all 5 USPs)
 
       Examples of Benefits for www.legora.com:
@@ -520,13 +312,13 @@ Deno.serve(async (req) => {
       within the C-suite.
 
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       [
         {
           "title": "your title here",
-          "value": "your analysis here",
-          "source": "your source here"
+          "value": "your analysis here (no links here!!)",
+          "source": ["your source here", "your source here"]
         }
       ]
     `;
@@ -578,7 +370,7 @@ Deno.serve(async (req) => {
       - [Paragraph 1: Problem + market context + metrics]
       - [Paragraph 2: Impact + supporting data + customer example]
       - [Paragraph 3: How ${company_website} solves it + why it's different]
-      Sources: [Name + URL]
+      Sources: [URL]
 
       Examples of Problems Solved for www.jobandtalent.com:
 
@@ -699,13 +491,13 @@ Deno.serve(async (req) => {
       environments.
 
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       [
         {
           "title": "your title here",
-          "value": "your analysis here",
-          "source": "your source here"
+          "value": "your analysis here (no links here!!)",
+          "source": ["your source here", "your source here"]
         }
       ]
     `;
@@ -744,7 +536,7 @@ Deno.serve(async (req) => {
       - Strategic implication: Briefly analyze how this benefit helps customers achieve broader
       business goals (e.g., profitability, compliance, scalability).
 
-      Sources: Use multiple independent sources for each benefit. Provide source name + URL for
+      Sources: Use multiple independent sources for each benefit. Provide source URL for
       every figure or named claim.
 
       No generic claims: Avoid vague statements or unverified marketing copy. Every assertion must
@@ -755,7 +547,7 @@ Deno.serve(async (req) => {
       - [Paragraph 1: Context + core benefit + metrics]
       - [Paragraph 2: Supporting data + customer example + differentiation]
       - [Paragraph 3: Strategic implication + market context]
-      Sources: [Name + URL]
+      Sources: [URL]
       (Repeat for all 5 benefits)
 
       Examples of Benefits for www.jobandtalent.com:
@@ -865,14 +657,14 @@ Deno.serve(async (req) => {
       enterprises operating on tight margins, this automation-driven efficiency provides a
       measurable competitive edge.
 
-      Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-
+      Please analyze the content and create a company analysis following this structure AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
       [
         {
           "title": "your title here",
-          "value": "your analysis here",
-          "source": "your source here"
+          "value": "your analysis here (no links here!!)",
+          "source": ["your source here", "your source here"]
         }
       ]
     `;
