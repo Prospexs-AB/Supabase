@@ -77,6 +77,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // type ToneOption =
+    //   | "Humorous"
+    //   | "Diplomatic"
+    //   | "Formal"
+    //   | "Casual"
+    //   | "Excited";
+    // type LengthOption =
+    //   | "Short & Concise"
+    //   | "Long & Informative"
+    //   | "Medium Length";
+    // type EmailTypeOption =
+    //   | "Book a meeting"
+    //   | "Follow up"
+    //   | "Introduction"
+    //   | "Proposal"
+    //   | "Thank you";
+
     return new Response(JSON.stringify({}), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
