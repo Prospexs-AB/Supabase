@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
     const leadExists = step_10_result.find(
       (savedLead) =>
-        savedLead.unformatted_full_name === lead.full_name
+        savedLead.full_name === lead.full_name
     );
 
     // if (leadExists) {
