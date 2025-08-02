@@ -14,24 +14,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
-const getUserId = async (req: Request, supabase: SupabaseClient) => {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    throw new Error("Authorization header is required");
-  }
-  const token = authHeader.replace("Bearer ", "");
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    throw new Error("Invalid or expired token");
-  }
-
-  return user.id;
-};
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -47,14 +29,43 @@ Deno.serve(async (req) => {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
     );
 
-    const userId = await getUserId(req, supabase);
-    const { campaign_id, lead } = await req.json();
+    console.log("========== Starting job processing ==========");
+
+    const { data: jobData, error: jobError } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("status", "queued")
+      .single();
+
+    if (jobError) {
+      console.error("Error getting job:", jobError);
+      return new Response(JSON.stringify({ error: jobError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const { error: firrstUpdateJobError } = await supabase
+      .from("jobs")
+      .update({ status: "processing" })
+      .eq("id", jobData.id);
+
+    if (firrstUpdateJobError) {
+      console.error("Error updating job:", firrstUpdateJobError);
+      return new Response(JSON.stringify({ error: firrstUpdateJobError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const { campaign_id, progress_data } = jobData;
+
+    console.log("Prosessing job for campaign:", campaign_id);
 
     const { data: campaignData, error: campaignError } = await supabase
       .from("campaigns")
       .select("*")
       .eq("id", campaign_id)
-      .eq("user_id", userId)
       .single();
 
     if (campaignError) {
@@ -84,26 +95,12 @@ Deno.serve(async (req) => {
 
     const {
       step_1_result: { language },
-      step_10_result,
     } = progressData;
-    const savedLead = step_10_result.find(
-      (savedLead) => savedLead.full_name === lead.full_name
-    );
-
-    console.log("savedLead", savedLead);
-
-    if (!savedLead) {
-      throw new Error(
-        `Lead with full_name "${lead.full_name}" not found in step_10_result`
-      );
-    }
 
     const { company_name: lead_company_name, linkedin_url: lead_linkedin_url } =
-      savedLead;
-    const { businessInsights } = savedLead.insights;
-    const updatedLead = JSON.parse(JSON.stringify(savedLead));
-
-    console.log("updatedLead", updatedLead);
+      progress_data;
+    const { businessInsights } = progress_data.insights;
+    const updatedLead = JSON.parse(JSON.stringify(progress_data));
 
     const conversationStarterPrompt = `
       You are a senior B2B strategist at a top-tier consultancy preparing for high-level outreach or
@@ -1056,7 +1053,7 @@ Deno.serve(async (req) => {
 
       Replace X and Y with the actual names of the user of Prospexs and the lead.
       X name: ${linkedin_profile.full_name}
-      Y name: ${lead.full_name}
+      Y name: ${progress_data.full_name}
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
@@ -1071,9 +1068,9 @@ Deno.serve(async (req) => {
       You are a strategic research analyst within a B2B prospecting engine.
       Your task is to find relevant mentions or signals connected to a specific lead, based on the
       following input:
-      - Name: ${lead.full_name}
-      - Job Title: ${lead.job_title}
-      - Company: ${lead.company_name}
+      - Name: ${progress_data.full_name}
+      - Job Title: ${progress_data.job_title}
+      - Company: ${progress_data.company_name}
 
       TIER 1 - Mentions of the Lead (First Priority)
       Search for:
@@ -1245,7 +1242,7 @@ Deno.serve(async (req) => {
 
     const personConversationalStarterPrompt = `
       You are a senior outbound strategist inside a B2B prospecting engine.
-      Your task is to generate relevant, natural, and timely conversation starters for ${lead.full_name}
+      Your task is to generate relevant, natural, and timely conversation starters for ${progress_data.full_name}
       based on all available data.
 
       This is the linkedin url: ${lead_linkedin_url}
@@ -1464,8 +1461,47 @@ Deno.serve(async (req) => {
 
     await Promise.all(promises);
 
+    // Save lead to progress database
+    let { step_10_result } = progressData;
+    if (!step_10_result) {
+      step_10_result = [];
+    }
+    step_10_result.push(updatedLead);
+
+    const { error: updateProgressError } = await supabase
+      .from("campaign_progress")
+      .update({ step_10_result })
+      .eq("id", campaignData.progress_id);
+
+    if (updateProgressError) {
+      console.error("Error updating campaign progress:", updateProgressError);
+      return new Response(
+        JSON.stringify({ error: updateProgressError.message }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+
+    const { error: updateJobError } = await supabase
+      .from("jobs")
+      .update({ status: "completed" })
+      .eq("id", jobData.id);
+
+    if (updateJobError) {
+      console.error("Error updating job:", updateJobError);
+      return new Response(JSON.stringify({ error: updateJobError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
     return new Response(
-      JSON.stringify({ message: "Success", data: updatedLead }),
+      JSON.stringify({
+        message: "Success",
+        data: updatedLead,
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
