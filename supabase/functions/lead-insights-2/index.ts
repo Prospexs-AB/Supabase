@@ -14,6 +14,26 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
+/**
+ * Cleans a domain by removing protocol (http://, https://) and www prefix
+ * @param domain - The domain to clean
+ * @returns Cleaned domain without protocol and www
+ */
+const cleanDomain = (domain: string): string => {
+  if (!domain) return "";
+
+  // Remove protocol (http:// or https://)
+  let cleaned = domain.replace(/^https?:\/\//, "");
+
+  // Remove www prefix
+  cleaned = cleaned.replace(/^www\./, "");
+
+  // Remove trailing slash
+  cleaned = cleaned.replace(/\/$/, "");
+
+  return cleaned;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -54,10 +74,13 @@ Deno.serve(async (req) => {
 
     if (firrstUpdateJobError) {
       console.error("Error updating job:", firrstUpdateJobError);
-      return new Response(JSON.stringify({ error: firrstUpdateJobError.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
+      return new Response(
+        JSON.stringify({ error: firrstUpdateJobError.message }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
     }
 
     const { campaign_id, progress_data } = jobData;
@@ -1462,6 +1485,30 @@ Deno.serve(async (req) => {
     );
 
     await Promise.all(promises);
+
+    const generectApiKey = "9923f958608bb3dd9e446506c6213706b46de708";
+    const generectUrl = "https://api.generect.com/api/linkedin/email_finder/";
+    const generectHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Token ${generectApiKey}`,
+    };
+
+    const generectBody = [
+      {
+        first_name: progress_data.first_name,
+        last_name: progress_data.last_name,
+        domain: cleanDomain(progress_data.company_website),
+      },
+    ];
+    const generectResponse = await fetch(generectUrl, {
+      method: "POST",
+      headers: generectHeaders,
+      body: JSON.stringify(generectBody),
+    });
+
+    const generectData = await generectResponse.json();
+    const email = generectData[0]?.valid_email;
+    updatedLead.email = email;
 
     // Save lead to progress database
     let { step_10_result } = progressData;
