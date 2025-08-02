@@ -119,6 +119,9 @@ async function generateEmailComponent(prompt) {
     const openai = new OpenAI({
       apiKey: OPENAI_API_KEY,
     });
+
+    console.log("prompt", prompt);
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -140,6 +143,8 @@ async function generateEmailComponent(prompt) {
           - Keep content within the specified word count
           - Focus on value proposition and mutual benefit
           - End with clear, non-pushy calls to action
+
+          IMPORTANT: Use actual names provided in the context for sender and receiver.
           
           Write in a way that feels like a genuine human reaching out, not an automated message.`,
         },
@@ -275,6 +280,8 @@ async function generateEmail1(
     Sender: ${context.senderContext}
     Receiver: ${context.receiverContext}
     Company Facts: ${context.receiverCompanyFacts}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word HPEF paragraph with 2-4 sentences in a ${tone.toLowerCase()} tone.
   `;
@@ -325,6 +332,8 @@ async function generateEmail1(
     Context:
     Sender Company: ${context.senderCompanyDetails}
     Best Challenge/Solution: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word value proposition paragraph in a ${tone.toLowerCase()} tone.
   `;
@@ -356,6 +365,8 @@ async function generateEmail1(
     Context:
     Receiver Company Facts: ${context.receiverCompanyFacts}
     HPEF: ${hpef}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word TTB paragraph with 2-4 sentences in a ${tone.toLowerCase()} tone.
   `;
@@ -380,6 +391,8 @@ async function generateEmail1(
     Context:
     Sender Company: ${context.senderCompanyDetails}
     Receiver Company: ${context.receiverCompanyDetails}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word objection handling paragraph in a ${tone.toLowerCase()} tone.
   `;
@@ -405,6 +418,8 @@ async function generateEmail1(
     Context:
     Sender Availability: ${context.senderAvailability}
     Current Date: ${context.currentDay}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word call to action paragraph in a ${tone.toLowerCase()} tone.
   `;
@@ -492,6 +507,8 @@ async function generateEmail2(
     Previous Email: ${previousEmails}
     Sender: ${senderDetails.person?.name || ""}
     Receiver: ${receiverDetails.person?.name || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a ${wordCount} word follow-up email in a ${tone.toLowerCase()} tone.
   `;
@@ -539,6 +556,8 @@ async function generateEmail3(
     Previous Emails: ${previousEmails}
     Sender: ${senderDetails.person?.name || ""}
     Receiver: ${receiverDetails.person?.name || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write a compelling subject line in a ${tone.toLowerCase()} tone.
   `;
@@ -574,6 +593,8 @@ async function generateEmail3(
     Context:
     Previous Emails: ${previousEmails}
     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 1 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -600,6 +621,8 @@ async function generateEmail3(
     Context:
     Previous Emails: ${previousEmails}
     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 2 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -626,6 +649,8 @@ async function generateEmail3(
     Context:
     Previous Emails: ${previousEmails}
     Sender Availability: ${senderDetails.availability || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 3 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -712,6 +737,8 @@ async function generateEmail4(
     Context:
     Previous Emails: ${previousEmails}
     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 1 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -737,6 +764,8 @@ async function generateEmail4(
     Context:
     Previous Emails: ${previousEmails}
     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 2 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -763,6 +792,8 @@ async function generateEmail4(
     Context:
     Previous Emails: ${previousEmails}
     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 3 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -789,6 +820,8 @@ async function generateEmail4(
     Context:
     Previous Emails: ${previousEmails}
     Sender Availability: ${senderDetails.availability || ""}
+
+    IMPORTANT: Use actual names provided in the context for sender and receiver.
     
     Write paragraph 4 (${wordCount} words) in a ${tone.toLowerCase()} tone.
   `;
@@ -877,6 +910,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    const {
+      step_5_result: {
+        linkedin_profile: { full_name: sender_name },
+      },
+    } = progressData;
+
     // Transform lead data into receiver_details format
     const receiver_details = {
       person: {
@@ -926,7 +965,7 @@ Deno.serve(async (req) => {
     // Transform campaign/progress data into sender_details format
     const sender_details = {
       person: {
-        name: progressData.sender_name || "Your Name",
+        name: sender_name || "Your Name",
         facts:
           progressData.sender_bio ||
           "Experienced professional in data solutions and business transformation",
