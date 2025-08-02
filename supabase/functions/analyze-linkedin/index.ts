@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
 
     const new_latest_step = 5;
     const cleanFurtherProgress = {};
-    for (let x = new_latest_step + 1; x <= 9; x++) {
+    for (let x = new_latest_step + 1; x <= 10; x++) {
       const keyName = `step_${x}_result`;
       cleanFurtherProgress[keyName] = null;
     }
