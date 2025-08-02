@@ -35,6 +35,8 @@ Deno.serve(async (req) => {
       .from("jobs")
       .select("*")
       .eq("status", "queued")
+      .order("created_at", { ascending: true })
+      .limit(1)
       .single();
 
     if (jobError) {
