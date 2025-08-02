@@ -82,7 +82,10 @@ Deno.serve(async (req) => {
       apiKey: apiKey,
     });
 
-    const { step_10_result } = progressData;
+    const {
+      step_1_result: { language },
+      step_10_result,
+    } = progressData;
     const savedLead = step_10_result.find(
       (savedLead) => savedLead.full_name === lead.full_name
     );
@@ -194,6 +197,7 @@ Deno.serve(async (req) => {
       downstream implications for merchants who might want to own this layer themselves? Is there a
       play here for Stripe to become the de facto optimization layer, not just the processor?
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -316,6 +320,7 @@ Deno.serve(async (req) => {
       companies are winning in the decentralized operations economy—where business is global
       from day one, and infrastructure needs to be borderless, automated, and compliant.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -419,6 +424,7 @@ Deno.serve(async (req) => {
       that recruiters gather pertinent information, streamlining the screening process and improving
       the quality of applicant data.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Make sure that the link for sources are not shown in the actual analysis description.
       IMPORTANT: Return the answers in the following JSON format:
@@ -597,6 +603,7 @@ Deno.serve(async (req) => {
       Stripe can help simplify multi-currency revenue recognition and offer richer financial
       dashboards, especially for CFO-level reporting.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -739,6 +746,7 @@ Deno.serve(async (req) => {
       financial data by region. If Remote waits, it risks ballooning ops costs and missing expansion
       targets in regions where payment preferences matter.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -800,6 +808,7 @@ Deno.serve(async (req) => {
       Swedish Tech Awards (2022).
       Example Award & Recognition 10: Received CEO's Performance Award at H&M Group.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -851,6 +860,7 @@ Deno.serve(async (req) => {
 
       If there are no interests or hobbies, return an empty array.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -900,6 +910,7 @@ Deno.serve(async (req) => {
       - Copenhagen Business School
       - HEC Paris
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -962,6 +973,7 @@ Deno.serve(async (req) => {
       three product leaders from her team - possibly open to solutions that tighten
       marketing-product alignment.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -1046,6 +1058,7 @@ Deno.serve(async (req) => {
       X name: ${linkedin_profile.full_name}
       Y name: ${lead.full_name}
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -1129,6 +1142,7 @@ Deno.serve(async (req) => {
       suggesting relevance to his current priorities.
       Link: https://example.com/nabil-mindbeam-casestudy
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -1215,6 +1229,7 @@ Deno.serve(async (req) => {
       Relevance: Signals a new role and likely open priorities — perfect window to introduce
       new tools or explore co-marketing, integrations, or partnerships.
 
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Return the answers in the following JSON format:
       [
@@ -1285,6 +1300,7 @@ Deno.serve(async (req) => {
       acquisition strategy or if you're doubling down on something totally different.
 
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT: Return the answers in the following JSON format:
       [
         {
