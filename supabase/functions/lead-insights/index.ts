@@ -93,6 +93,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: jobData, error: jobError } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("campaign_id", campaign_id);
+
+    const jobExists = jobData.find(
+      (job) => job.progress_data.full_name === lead.full_name
+    );
+    console.log("jobExists", jobExists);
+
+    if (jobExists) {
+      return new Response(
+        JSON.stringify({
+          message: `Job already exists for ${lead.full_name}`,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
       apiKey: apiKey,
