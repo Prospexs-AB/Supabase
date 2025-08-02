@@ -86,12 +86,12 @@ Deno.serve(async (req) => {
       (savedLead) => savedLead.full_name === lead.full_name
     );
 
-    // if (leadExists) {
-    //   return new Response(JSON.stringify(leadExists), {
-    //     headers: { ...corsHeaders, "Content-Type": "application/json" },
-    //     status: 200,
-    //   });
-    // }
+    if (leadExists) {
+      return new Response(JSON.stringify(leadExists), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
@@ -739,25 +739,11 @@ Deno.serve(async (req) => {
 
     result.businessInsights.challengesWithSolutions = impactsOfSolutions;
 
-    if (!leadExists) {
-      step_10_result.push({ ...lead, insights: result });
-    }
-
-    const { error: updateError } = await supabase
-      .from("campaign_progress")
-      .update({
-        latest_step: 10,
-        step_10_result: step_10_result,
-      })
-      .eq("id", campaignData.progress_id);
-
-    if (updateError) {
-      console.error("Error updating campaign progress:", updateError);
-      return new Response(JSON.stringify({ error: updateError.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
+    await supabase.from("jobs").insert({
+      campaign_id: campaign_id,
+      status: "queued",
+      progress_data: { ...lead, insights: result },
+    });
 
     return new Response(
       JSON.stringify({
