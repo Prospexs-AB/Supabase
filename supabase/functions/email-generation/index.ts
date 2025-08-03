@@ -238,28 +238,23 @@ async function generateEmail1(
     - Never put the receiver's first name in the first sentence
     
     Tone Guidelines:
-    ${
-      tone === "Humorous"
-        ? "- Include light humor, witty observations, or playful language"
-        : ""
+    ${tone === "Humorous"
+      ? "- Include light humor, witty observations, or playful language"
+      : ""
     }
-    ${
-      tone === "Diplomatic"
-        ? "- Use measured, respectful language with careful word choice"
-        : ""
+    ${tone === "Diplomatic"
+      ? "- Use measured, respectful language with careful word choice"
+      : ""
     }
-    ${
-      tone === "Formal"
-        ? "- Maintain professional, business-appropriate language"
-        : ""
+    ${tone === "Formal"
+      ? "- Maintain professional, business-appropriate language"
+      : ""
     }
-    ${
-      tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
+    ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
     }
-    ${
-      tone === "Excited"
-        ? "- Use enthusiastic, energetic language with positive energy"
-        : ""
+    ${tone === "Excited"
+      ? "- Use enthusiastic, energetic language with positive energy"
+      : ""
     }
     
     Anchor Checklist (use 1-2 in this order):
@@ -312,17 +307,16 @@ async function generateEmail1(
     - Conclude with Advanced Features or Future Potential
     
     Rules:
-    - The tone should feel ${tone.toLowerCase()} and ${
-    tone === "Casual"
+    - The tone should feel ${tone.toLowerCase()} and ${tone === "Casual"
       ? "relaxed"
       : tone === "Formal"
-      ? "professional"
-      : tone === "Excited"
-      ? "energetic"
-      : tone === "Humorous"
-      ? "witty"
-      : "measured"
-  }, not like a formal sales pitch
+        ? "professional"
+        : tone === "Excited"
+          ? "energetic"
+          : tone === "Humorous"
+            ? "witty"
+            : "measured"
+    }, not like a formal sales pitch
     - Avoid overly formal or technical language
     - Focus on clarity and flow
     - Choose modern, commonly used words and phrases
@@ -493,13 +487,11 @@ async function generateEmail2(
     Tone Guidelines:
     ${tone === "Humorous" ? "- Include light humor or playful language" : ""}
     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-    ${
-      tone === "Formal"
-        ? "- Maintain professional, business-appropriate language"
-        : ""
+    ${tone === "Formal"
+      ? "- Maintain professional, business-appropriate language"
+      : ""
     }
-    ${
-      tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
+    ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
     }
     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
     
@@ -580,13 +572,11 @@ async function generateEmail3(
     Tone Guidelines:
     ${tone === "Humorous" ? "- Include light humor or witty observations" : ""}
     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-    ${
-      tone === "Formal"
-        ? "- Maintain professional, business-appropriate language"
-        : ""
+    ${tone === "Formal"
+      ? "- Maintain professional, business-appropriate language"
+      : ""
     }
-    ${
-      tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
+    ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
     }
     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
     
@@ -610,10 +600,9 @@ async function generateEmail3(
     - Focus on how it can help the recipient's company and goals
     - Keep it ${wordCount} words
     
-    Tone: ${
-      tone === "Excited"
-        ? "Optimistic and enthusiastic"
-        : tone === "Formal"
+    Tone: ${tone === "Excited"
+      ? "Optimistic and enthusiastic"
+      : tone === "Formal"
         ? "Professional and informative"
         : "Optimistic and informative"
     }
@@ -638,10 +627,9 @@ async function generateEmail3(
     - Offer flexibility in scheduling
     - Keep it ${wordCount} words
     
-    Tone: ${
-      tone === "Excited"
-        ? "Friendly, inviting, and enthusiastic"
-        : tone === "Formal"
+    Tone: ${tone === "Excited"
+      ? "Friendly, inviting, and enthusiastic"
+      : tone === "Formal"
         ? "Professional, inviting, and eager"
         : "Friendly, inviting, and eager to continue the conversation"
     }
@@ -724,13 +712,11 @@ async function generateEmail4(
     Tone Guidelines:
     ${tone === "Humorous" ? "- Include light humor or witty observations" : ""}
     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-    ${
-      tone === "Formal"
-        ? "- Maintain professional, business-appropriate language"
-        : ""
+    ${tone === "Formal"
+      ? "- Maintain professional, business-appropriate language"
+      : ""
     }
-    ${
-      tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
+    ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
     }
     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
     
@@ -753,10 +739,9 @@ async function generateEmail4(
     - Include tangible outcomes like creating new streams of MQLs
     - Keep paragraph between ${wordCount} words
     
-    Tone: ${
-      tone === "Excited"
-        ? "Confident, experienced, and enthusiastic"
-        : tone === "Formal"
+    Tone: ${tone === "Excited"
+      ? "Confident, experienced, and enthusiastic"
+      : tone === "Formal"
         ? "Confident, experienced, and professional"
         : "Confident and experienced"
     }
@@ -781,10 +766,9 @@ async function generateEmail4(
     - Explain full support and customization will be provided
     - Keep paragraph between ${wordCount} words
     
-    Tone: ${
-      tone === "Excited"
-        ? "Excited, engaging, and enthusiastic"
-        : tone === "Formal"
+    Tone: ${tone === "Excited"
+      ? "Excited, engaging, and enthusiastic"
+      : tone === "Formal"
         ? "Professional, engaging, and confident"
         : "Excited and engaging"
     }
@@ -809,10 +793,9 @@ async function generateEmail4(
     - Use friendly language like 'coffee chat'
     - Keep paragraph between ${wordCount} words
     
-    Tone: ${
-      tone === "Excited"
-        ? "Friendly, approachable, and enthusiastic"
-        : tone === "Formal"
+    Tone: ${tone === "Excited"
+      ? "Friendly, approachable, and enthusiastic"
+      : tone === "Formal"
         ? "Professional, approachable, and respectful"
         : "Friendly and approachable"
     }
@@ -866,7 +849,10 @@ Deno.serve(async (req) => {
         JSON.stringify({
           error: "Missing required campaign_id or lead data",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -892,7 +878,7 @@ Deno.serve(async (req) => {
     if (campaignError) {
       return new Response(JSON.stringify({ error: campaignError.message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -906,7 +892,7 @@ Deno.serve(async (req) => {
     if (progressError) {
       return new Response(JSON.stringify({ error: progressError.message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -920,44 +906,36 @@ Deno.serve(async (req) => {
     const receiver_details = {
       person: {
         name: lead.full_name || `${lead.first_name} ${lead.last_name}`,
-        facts: `${lead.summary || ""} ${lead.headline || ""} ${
-          lead.jobs?.map((job) => job.job_description).join(" ") || ""
-        } ${
-          lead.insights?.personInsights?.awards
+        facts: `${lead.summary || ""} ${lead.headline || ""} ${lead.jobs?.map((job) => job.job_description).join(" ") || ""
+          } ${lead.insights?.personInsights?.awards
             ?.map((award) => award.description)
             .join(" ") || ""
-        } ${
-          lead.insights?.personInsights?.relevantInsights
+          } ${lead.insights?.personInsights?.relevantInsights
             ?.map((insight) => insight.description)
             .join(" ") || ""
-        } ${
-          lead.insights?.personInsights?.onlineMentions
+          } ${lead.insights?.personInsights?.onlineMentions
             ?.map((mention) => mention.summary)
             .join(" ") || ""
-        }`.trim(),
+          }`.trim(),
       },
       company: {
         name: lead.company_name,
         details: lead.company_description || "",
-        facts_and_figures: `${
-          lead.insights?.businessInsights?.detail
+        facts_and_figures: `${lead.insights?.businessInsights?.detail
             ? `Revenue: $${lead.insights.businessInsights.detail.revenue}, Employees: ${lead.insights.businessInsights.detail.employees}, Industry: ${lead.insights.businessInsights.detail.industry}`
             : ""
-        } 
-          ${
-            lead.insights?.businessInsights?.insights
-              ?.map((insight) => insight.description)
-              .join(" ") || ""
           } 
-          ${
-            lead.insights?.businessInsights?.whyNow
-              ?.map((why) => why.why_now)
-              .join(" ") || ""
+          ${lead.insights?.businessInsights?.insights
+            ?.map((insight) => insight.description)
+            .join(" ") || ""
           } 
-          ${
-            lead.insights?.businessInsights?.commonalities
-              ?.map((common) => common.description)
-              .join(" ") || ""
+          ${lead.insights?.businessInsights?.whyNow
+            ?.map((why) => why.why_now)
+            .join(" ") || ""
+          } 
+          ${lead.insights?.businessInsights?.commonalities
+            ?.map((common) => common.description)
+            .join(" ") || ""
           }`.trim(),
       },
     };
@@ -1036,9 +1014,41 @@ Deno.serve(async (req) => {
       default:
         return new Response(
           JSON.stringify({ error: `Unsupported email type: ${emailType}` }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
         );
     }
+
+    const rawFullEamil = result.full_email;
+
+    // Debug logging to help identify replacement issues
+    console.log("Debug - Sender name:", sender_details.person.name);
+    console.log("Debug - Receiver name:", receiver_details.person.name);
+    console.log("Debug - Receiver company:", receiver_details.company.name);
+    console.log("Debug - Sender company:", sender_details.company.name);
+    console.log("Debug - Raw email contains [Recipient's Name]:", rawFullEamil.includes("[Recipient's Name]"));
+
+    // More robust replacement system that handles multiple variations
+    let updatedEmail = rawFullEamil;
+
+    // Replace sender name variations
+    updatedEmail = updatedEmail.replace(/\[Sender's Name\]/g, sender_details.person.name);
+    updatedEmail = updatedEmail.replace(/\[Your Name\]/g, sender_details.person.name);
+
+    // Replace recipient name variations - handle multiple instances
+    updatedEmail = updatedEmail.replace(/\[Recipient's Name\]/g, receiver_details.person.name);
+    updatedEmail = updatedEmail.replace(/\[Recipient Name\]/g, receiver_details.person.name);
+    updatedEmail = updatedEmail.replace(/\[Receiver's Name\]/g, receiver_details.person.name);
+    updatedEmail = updatedEmail.replace(/\[Receiver Name\]/g, receiver_details.person.name);
+
+    // Replace company name variations
+    updatedEmail = updatedEmail.replace(/\[Recipient's Company\]/g, receiver_details.company.name);
+    updatedEmail = updatedEmail.replace(/\[Recipient Company\]/g, receiver_details.company.name);
+    updatedEmail = updatedEmail.replace(/\[Sender Company\]/g, sender_details.company.name);
+
+    result.full_email = updatedEmail;
 
     return new Response(
       JSON.stringify({
@@ -1049,7 +1059,7 @@ Deno.serve(async (req) => {
         length: normalizedLengthOption,
         result,
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     return new Response(
@@ -1057,7 +1067,10 @@ Deno.serve(async (req) => {
         error: error.message,
         success: false,
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
