@@ -1023,13 +1023,6 @@ Deno.serve(async (req) => {
 
     const rawFullEamil = result.full_email;
 
-    // Debug logging to help identify replacement issues
-    console.log("Debug - Sender name:", sender_details.person.name);
-    console.log("Debug - Receiver name:", receiver_details.person.name);
-    console.log("Debug - Receiver company:", receiver_details.company.name);
-    console.log("Debug - Sender company:", sender_details.company.name);
-    console.log("Debug - Raw email contains [Recipient's Name]:", rawFullEamil.includes("[Recipient's Name]"));
-
     // More robust replacement system that handles multiple variations
     let updatedEmail = rawFullEamil;
 
