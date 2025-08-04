@@ -49,8 +49,6 @@ Deno.serve(async (req) => {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
     );
 
-    console.log("========== Starting job processing ==========");
-
     const { data: jobData, error: jobError } = await supabase
       .from("jobs")
       .select("*")
@@ -66,6 +64,10 @@ Deno.serve(async (req) => {
         status: 500,
       });
     }
+
+    console.log(
+      `===== Starting job processing for job id: ${jobData.id} =====`
+    );
 
     const { error: firrstUpdateJobError } = await supabase
       .from("jobs")
@@ -978,7 +980,6 @@ Deno.serve(async (req) => {
       - Y = the lead (Linkedin URL: ${lead_linkedin_url})
 
       This is the linkedin data for "X" (the user of Prospexs): ${linkedin_profile}
-
       This is the linkedin data for "Y" (the lead): {linkedin_data}
 
       You will be given both LinkedIn profiles (including bios, work history, posts, education, interests,
@@ -1346,6 +1347,7 @@ Deno.serve(async (req) => {
         fieldName: "similarities",
         category: "personInsights",
         getLinkedinData: true,
+        useChatCompletion: true,
       },
       {
         prompt: onlineMentionsPrompt,
@@ -1368,7 +1370,16 @@ Deno.serve(async (req) => {
     ];
 
     const promises = additionalPrompts.map(
-      async ({ prompt, fieldName, category, getLinkedinData }, index) => {
+      async (
+        {
+          prompt,
+          fieldName,
+          category,
+          getLinkedinData,
+          useChatCompletion = false,
+        },
+        index
+      ) => {
         try {
           console.log(`===== Step ${index + 1}: Getting ${fieldName} =====`);
 
@@ -1395,19 +1406,27 @@ Deno.serve(async (req) => {
             );
           }
 
-          const response = await openai.responses.create({
-            model: "gpt-4.1",
-            tools: [{ type: "web_search_preview" }],
-            input: prompt,
-          });
+          let response;
+          if (useChatCompletion) {
+            const completion = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.7,
+              max_tokens: 4000,
+            });
+            response = completion.choices[0].message.content;
+          } else {
+            response = await openai.responses.create({
+              model: "gpt-4.1",
+              tools: [{ type: "web_search_preview" }],
+              input: prompt,
+            });
 
-          console.log(
-            `Response for ${fieldName}:`,
-            response.output_text.trim()
-          );
+            response = response.output_text;
+            console.log(`Response for ${fieldName}:`, response);
+          }
 
-          let cleanResponse = response.output_text.trim();
-
+          let cleanResponse = response.trim();
           const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
           if (jsonMatch) {
             cleanResponse = jsonMatch[1].trim();
