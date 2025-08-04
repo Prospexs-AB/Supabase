@@ -667,13 +667,29 @@ Deno.serve(async (req) => {
           }
         `;
 
-        const response = await openai.responses.create({
-          model: "gpt-4.1",
-          tools: [{ type: "web_search_preview" }],
-          input: objectionHandlingPrompt,
+        // const response = await openai.responses.create({
+        //   model: "gpt-4.1",
+        //   tools: [{ type: "web_search_preview" }],
+        //   input: objectionHandlingPrompt,
+        // });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "user",
+              content: objectionHandlingPrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 4000,
         });
 
-        let text = response.output_text.trim();
+        console.log("Successfully analyzed content with OpenAI");
+        const analysis = completion.choices[0].message.content;
+        console.log("OpenAI analysis:", analysis);
+
+        let text = analysis.trim();
         console.log("objection handling text", text);
         console.log(
           "objection handling text end:",
