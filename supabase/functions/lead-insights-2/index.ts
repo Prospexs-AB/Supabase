@@ -237,6 +237,7 @@ Deno.serve(async (req) => {
     const {
       step_2_result: { company_name },
     } = progressData;
+    const { company_website } = campaignData;
 
     const commonalitiesPrompt = `
       You are a senior B2B strategist at a top global consultancy.
@@ -245,8 +246,8 @@ Deno.serve(async (req) => {
       strategies of both companies listed below.
 
       Your task is to identify 4 deep, strategic similarities between the two companies. These
-      similarities should help the user ${company_name} build trust, relevance, or credibility when reaching
-      out to ${lead_company_name}.
+      similarities should help the user from this company: ${company_name} with website: ${company_website} build trust, relevance, or credibility when reaching
+      out to ${lead_company_name} with website: ${progress_data.company_website}.
 
       Focus on real, non-obvious business commonalities, such as:
       - Monetization model (e.g. usage-based, seat-based)
@@ -257,7 +258,9 @@ Deno.serve(async (req) => {
       - Unit economics (e.g. high NRR, expansion revenue, LTV/CAC logic)
 
       Use data or market logic where possible (e.g. based on company size, funding stage, product
-      motion, reported NRR benchmarks, etc.).
+      motion, reported NRR benchmarks, etc.) and make sure that the data is relevant to the company
+      and not other companies not mentioned in the input data.
+      Ensure the similarities are relevant to the user and leads company and dont halucinate any data.
 
       Format each similarity as a short, insight-rich paragraph. Write with the tone of a strategist or
       investor—not a marketer.
@@ -296,13 +299,6 @@ Deno.serve(async (req) => {
       at global scale. Their international expansions rely not on HQ-based assumptions but on
       platform customization at the local level—a rare operational capability in SaaS.
 
-      Example Similarities 4: API-Centric, Extensible Platforms Built for Ecosystem Scale
-      Stripe's API-first approach led to 3rd-party adoption across 100K+ startups and platforms (e.g.
-      Shopify, Amazon, GitHub). Teamtailor, while not an API company, has built one of the most
-      integrated ATS platforms, with over 100 plug-and-play integrations including Slack, Zapier,
-      LinkedIn, and scheduling tools. Both companies treat extensibility as a strategic moat—reducing
-      churn by embedding deeper into the workflows of their users and ecosystems.
-
       Example Detected Similarities Between www.remote.com and www.stripe.com:
 
       Example Similarities 1: Global Compliance Infrastructure at Scale
@@ -333,14 +329,6 @@ Deno.serve(async (req) => {
       with high CAC and long sales cycles, usage-based expansion is a moat—it boosts LTV,
       minimizes churn, and aligns growth with customer success. Stripe and Remote are both
       designed to win land-and-expand motions in tech-forward B2B segments.
-
-      Example Similarities 4: Dominating in Decentralized, Post-COVID Workflows
-      Post-2020, the rise of remote work and international commerce made Stripe and Remote
-      indispensable. Stripe's adoption skyrocketed as businesses went digital—facilitating payments
-      for Shopify, Amazon, Notion, and 100k+ others. Remote grew by over 10x between 2020 and
-      2022, driven by the need to hire talent globally without establishing foreign subsidiaries. Both
-      companies are winning in the decentralized operations economy—where business is global
-      from day one, and infrastructure needs to be borderless, automated, and compliant.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
