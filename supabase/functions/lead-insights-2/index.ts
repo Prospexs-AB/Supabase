@@ -285,20 +285,6 @@ Deno.serve(async (req) => {
       10,000+ companies) reflects similar unit economics: land small, expand over time. Both are
       structured to grow with their customers' success.
 
-      Example Similarities 2: Dominant in PLG-Friendly Buyer Personas
-      Stripe sells to developers and product teams. Teamtailor sells to in-house recruiters and
-      employer branding leads. These are bottom-up buyers, historically underserved by legacy
-      systems like Oracle or SAP. According to OpenView's PLG benchmark report, 61% of
-      top-performing SaaS companies use a PLG strategy to land SMB and mid-market accounts
-      before moving into enterprise—a playbook both Stripe and Teamtailor have mastered.
-
-      Example Similarities 3: International Growth With Localized Infrastructure
-      Stripe supports payments in 135+ currencies across 45+ countries with localized compliance,
-      tax, and payout logic. Teamtailor operates in 90+ countries, offering localized career pages,
-      language support, and hiring workflows. Both face the same challenge: enabling regional depth
-      at global scale. Their international expansions rely not on HQ-based assumptions but on
-      platform customization at the local level—a rare operational capability in SaaS.
-
       Example Detected Similarities Between www.remote.com and www.stripe.com:
 
       Example Similarities 1: Global Compliance Infrastructure at Scale
@@ -310,25 +296,6 @@ Deno.serve(async (req) => {
       businesses, allowing them to enter new markets in days instead of months. This shared
       positioning as a "compliance shield" makes them part of the modern international expansion
       stack.
-
-      Example Similarities 2: API-Centric Growth Engines Driving Embedded Revenue
-      Stripe generates a significant portion of its revenue via API-led integrations with platforms like
-      Shopify, Amazon, and Notion—powering embedded finance flows. Similarly, Remote is building
-      embedded HR infrastructure, with public partnerships and integrations (e.g. Greenhouse,
-      BambooHR) and a growing API product to let platforms offer payroll and compliance as a
-      service. Both companies are transitioning from SaaS to "platform revenue" models, where third
-      parties generate and own the customer relationship, while Stripe/Remote operate quietly
-      underneath. This shift supports exponential distribution and monetization without linear sales
-      headcount growth.
-
-      Example Similarities 3: Usage-Based Monetization With Exceptional Net Revenue
-      Retention
-      Stripe's NRR has been reported to exceed 125-130%, largely due to transactional pricing.
-      Remote uses a similar model, charging per employee or contractor managed, with expansion
-      into value-added services like benefits, stock options, and local compliance advisory. In markets
-      with high CAC and long sales cycles, usage-based expansion is a moat—it boosts LTV,
-      minimizes churn, and aligns growth with customer success. Stripe and Remote are both
-      designed to win land-and-expand motions in tech-forward B2B segments.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
