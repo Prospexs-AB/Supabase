@@ -220,6 +220,7 @@ Deno.serve(async (req) => {
     const categories = [
       {
         name: "usps",
+        label: "Unique Selling Points",
         data: unique_selling_points,
         promptExample: `
           Examples of Deep USPs for www.jobandtalent.com:
@@ -243,6 +244,7 @@ Deno.serve(async (req) => {
       },
       {
         name: "benefits",
+        label: "Benefits",
         data: benefits,
         promptExample: `
         Examples of Deep Benefits for www.jobandtalent.com:
@@ -265,6 +267,7 @@ Deno.serve(async (req) => {
       },
       {
         name: "problems",
+        label: "Problems Solved",
         data: problem_solved,
         promptExample: `
         Examples of Deep Problems Solved for www.jobandtalent.com:
@@ -300,55 +303,32 @@ Deno.serve(async (req) => {
         };
 
         for (const category of categories) {
-          const { name, data, promptExample } = category;
+          const { name, data, label, promptExample } = category;
           const prompt = `
-        You are a senior industry analyst who deeply understands the role, industry, and country
-        of the target audience.
-        Write an in-depth analysis of how ${companyWebsite}'s previously identified USPs, Benefits,
-        and Problems Solved directly affect this specific target audience. Write as if you've spent 5+
-        years in this role—you know their KPIs, operational pressures, and how they evaluate new tools.
+            You are a senior industry analyst. Write 5 consulting-grade paragraphs analyzing how ${companyWebsite}'s ${label} directly affect ${role} at ${industry} in ${country}.
 
-        MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
-        FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
+            Language: ${language}
 
-        Structure:
-        - Write five consulting-grade paragraphs (not bullet points). Each
-        paragraph should:
-        - Explain how it impacts the target audience's daily workflow, business model, or
-        strategic goals.
-        - Include real-world context: local industry trends, regulations, role KPIs, operational pain
-        points.
-        - Length: ~150 words. Treat each as a mini-analysis suitable for a consulting deck.
-        - Use at least 3 quantifiable data points (benchmarks, costs, adoption rates, time
-        savings).
-        - Compare against current alternatives (competitors, legacy tools).
-        - Tailor it to the decision-makers in this audience (e.g., how HR Directors in Spain
-        make staffing decisions vs. Operations Managers in Germany).
-        - Use verifiable sources (company cases, public stats, reports). If direct data is
-        missing, benchmark against industry standards—never make up numbers.
-        - Keep it fact-based, practical, and locally relevant.
+            Requirements per paragraph:
+            - 150 words max
+            - 3+ quantifiable data points
+            - Compare against alternatives
+            - Focus on daily workflow impact
+            - Use verifiable sources
 
-        Tone: Write as if handing this to someone in that role—they should recognize their challenges in
-        what you're describing.
-        Target Audience: ${role} at ${industry} in ${country}
-        Base your analysis on the following:
-        Unique Selling Points:
-        ${data.map((usp) => `- ${usp.value}`).join("\n")}
+            Base analysis on:
+            ${data.map((singleData) => `- ${singleData.value}`).join("\n")}
 
-        ${promptExample}
-        
-        IMPORTANT: Ensure the text is returned in the language code: ${language}.
-        IMPORTANT: USE THE JSON FORMAT BELOW AND MAKE SURE ITS A VALID JSON OBJECT.
-        IMPORTANT: ENSURE THAT ALL THE BRACKETS FOR OBJECTS AND ARRAYS ARE CLOSED IN THE JSON OBJECT.
-        IMPORTANT: Make sure that the link and url for sources are not shown in the actual analysis description but put in the source array.
-        Respond with only the JSON object such as:
-        [
-          {
-            "title": "Title here",
-            "description": "Description here",
-            "source": ["https://example.com"]
-          },
-        ]
+            IMPORTANT: Return only JSON. No links or citations in descriptions - put URLs in source array.
+            Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
+            Format:
+            [
+              {
+                "title": "Title",
+                "description": "Description (no URLs)",
+                "source": ["https://example.com"]
+              }
+            ]
           `;
 
           console.log("Prompt:", prompt);
