@@ -722,14 +722,14 @@ Deno.serve(async (req) => {
           Return ONLY valid JSON like this:
           {
             "solutionTitle": "Solution for challenge",
-            "solutionDescription": "...",
+            "solutionDescription": "Description here",
             "impactTitle": "Impact for challenge",
-            "impactDescription": "...",
+            "impactDescription": "Impact description here",
             "objectionHandling": [
               {
-                "objection": "...",
-                "whyItsValid": "...",
-                "howToWorkAroundIt": "..."
+                "objection": "Objection text here",
+                "whyItsValid": "Why it's valid explanation",
+                "howToWorkAroundIt": "How to work around it"
               }
             ]
           }
@@ -742,6 +742,11 @@ Deno.serve(async (req) => {
         });
 
         let text = response.output_text.trim();
+        console.log("objection handling text", text);
+        console.log(
+          "objection handling text end:",
+          text.substring(text.length - 500)
+        );
 
         if (text.startsWith("```json")) {
           text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
@@ -766,6 +771,8 @@ Deno.serve(async (req) => {
       status: "queued",
       progress_data: { ...lead, insights: result },
     });
+
+    console.log(`Adding job to database:`, lead.full_name);
 
     return new Response(
       JSON.stringify({

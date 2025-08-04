@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (jobError) {
-      console.error("Error getting job:", jobError);
+      console.log("Error getting job:", jobError);
       return new Response(JSON.stringify({ error: jobError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
