@@ -1510,27 +1510,16 @@ Deno.serve(async (req) => {
     const email = generectData[0]?.valid_email;
     updatedLead.email = email;
 
-    // Save lead to progress database
-    let { step_10_result } = progressData;
-    if (!step_10_result) {
-      step_10_result = [];
-    }
-    step_10_result.push(updatedLead);
+    console.log(`Saving new lead to progress database:`, updatedLead.full_name);
+    console.log(`Campaign progress id:`, campaignData.progress_id);
 
-    const { error: updateProgressError } = await supabase
-      .from("campaign_progress")
-      .update({ step_10_result })
-      .eq("id", campaignData.progress_id);
+    const { error } = await supabase.rpc("append_step_10_result", {
+      p_campaign_progress_id: campaignData.progress_id,
+      p_job_result: updatedLead,
+    });
 
-    if (updateProgressError) {
-      console.error("Error updating campaign progress:", updateProgressError);
-      return new Response(
-        JSON.stringify({ error: updateProgressError.message }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
+    if (error) {
+      console.error("RPC Error:", error);
     }
 
     const { error: updateJobError } = await supabase
