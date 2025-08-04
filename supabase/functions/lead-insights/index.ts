@@ -400,22 +400,6 @@ Deno.serve(async (req) => {
       friction in the buying process, speeding up deal velocity and helping enterprise teams say "yes"
       faster.
 
-      Example Solution 3: Preparing for AI Feature Monetization Without Friction
-      If Teamtailor is investing in AI functionality, Stripe makes it easy to test and charge for new
-      features - either as add-ons, bundled into new tiers, or billed per-usage (e.g. “AI-assisted
-      candidate screening”). Stripe's flexible pricing engine lets Teamtailor adapt pricing based on
-      usage data and feedback without overhauling backend systems. This helps the product and
-      GTM teams move faster, monetize innovation sooner, and reduce time-to-revenue from new
-      features.
-
-      Example Solution 4: De-Risking Expansion into New Markets with Global Payments
-      Compliance
-      Teamtailor is expanding into 90+ countries, which brings significant operational complexity in
-      terms of handling local currencies, regulations, and tax requirements. Stripe’s global payments
-      and tax stack simplifies this, letting Teamtailor accept payments in 135+ currencies, generate
-      compliant invoices, and automatically handle VAT and sales tax. That means the finance team
-      spends less time untangling tax issues—and more time supporting strategic growth.
-
       Example Solutions for www.remote.com:
 
       Example Solution 1: Simplifying Global Compliance Through Automated Tax
@@ -434,22 +418,6 @@ Deno.serve(async (req) => {
       monetization options—whether charging usage-based fees, custom enterprise tiers, or
       cross-selling payroll add-ons. This lets Remote match competitive pace without rebuilding
       infrastructure, while improving activation speed and lifetime value.
-
-      Example Solution 3: Managing Contractor Risk with Real-Time Payments & Controls
-      One of Remote's biggest liabilities is contractor misclassification and payroll mishandling. Stripe
-      Treasury and Instant Payouts can help Remote build a compliant, embedded payout experience
-      with real-time visibility and control over disbursements. With programmatic wallet infrastructure
-      and built-in KYC/AML, Remote could offer global contractors faster access to funds while
-      ensuring payout flows meet local financial regulations—mitigating risk and improving the user
-      experience.
-
-      Example Solution 4: Scaling Internationally Without Friction in Finance Ops
-      As Remote continues expanding into new markets, its finance stack must handle multiple
-      currencies, languages, payment methods, and partner billing flows. Stripe supports payments in
-      135+ currencies, local payment methods (e.g. SEPA, Boleto, ACH), and financial reporting
-      across subsidiaries. This allows Remote to enter new countries without needing custom-built
-      finance logic for each one—ensuring the ops and GTM teams can scale smoothly alongside
-      product.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
@@ -587,24 +555,6 @@ Deno.serve(async (req) => {
         boost quarterly recurring revenue (QRR) and help Teamtailor compete more effectively against
         enterprise-focused vendors like SAP SuccessFactors.
 
-        Example Impact 3: Monetizing AI Add-Ons Without Backend Friction
-        As Teamtailor builds AI capabilities (e.g. for candidate ranking or smart scheduling), Stripe
-        enables the monetization of those features via add-ons or usage-based pricing—without
-        engineering bottlenecks. This flexibility allows the product team to test go-to-market strategies
-        (freemium vs. paid AI tiers) without overhauling infrastructure. Benchmarks suggest companies
-        that successfully monetize AI functionality can grow ARPA by 10-30% within 12 months. For
-        Teamtailor, this could mean turning innovation into a scalable revenue engine instead of a cost
-        center.
-
-        Example Impact 4: Scaling Internationally with Built-In Global Payment Compliance
-        With customers in over 90 countries, Teamtailor faces the ongoing challenge of managing taxes,
-        currency conversions, and localized payment methods. Stripe's global payments and tax
-        automation stack helps ensure fast, compliant billing across regions—cutting down legal risk,
-        reducing overhead, and speeding up collections. This directly supports Teamtailor's goal of
-        expanding its footprint in Europe and beyond, while also ensuring its finance ops scale with
-        minimal overhead. Reducing regional friction could shorten time-to-revenue in new markets by
-        several months—critical in hyper-competitive SaaS growth cycles.
-
         Example Detected Impact for www.remote.com:
 
         Example Impact 1: Reducing Compliance Risk and Manual Overhead in Global Billing
@@ -627,24 +577,6 @@ Deno.serve(async (req) => {
         onboarding could become a deciding factor. Industry data shows that reducing user onboarding
         friction can increase conversion by up to 35% and improve first-month retention—giving Remote
         a competitive edge.
-
-        Example Impact 3: Lowering Contractor Payout Risk While Increasing Speed
-        By integrating Stripe Treasury and Instant Payouts, Remote can offer global contractors
-        near-instant access to earned wages through localized, compliant disbursement flows. This
-        adds value for contractors—many of whom prioritize payment reliability and speed—while
-        helping Remote stay ahead of misclassification risks and legal scrutiny. Providing real-time
-        payout transparency also improves customer trust and reduces the likelihood of support
-        escalations related to payroll. The result: a more resilient and scalable contractor infrastructure
-        that supports both user retention and compliance.
-
-        Example Impact 4: Accelerating Market Expansion Without Adding Finance Headcount
-        Stripe's global payment rails and multi-currency support allow Remote to accept and process
-        payments in 135+ currencies, offer localized payment methods (e.g. ACH, SEPA, PIX), and
-        generate regionally compliant invoices. This removes the need for custom finance logic and
-        tooling each time Remote enters a new country. As Remote targets rapid global expansion,
-        Stripe becomes a force multiplier—enabling entry into new markets with minimal overhead.
-        Reducing localization costs by even 40-50% per market can significantly compress the timeline
-        for international growth and make global ARR targets more attainable.
 
         IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
