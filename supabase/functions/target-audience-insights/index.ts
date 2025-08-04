@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
               {
                 "title": "Title",
                 "description": "Description (no URLs)",
-                "source": ["https://example.com"]
+                "source": ["source url here", "source url here"]
               }
             ]
           `;

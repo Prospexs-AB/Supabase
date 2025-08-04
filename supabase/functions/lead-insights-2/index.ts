@@ -1519,6 +1519,7 @@ Deno.serve(async (req) => {
     const { error } = await supabase.rpc("append_step_10_result", {
       p_campaign_progress_id: campaignData.progress_id,
       p_job_result: updatedLead,
+      p_latest_step: 10,
     });
 
     if (error) {

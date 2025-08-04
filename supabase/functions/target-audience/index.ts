@@ -246,8 +246,7 @@ Deno.serve(async (req) => {
 
       Your task: Identify 10 high-value target audiences that ${
         campaignData.company_website
-      } should reach out
-      to in ${companyCountry} to acquire new customers.
+      } should reach out to in ${locationContext} to acquire new customers.
 
       Primary sources:
       - The company's USPs, Benefits, and Problems Solved (already extracted).

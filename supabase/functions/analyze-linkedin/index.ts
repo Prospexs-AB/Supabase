@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
       console.error("Proxycurl API error:", errorText);
       return new Response(
         JSON.stringify({
-          error: `Proxycurl API error: ${response.status} ${response.statusText}`,
+          error: `Person profile does not exist or has been deleted or marked as private by the user`,
           details: errorText.substring(0, 500), // Limit error details
         }),
         {
