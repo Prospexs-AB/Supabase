@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       .eq("id", jobData.id);
 
     if (firrstUpdateJobError) {
-      console.error("Error updating job:", firrstUpdateJobError);
+      console.error(`Error updating job ${jobData.id}:`, firrstUpdateJobError);
       return new Response(
         JSON.stringify({ error: firrstUpdateJobError.message }),
         {
@@ -1479,7 +1479,10 @@ Deno.serve(async (req) => {
           return parsedResponse;
         } catch (error) {
           updatedLead.insights[category][fieldName] = [];
-          console.error(`Error getting ${fieldName}:`, error);
+          console.error(
+            `Error for job ${jobData.id} getting ${fieldName}:`,
+            error
+          );
         }
       }
     );
@@ -1519,7 +1522,7 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
-      console.error("RPC Error:", error);
+      console.error(`RPC Error ${jobData.id}:`, error);
     }
 
     const { error: updateJobError } = await supabase
@@ -1528,7 +1531,7 @@ Deno.serve(async (req) => {
       .eq("id", jobData.id);
 
     if (updateJobError) {
-      console.error("Error updating job:", updateJobError);
+      console.error(`Error updating job ${jobData.id}:`, updateJobError);
       return new Response(JSON.stringify({ error: updateJobError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
@@ -1545,7 +1548,11 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error(error);
+    console.error(`Error for job ${jobData.id}:`, error);
+    await supabase
+      .from("jobs")
+      .update({ status: "queued" })
+      .eq("id", jobData.id);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
