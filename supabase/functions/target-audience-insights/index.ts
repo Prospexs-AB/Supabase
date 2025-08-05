@@ -319,6 +319,9 @@ Deno.serve(async (req) => {
             Base analysis on:
             ${data.map((singleData) => `- ${singleData.value}`).join("\n")}
 
+            IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites. 
+            Try to not use the same source for multiple points.
+            If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
             IMPORTANT: Return only JSON. No links or citations in descriptions - put URLs in source array.
             Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
             Format:
