@@ -311,14 +311,16 @@ Deno.serve(async (req) => {
       strategic role of legal teams in risk oversight—strengthening their visibility and value
       within the C-suite.
 
+      Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
+      then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
       IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
-      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
           "title": "your title here",
           "value": "your analysis here (no links here!!)",
-          "source": ["your source here", "your source here"]
+          "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
       ]
     `;
@@ -490,14 +492,16 @@ Deno.serve(async (req) => {
       risk—particularly for enterprises managing complex, multi-site hourly labor
       environments.
 
+      Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
+      then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
       IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
-      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
           "title": "your title here",
           "value": "your analysis here (no links here!!)",
-          "source": ["your source here", "your source here"]
+          "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
       ]
     `;
@@ -657,14 +661,16 @@ Deno.serve(async (req) => {
       enterprises operating on tight margins, this automation-driven efficiency provides a
       measurable competitive edge.
 
-      Please analyze the content and create a company analysis following this structure AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
+      Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
+      then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
+      Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
       IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
-      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
+      Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
           "title": "your title here",
           "value": "your analysis here (no links here!!)",
-          "source": ["your source here", "your source here"]
+          "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
       ]
     `;
