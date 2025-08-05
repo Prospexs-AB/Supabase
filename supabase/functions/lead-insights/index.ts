@@ -217,86 +217,12 @@ Deno.serve(async (req) => {
       adoption or block entry into new markets. Being proactive on compliance is no longer
       optional—it's a moat.
 
-      Example Detected Challenges for www.remote.com:
-
-      Challenge 1: Global Compliance Complexity & Regulatory Risk
-      Remote.com operates in over 180 countries, acting as the legal Employer of Record (EOR) on
-      behalf of its clients. This model brings substantial regulatory complexity, as each market has its
-      own evolving labor laws, tax frameworks, benefits requirements, and worker protections. As
-      governments crack down on misclassification and tighten remote work compliance—especially
-      post-COVID—Remote must constantly update its localized knowledge base, contracts, and
-      infrastructure to avoid fines or operational disruption. Recent movements like the EU's AI Act
-      and country-specific employment reforms (e.g., Brazil's tightening contractor laws) only intensify
-      the need for real-time legal agility. Failing to adapt quickly enough could jeopardize Remote's
-      promise of full compliance and introduce reputational or legal risk for both itself and its clients.
-
-      Challenge 2: Surging Competition in the Global Payroll & EOR Market
-      While Remote was an early innovator in the EOR space, the market has quickly flooded with
-      aggressive, well-funded players like Deel (valued at $12B+), Rippling, Oyster, and Papaya
-      Global. Many are bundling adjacent services such as equipment provisioning, visa support, and
-      equity plan management—raising the bar for what clients expect. In Q1 2024 alone, VC funding
-      for global HR tech surpassed $2.5B, much of it going to platforms in direct competition. To
-      maintain relevance and market share, Remote must continue investing in product breadth,
-      infrastructure, and pricing transparency—especially as enterprise buyers increasingly demand
-      fully integrated HRIS + payroll ecosystems.
-
-      Challenge 3: Worker Classification & Contractor Risk Exposure
-      One of the biggest threats in Remote's business model is the misclassification of contractors vs.
-      employees. Lawsuits against companies like Uber and DoorDash have spotlighted the financial
-      and legal implications of getting this wrong. While Remote's platform includes contractor
-      management, the company must work harder to educate customers on proper
-      classification—and provide robust tools to enforce it. The recent release of “Contractor
-      Management Plus” is a step in the right direction, but as governments step up enforcement,
-      Remote will need to ensure every client follows the letter of the law in each jurisdiction. Even
-      indirect noncompliance could erode trust and create liabilities.
-
-      Challenge 4: Pressure to Scale While Preserving Customer Experience
-      Following a $300M Series C at a $3B+ valuation, Remote is under significant pressure to scale
-      both revenue and operations without compromising product quality or customer success. With
-      clients ranging from startups to multinationals like GitLab and Toyota, expectations around
-      uptime, support SLAs, integrations, and localization are extremely high. As the company grows,
-      balancing automation with human service becomes tricky—especially in edge cases like
-      benefits claims, offboarding, or localized payroll errors. Without scalable systems and top-tier
-      account management, churn risks increase—particularly among enterprise clients who expect
-      flawless delivery across geographies.
-
-      Example Detected Challenges for www.zimpler.com:
-
-      Challenge 1: Regulatory Scrutiny and Legal Challenges
-      In 2023, the Swedish Gambling Authority (Spelinspektionen) ordered Zimpler to cease providing
-      services to unlicensed gambling operators, threatening a fine of SEK 25 million. Zimpler
-      contested the order, and the Swedish Court of Appeal ultimately ruled in its favor, citing
-      ambiguities in the Gambling Act regarding what constitutes targeting Swedish consumers.
-      Despite this legal victory, the case highlighted the complexities fintech companies face in
-      ensuring compliance across different jurisdictions, especially when operating in sectors like
-      iGaming that are subject to stringent regulations.
-
-      Challenge 2: Anti-Money Laundering (AML) Compliance
-      Operating in high-risk sectors necessitates robust AML measures. Zimpler has emphasized its
-      commitment to AML compliance, implementing procedures such as customer identification,
-      transaction monitoring, and risk assessments. However, the dynamic nature of financial crimes
-      and the need to balance security with user experience present ongoing challenges. Ensuring
-      effective AML compliance is crucial for maintaining trust and meeting regulatory expectations.
-
-      Challenge 3: Intensifying Competition in the A2A Payments Space
-      The A2A payments market is experiencing significant growth, projected to reach a global market
-      size of nearly $850 billion by 2026. Zimpler faces competition from established players like
-      Trustly and emerging fintech startups. To differentiate itself, Zimpler has pursued strategic
-      partnerships, such as its collaboration with Swish, Sweden's most used payment app, to
-      enhance its service offerings and expand its market reach.
-
-      Challenge 4: Challenges in International Expansion
-      Zimpler's expansion into markets like Brazil introduces new complexities, including adapting to
-      local payment infrastructures and regulatory environments. For instance, integrating with Brazil's
-      Pix payment system requires navigating unique compliance requirements and consumer
-      behaviors. Successfully localizing services while maintaining operational efficiency is essential
-      for sustainable growth in diverse markets.
-
+      IMPORTANT: For revenue, add a currency symbol to the number thats relevant to the number so ($) or (€) or (£) or (Rp) or other and add commas to the number.
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       Return the answers in the following JSON format:
       {
         "company_name": "Acme Inc.",
-        "revenue": "1000000",
+        "revenue": "$1,000,000",
         "employees": "100",
         "industry": "Software",
         "challenges": [
@@ -399,25 +325,6 @@ Deno.serve(async (req) => {
       quote-based pricing, ACH payments in the US, or SEPA in the EU. This infrastructure removes
       friction in the buying process, speeding up deal velocity and helping enterprise teams say "yes"
       faster.
-
-      Example Solutions for www.remote.com:
-
-      Example Solution 1: Simplifying Global Compliance Through Automated Tax
-      Infrastructure
-      Remote.com operates across 180+ countries, navigating a complex patchwork of local tax,
-      billing, and payment regulations. Stripe Tax and Stripe Billing could remove a huge operational
-      burden by automating sales tax, VAT, and invoice compliance in over 40 countries—helping
-      Remote offer compliant, localized billing models at scale. This lets Remote focus its legal and
-      product teams on labor regulation and EOR complexity rather than financial compliance,
-      reducing risk and freeing up resources in hyper-growth markets.
-
-      Example Solution 2: Staying Competitive by Streamlining Onboarding and Monetization
-      Remote faces growing pressure from Deel, Papaya Global, and Rippling, all of which are
-      aggressively expanding product ecosystems. Stripe's Identity and Connect products could help
-      Remote onboard businesses and contractors faster and more securely, while offering flexible
-      monetization options—whether charging usage-based fees, custom enterprise tiers, or
-      cross-selling payroll add-ons. This lets Remote match competitive pace without rebuilding
-      infrastructure, while improving activation speed and lifetime value.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
@@ -555,29 +462,6 @@ Deno.serve(async (req) => {
         boost quarterly recurring revenue (QRR) and help Teamtailor compete more effectively against
         enterprise-focused vendors like SAP SuccessFactors.
 
-        Example Detected Impact for www.remote.com:
-
-        Example Impact 1: Reducing Compliance Risk and Manual Overhead in Global Billing
-        By implementing Stripe Tax and Billing, Remote.com can automate global invoicing and tax
-        compliance across 180+ countries, significantly reducing operational risk and the burden on
-        legal and finance teams. This infrastructure would allow Remote to support complex tax rules
-        (like VAT, GST, and reverse charges) at scale—while minimizing manual reconciliation and
-        compliance errors. For a global EOR provider, streamlining financial compliance not only
-        improves audit readiness but also accelerates expansion into regulated or complex markets.
-        Industry benchmarks suggest companies using automated tax solutions reduce
-        compliance-related errors and costs by up to 30%, freeing up internal teams to focus on
-        higher-value work.
-
-        Example Impact 2: Improving Customer Acquisition and Conversion Velocity
-        Stripe's Identity and Connect tools can help Remote onboard businesses and contractors faster
-        and with fewer drop-offs, which is crucial for winning enterprise deals and scaling B2B platform
-        usage. Reducing KYC friction and payment setup complexity translates to faster time-to-value
-        for clients—directly improving Remote's onboarding KPIs and reducing sales cycle times. In
-        highly competitive segments (with Deel, Rippling, and Oyster aggressively expanding), faster
-        onboarding could become a deciding factor. Industry data shows that reducing user onboarding
-        friction can increase conversion by up to 35% and improve first-month retention—giving Remote
-        a competitive edge.
-
         IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
         IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
@@ -666,12 +550,6 @@ Deno.serve(async (req) => {
             ]
           }
         `;
-
-        // const response = await openai.responses.create({
-        //   model: "gpt-4.1",
-        //   tools: [{ type: "web_search_preview" }],
-        //   input: objectionHandlingPrompt,
-        // });
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
