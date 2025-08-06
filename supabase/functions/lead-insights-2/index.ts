@@ -415,10 +415,12 @@ Deno.serve(async (req) => {
         {
           "title": "The title of the insight will be here",
           "description": "Description of the insight",
+          "source": ["Source 1", "Source 2", "Source 3"],
         },
         {
           "title": "The title of the insight will be here",
           "description": "Description of the insight",
+          "source": ["Source 1", "Source 2", "Source 3"],
         }
       ]
     `;

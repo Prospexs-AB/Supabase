@@ -568,7 +568,8 @@ Deno.serve(async (req) => {
 
           Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
           Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
-          `;
+          Ensure that every usp, pain point, and benefit will have a title, analysis and a source array for one or more sources.
+        `;
 
         console.log("Prompt:", prompt);
 
