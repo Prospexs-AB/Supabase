@@ -48,6 +48,15 @@ Deno.serve(async (req) => {
   const userId = await getUserId(req, supabase);
   const { campaign_id, leads } = await req.json();
 
+  const leadLimit = 99;
+
+  if (leads.length > leadLimit) {
+    return new Response(JSON.stringify({ error: "Max leads limit reached" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
+  }
+
   const { data: campaignData, error: campaignError } = await supabase
     .from("campaigns")
     .select("*")
