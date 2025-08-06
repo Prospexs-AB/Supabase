@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
     const userId = await getUserId(req, supabase);
     const { campaign_id, lead } = await req.json();
 
+    console.log(`=============== Start for: ${campaign_id} ===============`);
+
     const { data: campaignData, error: campaignError } = await supabase
       .from("campaigns")
       .select("*")
@@ -273,21 +275,6 @@ Deno.serve(async (req) => {
       ● Localize the context if relevant (country/region).
       ● 150-200 words each.
 
-      Examples for www.jobandtalent.com
-
-      Challenge 1: Operational Inefficiencies in Scaling Across Multi-Country Operations:
-      Job&Talent operates in 10+ countries across Europe and Latin America (Job&Talent Company
-      Data, 2024), managing a workforce of over 340,000 temporary workers. Rapid growth has
-      created challenges in standardizing compliance, payroll, and workforce analytics across regions
-      with varying labor laws (e.g., Spain's Registro de Jornada vs. Brazil's eSocial reporting
-      requirements). According to PwC's Global Workforce Hopes & Fears Survey 2024, 65% of
-      multinational companies cite “fragmented workforce processes” as a top barrier to scaling
-      globally. Moreover, regulatory non-compliance can lead to fines of up to €187,000 per infraction
-      in Spain (Spanish Labor Inspectorate, 2024) and $1.5M for payroll reporting violations in Brazil
-      (Brazilian Ministry of Labor, 2024). Job&Talent's current approach—leveraging regional teams
-      and siloed tools—leads to inefficiencies in onboarding, payroll, and compliance reporting,
-      slowing their ability to expand profitably and undermining.
-
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
       Return the answers in the following JSON format:
@@ -438,8 +425,11 @@ Deno.serve(async (req) => {
       You are a senior solutions strategist at a top global consultancy.
       Prospexs has already analyzed two things:
 
-      2. The lead company's specific strategic challenges:
-        ${JSON.stringify(parsedDetailsWithChallengesOutput.challenges)}
+      The lead company's specific strategic challenges:
+        ${parsedDetailsWithChallengesOutput.challenges.map(
+          (challenge) =>
+            `Title: ${challenge.title} Description: ${challenge.description}`
+        )}
 
       Explain how ${campaignData.company_name} directly solves this challenge.
       ● Generate 4 tailored solutions for each identified challenge that show how the
@@ -450,17 +440,6 @@ Deno.serve(async (req) => {
       approach).
       ● Cite case studies, product documentation, or press releases for validation.
       ● 150-200 words each.
-
-      Examples for www.jobandtalent.com (PwC providing the solution)
-
-      Solution:
-      PwC offers Integrated Global Workforce Solutions, combining compliance advisory,
-      AI-enabled payroll automation, and cross-border HR process optimization. By embedding PwC's
-      Workforce Insights Platform, Job&Talent can harmonize payroll and compliance reporting
-      across all jurisdictions, leveraging real-time dashboards to monitor risks and performance.
-      PwC's “Workforce of the Future” program—implemented at several multinational clients like
-      Unilever and Iberdrola—reduces administrative complexity by integrating regional processes
-      into a single global governance framework (PwC Case Studies, 2023). Additionally, PwC's
 
       compliance teams provide on-the-ground expertise for country-specific regulations, ensuring
       Job&Talent stays ahead of changing labor laws. This partnership replaces reactive regional
@@ -644,21 +623,6 @@ Deno.serve(async (req) => {
           analyst reports.
           ● 150-200 words each.
 
-          Example for www.jobandtalent.com (PwC providing the impact)
-
-          Impact:
-          Integrating PwC's platform and advisory reduces workforce management costs by 18-25%
-          (PwC Workforce Benchmarking Report, 2023) and shortens payroll cycle times by up to 40%,
-          improving Job&Talent's service delivery speed for large clients. It also minimizes regulatory
-          exposure, decreasing the likelihood of fines by over 60% through real-time compliance
-          monitoring (PwC Compliance Impact Report, 2024). This creates a competitive advantage when
-          bidding for contracts with public sector and enterprise clients—where compliance reliability is
-          a deciding factor. Strategically, these efficiencies allow Job&Talent to redirect regional
-          management resources toward growth initiatives, accelerating market penetration in new
-          geographies. As PwC's implementation experience shows, similar clients achieved 2-3x ROI
-          within 18 months, driven by reduced administrative overhead and improved client retention
-          through enhanced service reliability.
-
           IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
           IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
@@ -770,18 +734,6 @@ Deno.serve(async (req) => {
             ○ Cost/ROI comparisons from credible reports or competitor case studies.
           ● 4 x 50-75 words each.
 
-          Example for www.jobandtalent.com (PwC providing the objection handling)
-          
-          Objection Handling:
-          1. Objection: "PwC's services are too costly for a workforce platform with tight operating
-          margins."
-          Rebuttal: While PwC is a premium advisory partner, studies of similar workforce
-          platform clients show ROI of 2-3x within 12-18 months (PwC ROI Study, 2024). Savings
-          come from reduced payroll errors, faster compliance processing, and elimination of
-          regional redundancies, which collectively cut administrative costs by 18-25%. For a
-          fast-scaling business like Job&Talent, the upfront investment is offset by significant
-          operational savings and the.
-
           IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
 
           IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
@@ -810,7 +762,7 @@ Deno.serve(async (req) => {
             },
           ],
           temperature: 0.7,
-          max_tokens: 4000,
+          max_tokens: 1500,
         });
 
         console.log("Successfully analyzed content with OpenAI");

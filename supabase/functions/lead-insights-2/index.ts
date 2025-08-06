@@ -1422,7 +1422,7 @@ Deno.serve(async (req) => {
               model: "gpt-4o",
               messages: [{ role: "user", content: prompt }],
               temperature: 0.7,
-              max_tokens: 4000,
+              max_tokens: 1500,
             });
             response = completion.choices[0].message.content;
           } else {
