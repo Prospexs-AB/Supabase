@@ -334,13 +334,45 @@ Deno.serve(async (req) => {
         //     ]
         //   `;
 
+        const context = `
+          USPs: ${unique_selling_points
+            .map(
+              (usp, index) => `
+                ${index + 1}. Title: ${usp.value}
+                Description: ${usp.description}
+                Source: ${usp.source}
+            `
+            )
+            .join("\n")}
+          Benefits: ${benefits
+            .map(
+              (benefit, index) => `
+                ${index + 1}. Title: ${benefit.value}
+                Description: ${benefit.description}
+                Source: ${benefit.source}
+            `
+            )
+            .join("\n")}
+          Problems Solved: ${problem_solved
+            .map(
+              (problem, index) => `
+                ${index + 1}. Title: ${problem.value}
+                Description: ${problem.description}
+                Source: ${problem.source}
+            `
+            )
+            .join("\n")}
+        `;
+
+        console.log("Context:", context);
+
         const prompt = `
           You are a senior industry analyst at a top global consultancy.
           Your task: Produce a detailed Audience Insights brief for a given target audience (Role: ${role}, Industry: ${industry}, Country: ${country}).
           This should combine deep research with previously extracted USPs, Benefits, and Problems Solved for ${companyName}.
-          Language: ${language}
+          Ensure that the language is ${language}.
 
-          // TODO: Add context here
+          ${context}
 
           1. Audience Profile
           ● Write a 200-250 word analyst-level profile of this audience (e.g., “HR Directors at
@@ -535,7 +567,8 @@ Deno.serve(async (req) => {
           Sources: PwC Logistics Performance Study 2023, Eurofound 2024.
 
           Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
-        `;
+          Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
+          `;
 
         console.log("Prompt:", prompt);
 
