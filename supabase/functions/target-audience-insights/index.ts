@@ -340,6 +340,8 @@ Deno.serve(async (req) => {
           This should combine deep research with previously extracted USPs, Benefits, and Problems Solved for ${companyName}.
           Language: ${language}
 
+          // TODO: Add context here
+
           1. Audience Profile
           ● Write a 200-250 word analyst-level profile of this audience (e.g., “HR Directors at
           large tech companies in Romania”).
@@ -348,7 +350,7 @@ Deno.serve(async (req) => {
             transformation).
             ○ Industry-specific challenges (e.g., Romanian e-commerce managers facing
             workforce shortages).
-          ○ Local context (laws, market trends, labor data, regulatory environment).
+            ○ Local context (laws, market trends, labor data, regulatory environment).
           ● Use at least 3-5 public sources (market reports, news, industry data) and cite them
           inline (e.g., “According to PwC's 2024 Global Workforce Report...”).
 
