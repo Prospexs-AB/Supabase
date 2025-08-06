@@ -195,28 +195,28 @@ Deno.serve(async (req) => {
       step_2_result: { company_name },
     } = progressData;
 
-    if (
-      !company_name ||
-      !data.occupation ||
-      (!(
-        hasOverlap(company_name, data.occupation) ||
-        hasOverlap(data.occupation, company_name)
-      ) &&
-        !(
-          hasOverlap(company_name, data.headline) ||
-          hasOverlap(data.headline, company_name)
-        ))
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: "User is not working in the same company as the campaign",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
-    }
+    // if (
+    //   !company_name ||
+    //   !data.occupation ||
+    //   (!(
+    //     hasOverlap(company_name, data.occupation) ||
+    //     hasOverlap(data.occupation, company_name)
+    //   ) &&
+    //     !(
+    //       hasOverlap(company_name, data.headline) ||
+    //       hasOverlap(data.headline, company_name)
+    //     ))
+    // ) {
+    //   return new Response(
+    //     JSON.stringify({
+    //       error: "User is not working in the same company as the campaign",
+    //     }),
+    //     {
+    //       headers: { ...corsHeaders, "Content-Type": "application/json" },
+    //       status: 400,
+    //     }
+    //   );
+    // }
 
     const new_latest_step = 5;
     const cleanFurtherProgress = {};
