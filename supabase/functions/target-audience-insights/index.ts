@@ -302,76 +302,277 @@ Deno.serve(async (req) => {
           insights: {},
         };
 
-        for (const category of categories) {
-          const { name, data, label, promptExample } = category;
-          const prompt = `
-            You are a senior industry analyst. Write 5 consulting-grade paragraphs analyzing how ${companyWebsite}'s ${label} directly affect ${role} at ${industry} in ${country}.
+        // for (const category of categories) {
+        //   const { name, data, label, promptExample } = category;
+        //   const prompt = `
+        //     You are a senior industry analyst. Write 5 consulting-grade paragraphs analyzing how ${companyWebsite}'s ${label} directly affect ${role} at ${industry} in ${country}.
 
-            Language: ${language}
+        //     Language: ${language}
 
-            Requirements per paragraph:
-            - 150 words max
-            - 3+ quantifiable data points
-            - Compare against alternatives
-            - Focus on daily workflow impact
-            - Use verifiable sources
+        //     Requirements per paragraph:
+        //     - 150 words max
+        //     - 3+ quantifiable data points
+        //     - Compare against alternatives
+        //     - Focus on daily workflow impact
+        //     - Use verifiable sources
 
-            Base analysis on:
-            ${data.map((singleData) => `- ${singleData.value}`).join("\n")}
+        //     Base analysis on:
+        //     ${data.map((singleData) => `- ${singleData.value}`).join("\n")}
 
-            IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites. 
-            Try to not use the same source for multiple points.
-            If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
-            IMPORTANT: Return only JSON. No links or citations in descriptions - put URLs in source array.
-            Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
-            Format:
-            [
-              {
-                "title": "Title",
-                "description": "Description (no URLs)",
-                "source": ["source url here", "source url here"]
-              }
-            ]
-          `;
+        //     IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites.
+        //     Try to not use the same source for multiple points.
+        //     If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
+        //     IMPORTANT: Return only JSON. No links or citations in descriptions - put URLs in source array.
+        //     Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
+        //     Format:
+        //     [
+        //       {
+        //         "title": "Title",
+        //         "description": "Description (no URLs)",
+        //         "source": ["source url here", "source url here"]
+        //       }
+        //     ]
+        //   `;
 
-          console.log("Prompt:", prompt);
+        const prompt = `
+          You are a senior industry analyst at a top global consultancy.
+          Your task: Produce a detailed Audience Insights brief for a given target audience (Role: ${role}, Industry: ${industry}, Country: ${country}).
+          This should combine deep research with previously extracted USPs, Benefits, and Problems Solved for ${companyName}.
+          Language: ${language}
 
-          console.log("Sending request to OpenAI API...");
-          const openAiResponse = await openai.responses.create({
-            model: "gpt-4.1",
-            tools: [{ type: "web_search_preview" }],
-            input: prompt,
-          });
+          1. Audience Profile
+          ● Write a 200-250 word analyst-level profile of this audience (e.g., “HR Directors at
+          large tech companies in Romania”).
+          ● Include:
+            ○ Role-specific responsibilities and KPIs (e.g., cost control, compliance, digital
+            transformation).
+            ○ Industry-specific challenges (e.g., Romanian e-commerce managers facing
+            workforce shortages).
+          ○ Local context (laws, market trends, labor data, regulatory environment).
+          ● Use at least 3-5 public sources (market reports, news, industry data) and cite them
+          inline (e.g., “According to PwC's 2024 Global Workforce Report...”).
 
-          console.log("Successfully analyzed content with OpenAI");
-          const analysis = openAiResponse.output_text;
-          console.log("OpenAI analysis:", analysis);
-          console.log(
-            "OpenAI analysis preview:",
-            analysis.substring(0, analysis.length)
-          );
-          console.log(
-            "OpenAI analysis end:",
-            analysis.substring(analysis.length - 500)
-          );
+          2. Audience Sources
+          ● Provide 5 clickable sources directly under the Audience Profile.
+          ● These should be the reports, articles, or datasets used to inform the Audience
+          Profile (e.g., Eurostat labor market data, Gartner surveys, country-specific HR reports).
 
-          let cleanAnalysis = analysis.trim();
-          if (cleanAnalysis.startsWith("```json")) {
-            cleanAnalysis = cleanAnalysis
-              .replace(/^```json\s*/, "")
-              .replace(/\s*```$/, "");
-          } else if (cleanAnalysis.startsWith("```")) {
-            cleanAnalysis = cleanAnalysis
-              .replace(/^```\s*/, "")
-              .replace(/\s*```$/, "");
-          }
+          3. Key Data Points
+          ● Summarize 4-6 high-impact insights for this audience (bullet points).
+          ● These should be the most actionable findings from the Audience Profile and the
+          audience-specific USPs, Benefits, and Problems Solved.
+          ● Each data point must have a short descriptive title (e.g., “Rising Workforce
+          Compliance Costs in Romania”) and link to its source.
 
-          const parsedAnalysis = JSON.parse(cleanAnalysis);
-          console.log("Parsed analysis:", parsedAnalysis);
-          finalInsights.insights[name] = parsedAnalysis;
+          4. USPs, Pain Points, Benefits (Audience-Specific)
+          ● Write 3-4 USPs, 3-4 Pain Points, and 3-4 Benefits tailored to this audience.
+          ● Each section should be 150-200 words per item, sourced, and contextualized for the
+          role/industry/country.
+          ● Use multiple public, verifiable sources (press releases, reports, analyst insights).
+
+          Output Format:
+          Audience Profile: [200-250 word analysis + inline citations]
+          Sources: [5 clickable URLs with source names]
+          Key Data Points:
+          ● [Title + 1-2 sentence summary + source]
+          ● [Repeat 4-6 times]
+
+          USPs:
+          1. [Title + 150-200 word analysis + sources]
+          2. ...
+
+          Pain Points:
+          1. ...
+
+          Benefits:
+          1. ...
+
+          Examples for www.jobandtalent.com (PwC providing the solution)
+
+          Audience Profile
+          Operations Managers in Spain's logistics sector are under mounting pressure to reduce costs,
+          maintain service-level agreements, and navigate strict labor compliance requirements.
+          The sector employs over 1 million workers (Spanish Ministry of Transport, 2024) and faces
+          turnover rates of 25-30% among warehouse staff (Eurofound Labor Market Report, 2024).
+          Compliance with Spanish labor laws, such as Registro de Jornada (daily working-time
+          tracking) and sectoral collective bargaining agreements, significantly increases administrative
+          burden. Non-compliance can lead to fines of up to €187,000 per infraction (Spanish Labor
+          Inspectorate, 2024).
+          Additionally, Spain's e-commerce boom—growing at 15% YoY (CNMC E-Commerce Report,
+          2024)—has increased demand volatility, forcing operations managers to balance workforce
+          flexibility with delivery performance. According to PwC's Global Operations Pulse Survey
+          (2024), 63% of logistics leaders in Southern Europe cite “scaling operations quickly without
+          inflating labor costs” as a top priority. These challenges make workforce platforms like
+          Job&Talent appealing. However, as operations scale across multiple regions and enterprise
+          clients, integrating PwC's global workforce management solutions offers added value:
+          harmonized compliance, streamlined reporting, and AI-driven workforce
+          analytics—freeing managers from repetitive admin tasks and allowing them to focus on
+          throughput, cost efficiency, and client SLAs.
+          Sources
+          1. Spanish Ministry of Transport - Logistics Sector Labor Statistics (2024) -
+          https://mitma.gob.es
+          2. Eurofound Labor Market Report - Southern Europe Logistics Workforce (2024) -
+          https://eurofound.europa.eu
+          3. Spanish Labor Inspectorate - Registro de Jornada Compliance Fines (2024) -
+          https://mites.gob.es
+          4. CNMC E-Commerce Growth Report - Spain 2024 - https://cnmc.es
+          5. PwC Global Operations Pulse Survey (2024) - https://pwc.com
+
+          Key Data Points
+
+          ● Rising Turnover in Spanish Logistics: Warehouse staff turnover averages 25-30%,
+          disrupting continuity and inflating recruitment costs. (Eurofound, 2024)
+          ● Compliance Costs are Increasing: Fines for non-compliance with Registro de
+          Jornada can reach €187,000 per case. (Spanish Labor Inspectorate, 2024)
+          ● E-Commerce Drives Volatility: Spain's logistics sector is growing 15% YoY, increasing
+          workforce planning complexity. (CNMC, 2024)
+          ● Scaling Without Cost Inflation: 63% of logistics leaders in Southern Europe cite
+          efficient scaling as their top challenge. (PwC Global Ops Survey, 2024)
+
+          USPs
+          PwC-Enhanced Compliance and Reporting
+          Managing compliance in Spain's logistics sector is complex, with requirements like Registro de
+          Jornada (daily working-time logging), collective bargaining agreements, and sector-specific
+          reporting. Non-compliance fines can reach €187,000 per infraction (Spanish Labor
+          Inspectorate, 2024). Job&Talent's existing compliance tools address core tracking needs, but
+          PwC extends this with end-to-end compliance management, including automated geo-tagged
+          attendance, consolidated reporting across multi-site operations, and audit-ready payroll
+          documentation. These features reduce administrative burden by up to 25-30% (PwC
+          Compliance Impact Study, 2024), freeing operations managers to focus on meeting client SLAs
+          and throughput targets. Moreover, PwC's country-specific advisory teams help navigate evolving
+          labor regulations, reducing the risk of penalties during labor inspections. This positions
+          Job&Talent as a trusted partner for enterprise clients who require bulletproof compliance in
+          high-risk sectors like last-mile delivery and e-commerce logistics.
+          Sources: Spanish Labor Inspectorate 2024, PwC Compliance Impact Study 2024, Eurofound
+          Labor Market Report 2024.
+          
+          AI-Driven Workforce Demand Forecasting
+          Seasonal demand surges driven by Spain's 15% YoY e-commerce growth (CNMC, 2024)
+          place heavy strain on logistics managers. Traditional staffing models often lead to under- or
+          over-hiring, inflating labor costs and increasing SLA penalties. PwC's Workforce Insights
+          Platform integrates predictive analytics into Job&Talent's ecosystem, improving scheduling
+          accuracy by up to 20% (PwC Workforce Benchmark, 2024). By analyzing historical data, order
+          volumes, and regional labor availability, the system recommends optimal staffing levels for
+          warehouses and last-mile operations. This results in 15-20% fewer overtime hours and
+          reduced reliance on last-minute staffing agencies. For managers, this means fewer costly
+          disruptions during peak seasons (e.g., Black Friday, holiday campaigns) and higher on-time
+          delivery rates. The outcome is not just cost efficiency but also a competitive advantage in
+          maintaining service quality under fluctuating demand.
+          Sources: CNMC 2024, PwC Workforce Benchmark 2024, PwC Logistics Case Studies 2023.
+
+          Standardized Multi-Site Payroll Management
+          As logistics companies expand across regions in Spain and Southern Europe, inconsistent
+          payroll systems create administrative inefficiencies and compliance risks. Job&Talent addresses
+          core workforce payments, but PwC adds multi-site payroll harmonization, unifying pay
+          structures and automating compliance checks across different collective agreements. This
+          reduces payroll cycle times by 40% (PwC Payroll Modernization Report, 2023) and minimizes
+          errors that can trigger legal disputes. For operations managers overseeing multi-warehouse
+          networks, this ensures consistent, transparent pay practices—essential for maintaining worker
+          satisfaction and retention in a sector where turnover averages 25-30% (Eurofound, 2024).
+          Harmonized payroll also facilitates real-time workforce cost tracking, enabling managers to
+          make data-driven decisions on labor allocation. This strategic integration transforms payroll from
+          a reactive process into a forward-looking tool for workforce planning and cost control.
+          Sources: PwC Payroll Modernization Report 2023, Eurofound Labor Market Report 2024,
+          Spanish Ministry of Transport 2024.
+
+          Pain Points
+          Administrative Overload in Compliance
+          Operations managers in Spanish logistics spend up to 35% of their time on compliance
+          administration—logging hours, preparing audit files, and managing payroll data (Eurofound,
+          2024). With labor inspections becoming more frequent and penalties for errors reaching
+          €187,000, the stakes are high (Spanish Labor Inspectorate, 2024). This reactive, manual
+          approach diverts time from core performance metrics like throughput and SLA adherence.
+          PwC's integrated compliance solution automates these processes, providing audit-ready
+          records and real-time dashboards, significantly reducing the risk of human error. By alleviating
+          this burden, managers can reallocate resources toward optimizing operations, driving
+          efficiencies, and improving client delivery metrics.
+          Sources: Eurofound 2024, Spanish Labor Inspectorate 2024, PwC Compliance Impact Study
+          2024.
+
+          High Turnover and Training Costs
+          With 25-30% annual turnover among warehouse staff (Eurofound, 2024), Spanish logistics
+          managers face recurring recruitment and training cycles that cost €3,000-€5,000 per
+          replacement (PwC Workforce Cost Analysis, 2023). This disrupts team cohesion and
+          jeopardizes delivery timelines, particularly during high-volume periods. Job&Talent's
+          engagement features improve retention, while PwC's data-driven workforce analytics enhance it
+          further by aligning worker incentives with performance. For managers, this means reduced
+          churn, lower training costs, and a more stable workforce—crucial for maintaining operational
+          consistency in time-sensitive delivery networks.
+          Sources: Eurofound 2024, PwC Workforce Cost Analysis 2023.
+
+          Scaling for Volatile Demand
+          E-commerce growth (15% YoY) has amplified demand volatility, leaving managers scrambling
+          to scale operations quickly (CNMC, 2024). Traditional staffing models are too slow to meet
+          peaks, leading to missed SLAs and penalty fees. PwC's AI-driven onboarding workflows
+          reduce time-to-fill by up to 40% (PwC Case Study Iberdrola, 2023), helping Job&Talent provide
+          workforce continuity during demand surges. This reduces operational firefighting, enabling
+          proactive labor planning.
+          Sources: CNMC 2024, PwC Case Study Iberdrola 2023.
+
+          Benefits
+          Reduced Compliance Risk and Cost
+          PwC's compliance solutions reduce the likelihood of non-compliance fines by over 60%
+          through automated tracking, standardized reporting, and advisory oversight (PwC Compliance
+          Impact Study, 2024). This allows managers to confidently meet legal obligations while
+          reallocating time and resources to operational KPIs like delivery performance and cost
+          efficiency.
+          Sources: PwC Compliance Impact Study 2024, Spanish Labor Inspectorate 2024.
+
+          Faster, Smarter Workforce Scaling
+          AI-powered labor forecasting improves scheduling efficiency by up to 20%, cutting overtime
+          costs by 15-20% and ensuring adequate coverage for peak periods (PwC Workforce
+          Benchmark 2024). This allows managers to meet demand without overstaffing—protecting
+          margins while maintaining service levels.
+          Sources: PwC Workforce Benchmark 2024, CNMC 2024.
+
+          Improved SLA and Client Retention
+          By streamlining workforce planning and compliance, operations managers achieve on-time
+          delivery improvements of up to 12%, enhancing SLA adherence and boosting client
+          satisfaction (PwC Logistics Performance Study, 2023). This strengthens Job&Talent's reputation
+          as a reliable workforce partner for enterprise clients in Spain's competitive logistics sector.
+          Sources: PwC Logistics Performance Study 2023, Eurofound 2024.
+
+          Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
+        `;
+
+        console.log("Prompt:", prompt);
+
+        console.log("Sending request to OpenAI API...");
+        const openAiResponse = await openai.responses.create({
+          model: "gpt-4.1",
+          tools: [{ type: "web_search_preview" }],
+          input: prompt,
+        });
+
+        console.log("Successfully analyzed content with OpenAI");
+        const analysis = openAiResponse.output_text;
+        console.log("OpenAI analysis:", analysis);
+        console.log(
+          "OpenAI analysis preview:",
+          analysis.substring(0, analysis.length)
+        );
+        console.log(
+          "OpenAI analysis end:",
+          analysis.substring(analysis.length - 500)
+        );
+
+        let cleanAnalysis = analysis.trim();
+        if (cleanAnalysis.startsWith("```json")) {
+          cleanAnalysis = cleanAnalysis
+            .replace(/^```json\s*/, "")
+            .replace(/\s*```$/, "");
+        } else if (cleanAnalysis.startsWith("```")) {
+          cleanAnalysis = cleanAnalysis
+            .replace(/^```\s*/, "")
+            .replace(/\s*```$/, "");
         }
 
-        listOfInsights.push(finalInsights);
+        const parsedAnalysis = JSON.parse(cleanAnalysis);
+        console.log("Parsed analysis:", parsedAnalysis);
+        // finalInsights.insights[name] = parsedAnalysis;
+        // }
+
+        listOfInsights.push({ ...recommendation, ...parsedAnalysis });
       }
     );
 
