@@ -403,6 +403,10 @@ Deno.serve(async (req) => {
       that recruiters gather pertinent information, streamlining the screening process and improving
       the quality of applicant data.
 
+      IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites.
+      Try to not use the same source for multiple points.
+      If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
+
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
       IMPORTANT: Make sure that the link for sources are not shown in the actual analysis description.
@@ -581,6 +585,10 @@ Deno.serve(async (req) => {
       5. "How do you forecast or report on revenue by country or currency?"
       Stripe can help simplify multi-currency revenue recognition and offer richer financial
       dashboards, especially for CFO-level reporting.
+
+      IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites.
+      Try to not use the same source for multiple points.
+      If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT!!!!! Directly respond in the JSON format provided below!!!! Do not include any explanatory text or a response sentence, markdown formatting, or additional content outside the JSON structure.
