@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
       summary: description = "No description available",
       country: company_country,
       industry: company_industry,
+      company_size,
     } = step2Result;
 
     const { language = "en" } = step1Result;
@@ -218,7 +219,7 @@ Deno.serve(async (req) => {
 
       Task: Write a 150-200 word audience brief for the target audience:
       [Target Audience Title] in [Country]
-      
+
       Context:
       ● The logged-in user works at ${name}, which operates in ${company_industry}, with ${company_size} employees and headquarters in ${companyCountry}.
       ● Your job is to explain why this audience is a high-value target for ${name}.
@@ -347,6 +348,7 @@ Deno.serve(async (req) => {
       );
     }
   } catch (error) {
+    console.error(error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status:
