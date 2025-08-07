@@ -591,51 +591,51 @@ Deno.serve(async (req) => {
   });
 
   const prompt = `
-      With the following different target audience contexts:
-      ${targetAudienceList.map((targetAudience, index) => {
-        return `
-        ${index + 1}.
-        Role: ${targetAudience.role}
-        Industry: ${targetAudience.industry}
-        Country: ${targetAudience.country}`;
-      })}
+    With the following different target audience contexts:
+    ${targetAudienceList.map((targetAudience, index) => {
+      return `
+      ${index + 1}.
+      Role: ${targetAudience.role}
+      Industry: ${targetAudience.industry}
+      Country: ${targetAudience.country}`;
+    })}
 
-      Industry List:
-      ${industryList.map((industry, index) => {
-        return `${index + 1}. Parent: ${industry.parent} - Children: ${industry.children.join(
-          ", "
-        )}`;
-      })}
+    Industry List:
+    ${industryList.map((industry, index) => {
+      return `${index + 1}. Parent: ${
+        industry.parent
+      } - Children: ${industry.children.join(", ")}`;
+    })}
 
-      Tasks:
-      - Generate a list of 4-5 words (one word per item) that are relevant to the role or industry for each target audience.
-      - Generate a list of 4-5 words (one word per item) that are relevant to the desired seniority for each target audience.
-      - Choose two child industry from the same parent from the industry list that are relevant to the target audiences industry.
+    Tasks:
+    - Generate a list of 4-5 words (one word per item) that are relevant to the role or industry for each target audience.
+    - Generate a list of 4-5 words (one word per item) that are relevant to the desired seniority for each target audience.
+    - Choose two child industry from the same parent from the industry list that are relevant to the target audiences industry.
 
-      Keep the words simple and generic.
-    
-      Examples for the role or insudtry list are: 
-      "Chiefs": ["Digital", "Data", "Sales", "Strategy", "Executive"]
-      "Sales or Data Managers/Directors": ["Sales", "Data"]
-      "Founder and owners": ["Founder", "Co-Founder", "Owner", "Co-Owner", "President"]
+    Keep the words simple and generic.
+  
+    Examples for the role or insudtry list are:
+    "Chiefs": ["Digital", "Data", "Sales", "Strategy", "Executive"]
+    "Sales or Data Managers/Directors": ["Sales", "Data"]
+    "Founder and owners": ["Founder", "Co-Founder", "Owner", "Co-Owner", "President"]
 
-      Examples for the seniority list are: 
-      "Chiefs": ["Chief"]
-      "Sales or Data Managers/Directors": ["Manager", "Director"]
+    Examples for the seniority list are: 
+    "Chiefs": ["Chief"]
+    "Sales or Data Managers/Directors": ["Manager", "Director"]
 
-      IMPORTANT: If the data provided is not in english, please return the data in english.
-      IMPORTANT: Return the answers in the following JSON format for each target audience:
-      [
-        {
-          "role": "actual target audience role",
-          "industry": "actual target audience industry",
-          "country": "actual target audience country",
-          "roleList": [ "role 1", "role 2", "role 3" ],
-          "seniorityList": [ "seniority 1", "seniority 2", "seniority 3" ],
-          "recommendedIndustries": [ "industry 1", "industry 2"]
-        }
-      ]
-    `;
+    IMPORTANT: If the data provided is not in english, please return the data in english.
+    IMPORTANT: Return the answers in the following JSON format for each target audience:
+    [
+      {
+        "role": "actual target audience role",
+        "industry": "actual target audience industry",
+        "country": "actual target audience country",
+        "roleList": [ "role 1", "role 2", "role 3" ],
+        "seniorityList": [ "seniority 1", "seniority 2", "seniority 3" ],
+        "recommendedIndustries": [ "industry 1", "industry 2"]
+      }
+    ]
+  `;
 
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   const openai = new OpenAI({
@@ -643,7 +643,7 @@ Deno.serve(async (req) => {
   });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
