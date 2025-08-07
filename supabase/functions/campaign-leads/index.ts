@@ -602,15 +602,15 @@ Deno.serve(async (req) => {
 
       Industry List:
       ${industryList.map((industry, index) => {
-        return `${index + 1}. ${industry.parent} - ${industry.children.join(
+        return `${index + 1}. Parent: ${industry.parent} - Children: ${industry.children.join(
           ", "
         )}`;
       })}
 
       Tasks:
-      - Generate a list of 1-2 words (one word per item) that are relevant to the role or industry for each target audience.
-      - Generate a list of 1-2 words (one word per item) that are relevant to the desired seniority for each target audience.
-      - Choose one parent and one child industry from the same parent from the industry list that are relevant to the target audiences industry.
+      - Generate a list of 2-3 words (one word per item) that are relevant to the role or industry for each target audience.
+      - Generate a list of 2-3 words (one word per item) that are relevant to the desired seniority for each target audience.
+      - Choose two child industry from the same parent from the industry list that are relevant to the target audiences industry.
 
       Keep the words simple and generic.
     
