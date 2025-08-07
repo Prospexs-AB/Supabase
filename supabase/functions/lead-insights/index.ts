@@ -32,25 +32,6 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
   return user.id;
 };
 
-// Helper function to clean JSON responses from OpenAI
-const cleanJsonResponse = (response: string): string => {
-  let cleaned = response.trim();
-
-  // Handle cases where there's text before the JSON
-  const jsonMatch = cleaned.match(
-    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
-  );
-  if (jsonMatch) {
-    return jsonMatch[1];
-  } else if (cleaned.startsWith("```json")) {
-    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-  } else if (cleaned.startsWith("```")) {
-    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
-  }
-
-  return cleaned;
-};
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -67,7 +48,7 @@ Deno.serve(async (req) => {
     );
 
     const userId = await getUserId(req, supabase);
-    const { campaign_id, lead } = await req.json();
+    const { campaign_id, leads } = await req.json();
 
     console.log(`=============== Start for: ${campaign_id} ===============`);
 
@@ -106,53 +87,52 @@ Deno.serve(async (req) => {
       step_10_result = [];
     }
 
-    const leadExists = step_10_result.find(
-      (savedLead) => savedLead.full_name === lead.full_name
-    );
-
-    if (leadExists) {
-      return new Response(JSON.stringify(leadExists), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     const { data: jobData, error: jobError } = await supabase
       .from("jobs")
       .select("*")
       .eq("campaign_id", campaign_id);
 
-    const jobExists = jobData.find(
-      (job) => job.progress_data.full_name === lead.full_name
-    );
-    console.log("jobExists", jobExists);
-
-    if (jobExists) {
-      return new Response(
-        JSON.stringify({
-          message: `Job already exists for ${lead.full_name}`,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
+    const filteredLeads = [];
+    for (const lead of leads) {
+      const leadExists = step_10_result.find(
+        (savedLead) => savedLead.full_name === lead.full_name
       );
+
+      if (leadExists) {
+        console.log(`Lead already exists: ${lead.full_name}`);
+        continue;
+      }
+
+      const jobExists = jobData.find(
+        (job) => job.progress_data.full_name === lead.full_name
+      );
+      console.log("jobExists", jobExists);
+
+      if (jobExists) {
+        console.log(`Job already exists for ${lead.full_name}`);
+        continue;
+      }
+
+      filteredLeads.push(lead);
     }
 
-    await supabase.from("jobs").insert({
-      campaign_id: campaign_id,
-      job_name: "lead-insights",
-      job_step: 0,
-      status: "queued",
-      progress_data: { ...lead },
+    const leadsToProcess = filteredLeads.map(async (lead) => {
+      await supabase.from("jobs").insert({
+        campaign_id: campaign_id,
+        job_name: "lead-insights",
+        job_step: 0,
+        status: "queued",
+        progress_data: { ...lead },
+      });
     });
 
-    console.log(`Adding job to database:`, lead.full_name);
+    await Promise.all(leadsToProcess);
+
+    console.log(`Adding job to database:`, filteredLeads.length);
 
     return new Response(
       JSON.stringify({
         message: "Successfully generated business insights",
-        data: { ...lead },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
