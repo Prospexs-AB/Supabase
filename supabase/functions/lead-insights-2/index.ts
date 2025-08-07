@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
     const { data: jobData, error: jobError } = await supabase
       .from("jobs")
       .select("*")
+      .eq("job_name", "lead-insights")
       .eq("status", "queued")
       .eq("job_step", 1)
       .order("created_at", { ascending: true })
