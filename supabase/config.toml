@@ -524,3 +524,14 @@ entrypoint = "./functions/lead-insights-2/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/lead-insights-2/*.html" ]
+
+[functions.lead-insights-3]
+enabled = true
+verify_jwt = true
+import_map = "./functions/lead-insights-3/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/lead-insights-3/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/lead-insights-3/*.html" ]
