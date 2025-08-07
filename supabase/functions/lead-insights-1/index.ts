@@ -48,6 +48,22 @@ Deno.serve(async (req) => {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
     );
 
+    const { data: jobDataList } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("job_name", "lead-insights")
+      .eq("status", "processing")
+      .eq("job_step", 0)
+      .limit(3);
+
+    if (jobDataList.length === 3) {
+      console.log("Too many jobs running");
+      return new Response(JSON.stringify({ error: "Too many jobs" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429,
+      });
+    }
+
     const { data: jobData, error: jobError } = await supabase
       .from("jobs")
       .select("*")

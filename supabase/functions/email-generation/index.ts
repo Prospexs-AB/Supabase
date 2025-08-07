@@ -14,7 +14,897 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
-const getUserId = async (req: Request, supabase: SupabaseClient) => {
+// Configuration
+const CONFIG = {
+  MODELS: {
+    GPT4: "gpt-4o",
+    GPT4_MINI: "gpt-4o-mini",
+    FINETUNED_HPEF:
+      "ft:gpt-4o-mini-2024-07-18:prospexs:hpef-condensed:A1ScOMrW",
+    FINETUNED_TTB:
+      "ft:gpt-4o-mini-2024-07-18:prospexs:transitiontobusiness:A1DJJhy8",
+  },
+  TEMPERATURE: {
+    CREATIVE: 1.0,
+    BALANCED: 0.5,
+    CONSISTENT: 0.1,
+  },
+};
+
+// Utility Functions
+class Utils {
+  static async sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  static getCurrentDay() {
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    const now = new Date();
+    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  }
+
+  static cleanContent(text: string) {
+    return text.trim().replace(/\n+/g, "\n").replace(/\s+/g, " ");
+  }
+}
+
+// Base Email Part Class
+class EmailPart {
+  content: string;
+  context: string;
+  language: string;
+  explanation: string;
+  options: string[];
+
+  constructor(content: string, options: any = {}) {
+    this.content = content;
+    this.context = options.context || "";
+    this.language = options.language || "en";
+    this.explanation = options.explanation || "";
+    this.options = options.options || [];
+  }
+
+  cleanContent() {
+    this.content = Utils.cleanContent(this.content);
+    return this;
+  }
+
+  toText() {
+    return this.content;
+  }
+
+  toMarkdown() {
+    return `**${this.constructor.name}:**\n\n${this.content}`;
+  }
+}
+
+// Subject Class
+class Subject extends EmailPart {
+  static async fromDetailsAndContexts(
+    details: any,
+    contexts: any,
+    openai: OpenAI
+  ) {
+    const prompt = this.buildPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4_MINI,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 100,
+    });
+
+    return new Subject(completion.choices[0].message.content || "", {
+      context: prompt,
+      language: details.language,
+    });
+  }
+
+  static buildPrompt(details: any, contexts: any) {
+    return `
+Generate a compelling email subject line for a professional outreach email.
+
+Sender: ${details.sender.person.name} (${
+      details.sender.person.designation
+    }) at ${details.sender.company.name}
+Receiver: ${details.receiver.person.name} (${
+      details.receiver.person.designation
+    }) at ${details.receiver.company.name}
+
+Context: ${contexts.email || "Professional business outreach"}
+
+Requirements:
+- Keep it under 60 characters
+- Be professional and engaging
+- Avoid spam trigger words
+- Be specific and relevant
+- Return ONLY the subject line, no additional text
+
+Subject line:`;
+  }
+
+  toText() {
+    return this.content;
+  }
+}
+
+// HPEF (Hyper Personalized Engagement Framework)
+class HPEF extends EmailPart {
+  static async fromDetails(details: any, openai: OpenAI, options: any = {}) {
+    const { useFinetuned = false } = options;
+
+    if (useFinetuned) {
+      return await this.getFinetunedHPEF(details, openai);
+    } else {
+      return await this.getStoryLikeHPEF(details, openai);
+    }
+  }
+
+  static async getStoryLikeHPEF(details: any, openai: OpenAI) {
+    const stories = await this.generateStories(details, openai, 1, 2);
+    const bestStory = await this.selectBestStory(
+      stories,
+      details.language,
+      openai
+    );
+
+    return new HPEF(bestStory.content, {
+      context: this.getContext(details),
+      language: details.language,
+      options: stories.map((s: any) => s.content),
+    }).cleanContent();
+  }
+
+  static async generateStories(
+    details: any,
+    openai: OpenAI,
+    start: number = 1,
+    end: number = 2
+  ) {
+    const stories = [];
+    for (let i = start; i <= end; i++) {
+      const story = await this.generateSingleStory(details, openai, i);
+      stories.push(story);
+    }
+    return stories;
+  }
+
+  static async generateSingleStory(
+    details: any,
+    openai: OpenAI,
+    storyId: number
+  ) {
+    const prompt = this.buildStoryPrompt(details, storyId);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.BALANCED,
+      max_tokens: 300,
+    });
+
+    const refinedStory = await this.rewriteHPEF(
+      completion.choices[0].message.content || "",
+      details.language,
+      openai
+    );
+
+    return refinedStory;
+  }
+
+  static async rewriteHPEF(
+    oldStory: string,
+    language: string = "en",
+    openai: OpenAI
+  ) {
+    const prompt = `
+Rewrite this email introduction to make it more concise and engaging:
+
+${oldStory}
+
+Requirements:
+- Keep it under 3 sentences
+- Make it more personal and relevant
+- Maintain professional tone
+- Focus on building connection
+
+Rewritten version:`;
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4_MINI,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CREATIVE,
+      max_tokens: 200,
+    });
+
+    return {
+      content: completion.choices[0].message.content || "",
+    };
+  }
+
+  static async selectBestStory(
+    stories: any[],
+    language: string = "en",
+    openai: OpenAI
+  ) {
+    const storiesText = stories
+      .map((s, i) => `${i + 1}. ${s.content}`)
+      .join("\n");
+
+    const prompt = `
+Compare these email introductions and select the best one:
+
+${storiesText}
+
+Select the best introduction based on:
+- Personalization quality
+- Engagement potential
+- Professional tone
+- Relevance to business context
+
+Respond with only the number (1, 2, etc.) of the best option:`;
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4_MINI,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 50,
+    });
+
+    const selectedIndex =
+      parseInt(
+        completion.choices[0].message.content?.match(/\d+/)?.[0] || "1"
+      ) - 1;
+    const selectedStory = stories[selectedIndex];
+
+    return selectedStory;
+  }
+
+  static async getFinetunedHPEF(details: any, openai: OpenAI) {
+    const prompt = this.buildFinetunedPrompt(details);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.FINETUNED_HPEF,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.BALANCED,
+      max_tokens: 300,
+      n: 3,
+    });
+
+    const hpefs = completion.choices
+      .map((choice) => choice.message.content)
+      .filter((content) => content)
+      .map((content) => this.parseFinetunedResponse(content))
+      .filter((hpef) => hpef);
+
+    if (hpefs.length === 0) {
+      return await this.getStoryLikeHPEF(details, openai);
+    }
+
+    const bestHPEF = await this.selectBestStory(
+      hpefs,
+      details.language,
+      openai
+    );
+
+    return new HPEF(bestHPEF.content, {
+      context: this.getContext(details),
+      language: details.language,
+      explanation: bestHPEF.explanation || "",
+      options: hpefs
+        .filter((h: any) => h.content !== bestHPEF.content)
+        .map((h: any) => h.content),
+    }).cleanContent();
+  }
+
+  static parseFinetunedResponse(response: string) {
+    const regex = /explanation:\s*(.*?)\s+hpef:\s*(.*)/s;
+    const match = response.match(regex);
+
+    if (match) {
+      return {
+        content: match[2].trim(),
+        explanation: match[1].trim(),
+      };
+    }
+    return null;
+  }
+
+  static buildStoryPrompt(details: any, storyId: number) {
+    return `
+Generate a personalized email introduction paragraph for:
+
+Sender: ${details.sender.person.name} (${
+      details.sender.person.designation
+    }) at ${details.sender.company.name}
+Sender Context: ${details.sender.person.facts || "Professional in technology"}
+
+Receiver: ${details.receiver.person.name} (${
+      details.receiver.person.designation
+    }) at ${details.receiver.company.name}
+Receiver Context: ${details.receiver.person.facts || "Business professional"}
+
+Company Context: ${
+      details.receiver.company.facts_and_figures || "Established company"
+    }
+
+Create a story-like introduction that:
+- Builds a personal connection
+- Shows understanding of their business
+- Is relevant and engaging
+- Maintains professional tone
+- IMPORTANT: Do NOT include any greetings like "Hi", "Dear", or "Hello"
+- Return ONLY the introduction paragraph content
+
+Introduction:`;
+  }
+
+  static buildFinetunedPrompt(details: any) {
+    return `
+Generate a hyper-personalized email introduction.
+
+Sender: ${details.sender.person.name} (${
+      details.sender.person.designation
+    }) at ${details.sender.company.name}
+Sender Context: ${details.sender.person.facts || "Professional in technology"}
+
+Receiver: ${details.receiver.person.name} (${
+      details.receiver.person.designation
+    }) at ${details.receiver.company.name}
+Receiver Context: ${details.receiver.person.facts || "Business professional"}
+
+Company Context: ${
+      details.receiver.company.facts_and_figures || "Established company"
+    }
+
+Format your response as:
+explanation: [brief explanation of the approach]
+hpef: [the actual introduction text]`;
+  }
+
+  static getContext(details: any) {
+    return `
+Sender: ${details.sender.person.name} at ${details.sender.company.name}
+Receiver: ${details.receiver.person.name} at ${details.receiver.company.name}
+Context: Professional business outreach
+    `;
+  }
+
+  static calculateCost(usage: any, model: string) {
+    const inputCost = usage.prompt_tokens * 0.00001;
+    const outputCost = usage.completion_tokens * 0.00003;
+    return inputCost + outputCost;
+  }
+}
+
+// Value Proposition
+class ValueProposition extends EmailPart {
+  static async fromDetailsAndContexts(
+    details: any,
+    contexts: any,
+    openai: OpenAI
+  ) {
+    const openaiResponse = await this.getFromOpenAI(details, contexts, openai);
+
+    return new ValueProposition(openaiResponse.content, {
+      context: this.getContext(details, contexts),
+      language: details.language,
+      options: [],
+    }).cleanContent();
+  }
+
+  static async getFromOpenAI(details: any, contexts: any, openai: OpenAI) {
+    const prompt = this.buildOpenAIPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4_MINI,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 300,
+    });
+
+    return {
+      content: completion.choices[0].message.content || "",
+    };
+  }
+
+  static buildOpenAIPrompt(details: any, contexts: any) {
+    return `
+Create a compelling value proposition paragraph for a business outreach email.
+
+Sender Company: ${details.sender.company.name}
+Sender Company Details: ${
+      details.sender.company.details || "Technology solutions provider"
+    }
+Sender Company Facts: ${
+      details.sender.company.facts_and_figures ||
+      "Established company with proven track record"
+    }
+
+Receiver Company: ${details.receiver.company.name}
+Receiver Company Details: ${
+      details.receiver.company.details || "Established business"
+    }
+
+Requirements:
+- Make it specific and relevant to the receiver's business
+- Focus on mutual benefits
+- Keep it concise (2-3 sentences)
+- Maintain professional tone
+- Highlight unique value proposition
+- Return ONLY the value proposition paragraph, no additional text
+
+Value Proposition:`;
+  }
+
+  static getContext(details: any, contexts: any) {
+    return `
+Sender Company: ${details.sender.company.name}
+Receiver Company: ${details.receiver.company.name}
+Context: ${contexts.email || "Professional outreach"}
+    `;
+  }
+
+  static calculateCost(usage: any, model: string) {
+    const inputCost = usage.prompt_tokens * 0.00001;
+    const outputCost = usage.completion_tokens * 0.00003;
+    return inputCost + outputCost;
+  }
+}
+
+// Transition to Business
+class TransitionToBusiness extends EmailPart {
+  static async fromDetailsAndContexts(
+    details: any,
+    contexts: any,
+    openai: OpenAI,
+    method: string = "examples"
+  ) {
+    let result;
+
+    switch (method) {
+      case "finetuned":
+        result = await this.getFinetuned(details, contexts, openai);
+        break;
+      case "only_prompt":
+        result = await this.getUsingOnlyPrompt(details, contexts, openai);
+        break;
+      case "examples":
+      default:
+        result = await this.getWithExamples(details, contexts, openai);
+        break;
+    }
+
+    return result.cleanContent();
+  }
+
+  static async getFinetuned(details: any, contexts: any, openai: OpenAI) {
+    const prompt = this.buildPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.FINETUNED_TTB,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.BALANCED,
+      max_tokens: 200,
+    });
+
+    const content = completion.choices[0].message.content || "";
+    const parsed = this.parseFinetunedResponse(content);
+
+    return new TransitionToBusiness(parsed.transition_to_business, {
+      explanation: parsed.explanation,
+      context: this.getContext(details, contexts),
+      language: details.language,
+    });
+  }
+
+  static async getUsingOnlyPrompt(details: any, contexts: any, openai: OpenAI) {
+    const prompt = this.buildPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 200,
+    });
+
+    return new TransitionToBusiness(
+      completion.choices[0].message.content || "",
+      {
+        context: this.getContext(details, contexts),
+        language: details.language,
+      }
+    );
+  }
+
+  static async getWithExamples(details: any, contexts: any, openai: OpenAI) {
+    const context = this.getContext(details, contexts);
+    const systemPrompt = this.getSystemPrompt(details.language);
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: context },
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4,
+      messages: messages,
+      temperature: CONFIG.TEMPERATURE.BALANCED,
+      max_tokens: 200,
+    });
+
+    return new TransitionToBusiness(
+      completion.choices[0].message.content || "",
+      {
+        context,
+        language: details.language,
+      }
+    );
+  }
+
+  static parseFinetunedResponse(response: string) {
+    const regex = /explanation:\s*(.*?)\s+transition_to_business:\s*(.*)/s;
+    const match = response.match(regex);
+
+    if (match) {
+      return {
+        explanation: match[1].trim(),
+        transition_to_business: match[2].trim(),
+      };
+    }
+
+    return {
+      explanation: "",
+      transition_to_business: response,
+    };
+  }
+
+  static buildPrompt(details: any, contexts: any) {
+    const context = this.getContext(details, contexts);
+    const examples = this.getExamples(details.language);
+    const systemPrompt = this.getSystemPrompt(details.language);
+
+    return `${context}\n\n${examples}\n\n${systemPrompt}`;
+  }
+
+  static getContext(details: any, contexts: any) {
+    return `
+Receiver Company Facts: ${
+      details.receiver.company.facts_and_figures || "Established company"
+    }
+Sender & Receiver Details: ${
+      details.sender_receiver_yaml || "Professional communication"
+    }
+Email Context: ${contexts.email || "Professional outreach"}
+    `;
+  }
+
+  static getExamples(language: string = "en") {
+    const examples = {
+      en: `
+Examples of good transitions:
+- "Given your company's focus on innovation, I believe our solution could be particularly relevant."
+- "I noticed your company's recent expansion, which aligns perfectly with what we offer."
+- "Based on your industry position, I think there's a great opportunity for collaboration."
+      `,
+    };
+
+    return examples[language as keyof typeof examples] || examples.en;
+  }
+
+  static getSystemPrompt(language: string = "en") {
+    const prompts = {
+      en: `You are a professional business communicator. Create a smooth transition paragraph from personal engagement to business discussion. Return ONLY the transition paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
+      es: `Eres un comunicador empresarial profesional. Crea una transición suave del compromiso personal a la discusión empresarial. Hoy es ${Utils.getCurrentDay()}.`,
+    };
+
+    return prompts[language as keyof typeof prompts] || prompts.en;
+  }
+
+  static calculateCost(usage: any, model: string) {
+    const inputCost = usage.prompt_tokens * 0.00001;
+    const outputCost = usage.completion_tokens * 0.00003;
+    return inputCost + outputCost;
+  }
+}
+
+// Objection Handling
+class ObjectionHandling extends EmailPart {
+  static async fromDetailsAndContexts(
+    details: any,
+    contexts: any,
+    openai: OpenAI
+  ) {
+    const prompt = this.buildPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 200,
+    });
+
+    return new ObjectionHandling(completion.choices[0].message.content || "", {
+      context: this.getContext(details, contexts),
+      language: details.language,
+    }).cleanContent();
+  }
+
+  static buildPrompt(details: any, contexts: any) {
+    const context = this.getContext(details, contexts);
+    const examples = this.getExamples(details.language);
+    const systemPrompt = this.getSystemPrompt(details.language);
+
+    return `${context}\n\n${examples}\n\n${systemPrompt}`;
+  }
+
+  static getContext(details: any, contexts: any) {
+    return `
+Sender Company Details: ${
+      details.sender.company.details || "Technology solutions provider"
+    }
+Receiver Company Details: ${
+      details.receiver.company.details || "Established business"
+    }
+Sender & Receiver Details: ${
+      details.sender_receiver_yaml || "Professional communication"
+    }
+Email Context: ${contexts.email || "Professional outreach"}
+    `;
+  }
+
+  static getExamples(language: string = "en") {
+    const examples = {
+      en: `
+        Examples of objection handling:
+        - "I understand you may be busy, but this could save you significant time in the long run."
+        - "While this might seem like an additional cost, the ROI typically pays for itself within 3 months."
+        - "I know you have existing solutions, but our approach offers unique advantages."
+      `,
+    };
+
+    return examples[language as keyof typeof examples] || examples.en;
+  }
+
+  static getSystemPrompt(language: string = "en") {
+    const prompts = {
+      en: `Address potential objections professionally and persuasively in a single paragraph. Return ONLY the objection handling paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
+      es: `Aborda las objeciones potenciales de manera profesional y persuasiva. Hoy es ${Utils.getCurrentDay()}.`,
+    };
+
+    return prompts[language as keyof typeof prompts] || prompts.en;
+  }
+
+  static calculateCost(usage: any, model: string) {
+    const inputCost = usage.prompt_tokens * 0.00001;
+    const outputCost = usage.completion_tokens * 0.00003;
+    return inputCost + outputCost;
+  }
+}
+
+// Call to Action
+class CallToAction extends EmailPart {
+  static async fromDetailsAndContexts(
+    details: any,
+    contexts: any,
+    openai: OpenAI
+  ) {
+    const prompt = this.buildPrompt(details, contexts);
+
+    const completion = await openai.chat.completions.create({
+      model: CONFIG.MODELS.GPT4,
+      messages: [{ role: "user", content: prompt }],
+      temperature: CONFIG.TEMPERATURE.CONSISTENT,
+      max_tokens: 200,
+    });
+
+    return new CallToAction(completion.choices[0].message.content || "", {
+      context: this.getContext(details, contexts),
+      language: details.language,
+    }).cleanContent();
+  }
+
+  static buildPrompt(details: any, contexts: any) {
+    const context = this.getContext(details, contexts);
+    const examples = this.getExamples(details.language);
+    const systemPrompt = this.getSystemPrompt(details.language);
+
+    return `${context}\n\n${examples}\n\n${systemPrompt}`;
+  }
+
+  static getContext(details: any, contexts: any) {
+    const now = new Date();
+    const availability = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return `
+Sender & Receiver Details: ${
+      details.sender_receiver_yaml || "Professional communication"
+    }
+Sender Availability: ${details.sender.availability || availability}
+Email Context: ${contexts.email || "Professional outreach"}
+    `;
+  }
+
+  static getExamples(language: string = "en") {
+    const examples = {
+      en: `
+Examples of effective calls to action:
+- "Would you be available for a 15-minute call this week to discuss this further?"
+- "I'd love to schedule a brief meeting to explore how we might collaborate."
+- "Could we set up a time to discuss this opportunity in more detail?"
+      `,
+      es: `
+Ejemplos de llamadas a la acción efectivas:
+- "¿Estaría disponible para una llamada de 15 minutos esta semana para discutir esto más a fondo?"
+- "Me encantaría programar una breve reunión para explorar cómo podríamos colaborar."
+      `,
+    };
+
+    return examples[language as keyof typeof examples] || examples.en;
+  }
+
+  static getSystemPrompt(language: string = "en") {
+    const prompts = {
+      en: `Create a clear, professional call to action paragraph that encourages a specific next step. Return ONLY the call to action paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
+      es: `Crea una llamada a la acción clara y profesional que fomente un siguiente paso específico. Hoy es ${Utils.getCurrentDay()}.`,
+    };
+
+    return prompts[language as keyof typeof prompts] || prompts.en;
+  }
+
+  static calculateCost(usage: any, model: string) {
+    const inputCost = usage.prompt_tokens * 0.00001;
+    const outputCost = usage.completion_tokens * 0.00003;
+    return inputCost + outputCost;
+  }
+}
+
+// Main Email1 Class
+class Email1 {
+  subject: Subject;
+  body: EmailPart[];
+  language: string;
+  contexts: any;
+
+  constructor(subject: Subject, body: EmailPart[], options: any = {}) {
+    this.subject = subject;
+    this.body = body;
+    this.language = options.language || "en";
+    this.contexts = options.contexts || {};
+  }
+
+  static async generateAll(details: any, contexts: any, openai: OpenAI) {
+    try {
+      const { subject, body } = await this.getSubjectAndBody(
+        details,
+        contexts,
+        openai
+      );
+
+      return new Email1(subject, body, {
+        language: details.language,
+        contexts,
+      });
+    } catch (error) {
+      console.error("Error generating email:", error);
+      throw error;
+    }
+  }
+
+  static async getSubjectAndBody(details: any, contexts: any, openai: OpenAI) {
+    // Generate all parts in parallel with clean contexts
+    const [subject, hpef, vp, ttb, objection, cta] = await Promise.all([
+      Subject.fromDetailsAndContexts(details, { ...contexts }, openai),
+      HPEF.fromDetails(details, openai),
+      ValueProposition.fromDetailsAndContexts(details, { ...contexts }, openai),
+      TransitionToBusiness.fromDetailsAndContexts(
+        details,
+        { ...contexts },
+        openai,
+        "examples"
+      ),
+      ObjectionHandling.fromDetailsAndContexts(
+        details,
+        { ...contexts },
+        openai
+      ),
+      CallToAction.fromDetailsAndContexts(details, { ...contexts }, openai),
+    ]);
+
+    // Clean up any potential duplication or unwanted content
+    const cleanHPEF = hpef.content
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .trim();
+    const cleanTTB = ttb.content
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .trim();
+    const cleanVP = vp.content
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .trim();
+    const cleanObjection = objection.content
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .trim();
+    const cleanCTA = cta.content
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .trim();
+
+    // Update the components with cleaned content
+    hpef.content = cleanHPEF;
+    ttb.content = cleanTTB;
+    vp.content = cleanVP;
+    objection.content = cleanObjection;
+    cta.content = cleanCTA;
+
+    // Assemble body in the correct order
+    const body = [hpef, ttb, vp, objection, cta];
+
+    return { subject, body };
+  }
+
+  toText() {
+    const bodyText = this.body.map((part) => part.toText()).join("\n\n");
+    return `Subject: ${this.subject.toText()}\n\n${bodyText}`;
+  }
+
+  toMarkdown() {
+    const bodyMarkdown = this.body
+      .map((part) => part.toMarkdown())
+      .join("\n\n");
+    return `# ${this.subject.toText()}\n\n${bodyMarkdown}`;
+  }
+
+  toJSON() {
+    return {
+      subject: this.subject.toText(),
+      body: this.body.map((part) => ({
+        type: part.constructor.name,
+        content: part.content,
+      })),
+      language: this.language,
+    };
+  }
+}
+
+const getUserId = async (req: Request, supabase: any) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     throw new Error("Authorization header is required");
@@ -99,19 +989,20 @@ Deno.serve(async (req) => {
     const receiver_details = {
       person: {
         name: lead.full_name || `${lead.first_name} ${lead.last_name}`,
+        designation: lead.headline || "Business Professional",
         facts: `${lead.summary || ""} ${lead.headline || ""} ${
-          lead.jobs?.map((job) => job.job_description).join(" ") || ""
+          lead.jobs?.map((job: any) => job.job_description).join(" ") || ""
         } ${
           lead.insights?.personInsights?.awards
-            ?.map((award) => award.description)
+            ?.map((award: any) => award.description)
             .join(" ") || ""
         } ${
           lead.insights?.personInsights?.relevantInsights
-            ?.map((insight) => insight.description)
+            ?.map((insight: any) => insight.description)
             .join(" ") || ""
         } ${
           lead.insights?.personInsights?.onlineMentions
-            ?.map((mention) => mention.summary)
+            ?.map((mention: any) => mention.summary)
             .join(" ") || ""
         }`.trim(),
       },
@@ -125,17 +1016,17 @@ Deno.serve(async (req) => {
         }
           ${
             lead.insights?.businessInsights?.insights
-              ?.map((insight) => insight.description)
+              ?.map((insight: any) => insight.description)
               .join(" ") || ""
           }
           ${
             lead.insights?.businessInsights?.whyNow
-              ?.map((why) => why.why_now)
+              ?.map((why: any) => why.why_now)
               .join(" ") || ""
           }
           ${
             lead.insights?.businessInsights?.commonalities
-              ?.map((common) => common.description)
+              ?.map((common: any) => common.description)
               .join(" ") || ""
           }`.trim(),
       },
@@ -145,6 +1036,7 @@ Deno.serve(async (req) => {
     const sender_details = {
       person: {
         name: sender_name || "Your Name",
+        designation: "Business Development",
         facts:
           progressData.sender_bio ||
           "Experienced professional in data solutions and business transformation",
@@ -163,107 +1055,65 @@ Deno.serve(async (req) => {
         "Available for meetings Monday-Friday, 9 AM - 5 PM EST",
     };
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `
-            You are an expert email copywriter specializing in personalized business outreach and cold emails. Your expertise includes:
+    // Prepare details and contexts for the new email generation system
+    const details = {
+      sender: sender_details,
+      receiver: receiver_details,
+      language: language || "en",
+      sender_receiver_yaml: JSON.stringify({
+        sender: sender_details,
+        receiver: receiver_details,
+      }),
+    };
 
-            Using this tone: ${toneOption}
-            Using this length: ${lengthOption}
-            Using this email type: ${emailTypeOption}
-
-            Context:
-            Sender Name: ${sender_details.person.name}
-            Sender Company Name: ${sender_details.company.name}
-            Sender Company Details: ${sender_details.company.details}
-            Sender Company Facts and Figures: ${
-              sender_details.company.facts_and_figures
-            }
-            Sender Availability: ${sender_details.availability}
-            Receiver: ${receiver_details.person.name}
-            Company: ${receiver_details.company.name}
-            Company Details: ${receiver_details.company.details}
-            Company Facts and Figures: ${
-              receiver_details.company.facts_and_figures
-            }
-            Availability: ${sender_details.availability}
-            Current Day: ${new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-            Story: ${sender_details.person.name} from ${
-            sender_details.company.name
-          } reaching out to ${receiver_details.person.name} at ${
-            receiver_details.company.name
-          }
-
-            Receiver Facts: ${receiver_details.person.facts}
-            Receiver Company Facts: ${
-              receiver_details.company.facts_and_figures
-            }
-            Receiver Company Details: ${receiver_details.company.details}
-            Receiver Company Name: ${receiver_details.company.name}
-            `,
+    const contexts = {
+      email: `Professional outreach from ${sender_details.person.name} at ${sender_details.company.name} to ${receiver_details.person.name} at ${receiver_details.company.name}`,
+      problem_solution: {
+        best_match: {
+          content:
+            "Business optimization and growth through data analytics and transformation solutions",
         },
-        {
-          role: "user",
-          content: `
-            - Creating highly personalized, engaging email content that feels authentic and human
-            - Adapting tone and style based on the recipient's role, industry, and company context
-            - Using specific details and insights to create meaningful connections
-            - Writing compelling subject lines and email body content
-            - Balancing professionalism with approachability
-            - Ensuring emails are concise, clear, and action-oriented
-            
-            Key principles:
-            - Always use the recipient's name and company context when available
-            - Reference specific details from their background, achievements, or company news
-            - Maintain the requested tone (formal, casual, diplomatic, excited, or humorous)
-            - Keep content within the specified word count
-            - Focus on value proposition and mutual benefit
-            - End with clear, non-pushy calls to action
-
-            IMPORTANT: Use actual names provided in the context for sender and receiver.
-            IMPORTANT: Make sure that the text is returned in a language following this language code: ${language}.
-            Write in a way that feels like a genuine human reaching out, not an automated message.
-            
-            Return in a json format with the following keys:
-            {
-              "subject": "Subject",
-              "full_email": "Full Email"
-            }
-            `,
+      },
+      similarities: {
+        company: {
+          similarity: "Business partnerships and growth opportunities",
         },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
+      },
+    };
 
-    const response = completion.choices[0].message.content;
-    console.log("OpenAI response:", response);
+    // Generate email using the new structured approach
+    const email = await Email1.generateAll(details, contexts, openai);
 
-    let cleanedResponse = response.trim();
-    if (cleanedResponse.startsWith("```json")) {
-      cleanedResponse = cleanedResponse
-        .replace(/^```json\s*/, "")
-        .replace(/\s*```$/, "");
-    } else if (cleanedResponse.startsWith("```")) {
-      cleanedResponse = cleanedResponse
-        .replace(/^```\s*/, "")
-        .replace(/\s*```$/, "");
-    }
+    // Format the response to match the expected structure
+    const greeting = `Hi ${receiver_details.person.name},`;
+    const bodyParts = email.body.map((part) => part.toText());
+    const closing = `Best regards,\n${sender_details.person.name}\n${sender_details.person.designation}\n${sender_details.company.name}`;
 
-    const parsedResponse = JSON.parse(cleanedResponse);
+    const fullEmail = `${greeting}\n\n${bodyParts.join("\n\n")}\n\n${closing}`;
+
+    // Extract individual components
+    const hpef = email.body[0]; // HPEF is first
+    const transitionToBusiness = email.body[1]; // TTB is second
+    const valueProposition = email.body[2]; // VP is third
+    const objectionHandling = email.body[3]; // Objection is fourth
+    const callToAction = email.body[4]; // CTA is fifth
+
+    const response = {
+      subject: email.subject.toText(),
+      full_email: fullEmail,
+      components: {
+        hpef: hpef.toText(),
+        transition_to_business: transitionToBusiness.toText(),
+        value_proposition: valueProposition.toText(),
+        objection_handling: objectionHandling.toText(),
+        call_to_action: callToAction.toText(),
+      },
+    };
 
     return new Response(
       JSON.stringify({
         message: "Successfully generated email",
-        data: parsedResponse,
+        data: response,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -276,971 +1126,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
-// // OpenAI API key
-// const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-
-// async function generateEmailComponent(prompt) {
-//   try {
-//     const openai = new OpenAI({
-//       apiKey: OPENAI_API_KEY,
-//     });
-
-//     console.log("prompt", prompt);
-
-//     const completion = await openai.chat.completions.create({
-//       model: "gpt-4o",
-//       messages: [
-//         {
-//           role: "system",
-//           content: `You are an expert email copywriter specializing in personalized business outreach and cold emails. Your expertise includes:
-
-//           - Creating highly personalized, engaging email content that feels authentic and human
-//           - Adapting tone and style based on the recipient's role, industry, and company context
-//           - Using specific details and insights to create meaningful connections
-//           - Writing compelling subject lines and email body content
-//           - Balancing professionalism with approachability
-//           - Ensuring emails are concise, clear, and action-oriented
-
-//           Key principles:
-//           - Always use the recipient's name and company context when available
-//           - Reference specific details from their background, achievements, or company news
-//           - Maintain the requested tone (formal, casual, diplomatic, excited, or humorous)
-//           - Keep content within the specified word count
-//           - Focus on value proposition and mutual benefit
-//           - End with clear, non-pushy calls to action
-
-//           IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//           Write in a way that feels like a genuine human reaching out, not an automated message.`,
-//         },
-//         {
-//           role: "user",
-//           content: prompt,
-//         },
-//       ],
-//       temperature: 0.7,
-//       max_tokens: 2000,
-//     });
-
-//     return completion.choices[0].message.content.trim();
-//   } catch (error) {
-//     return `Error generating content: ${error.message}`;
-//   }
-// }
-
-// async function generateEmail1(
-//   senderDetails,
-//   receiverDetails,
-//   tone = "Casual",
-//   length = "Medium Length"
-// ) {
-//   // Prepare context
-//   const senderName = senderDetails.person?.name || "";
-//   const receiverName = receiverDetails.person?.name || "";
-//   const senderCompany = senderDetails.company?.name || "";
-//   const receiverCompany = receiverDetails.company?.name || "";
-
-//   const context = {
-//     senderContext: senderDetails.person?.facts || "",
-//     receiverContext: receiverDetails.person?.facts || "",
-//     senderName,
-//     receiverName,
-//     senderCompanyDetails: senderDetails.company?.details || "",
-//     receiverCompanyDetails: receiverDetails.company?.details || "",
-//     receiverCompanyFacts: receiverDetails.company?.facts_and_figures || "",
-//     senderAvailability: senderDetails.availability || "",
-//     currentDay: new Date().toLocaleDateString("en-US", {
-//       weekday: "long",
-//       year: "numeric",
-//       month: "long",
-//       day: "numeric",
-//     }),
-//     story: `Sender: ${senderName} from ${senderCompany} reaching out to ${receiverName} at ${receiverCompany}`,
-//   };
-
-//   // Determine word count based on length
-//   const getWordCount = (length) => {
-//     switch (length) {
-//       case "Short & Concise":
-//         return "50-100";
-//       case "Long & Informative":
-//         return "200-300";
-//       case "Medium Length":
-//       default:
-//         return "100-200";
-//     }
-//   };
-
-//   const wordCount = getWordCount(length);
-
-//   // Generate Subject
-//   const subjectPrompt = `
-//     Extract 3 unique keywords (nouns) from this story that are specific to the sender or receiver, not common or generic—focus on proper nouns (e.g., brands, products, events, locations), 1-3 words long, each representing something different.
-
-//     Instructions:
-//     - Focus on names that stand out. Keep it intriguing.
-//     - Skip generic terms like 'Acquisition' or 'Q1 2024 target'.
-//     - Keep it short and mysterious—don't add extra descriptions.
-//     - Avoid generic words like 'AI' or 'UX'.
-//     - Don't mention the sender or receiver's names.
-
-//     Context: ${context.story}
-
-//     Output format: Keywords: Keyword1 + Keyword2 + Keyword3
-//   `;
-//   const subject = await generateEmailComponent(subjectPrompt);
-
-//   // Generate HPEF
-//   const hpefPrompt = `
-//     Craft a personalized email introduction (HPEF) for the sender to share with the receiver, using relevant context about the receiver. The message should feel ${tone.toLowerCase()}, highly personalized, and flow naturally.
-
-//     Rules:
-//     - Make the HPEF ${tone.toUpperCase()}, conversational and highly personalized
-//     - Use an ANCHOR FROM THE CONTEXT to start the HPEF, mentioning the source
-//     - Keep the lines CONCISE and easy to read/understand
-//     - The HPEF should be a SINGLE paragraph with about ${wordCount} words and 2-4 sentences
-//     - There should at least be two proper nouns in every sentence
-//     - Never put the receiver's first name in the first sentence
-
-//     Tone Guidelines:
-//     ${tone === "Humorous"
-//       ? "- Include light humor, witty observations, or playful language"
-//       : ""
-//     }
-//     ${tone === "Diplomatic"
-//       ? "- Use measured, respectful language with careful word choice"
-//       : ""
-//     }
-//     ${tone === "Formal"
-//       ? "- Maintain professional, business-appropriate language"
-//       : ""
-//     }
-//     ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
-//     }
-//     ${tone === "Excited"
-//       ? "- Use enthusiastic, energetic language with positive energy"
-//       : ""
-//     }
-
-//     Anchor Checklist (use 1-2 in this order):
-//     1. Recent Activity of the Receiver
-//     2. Personal Interests or Hobbies
-//     3. Company-Specific Data
-//     4. Industry-Happening
-//     5. Personal Happenings
-//     6. Mutual Connections or Referrals
-//     7. Education or Skills
-
-//     Prohibited Phrases (avoid these):
-//     - I recently came across, I admire your, Curious to hear more about your
-//     - Looking forward to, It's clear you have a strong focus on, It's truly impressive
-//     - I found your insights on, Inspiring, Amazing, Incredible, Impressive
-
-//     Context:
-//     Sender: ${context.senderContext}
-//     Receiver: ${context.receiverContext}
-//     Company Facts: ${context.receiverCompanyFacts}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word HPEF paragraph with 2-4 sentences in a ${tone.toLowerCase()} tone.
-//   `;
-//   const hpef = await generateEmailComponent(hpefPrompt);
-
-//   // Generate Value Proposition
-//   const openingPhrases = [
-//     `This is where I see ${senderCompany} really stepping in.`,
-//     `That's where ${senderCompany} could really shine.`,
-//     `I believe ${senderCompany} can be a game-changer here.`,
-//     `This is exactly where ${senderCompany} can help.`,
-//     `I think ${senderCompany} could really move the needle here.`,
-//     `This is where ${senderCompany} could make all the difference.`,
-//     `This is where I think ${senderCompany} could really step up for you!`,
-//   ];
-//   const openingPhrase =
-//     openingPhrases[Math.floor(Math.random() * openingPhrases.length)];
-
-//   const vpPrompt = `
-//     Write a Value Proposition paragraph where the Sender clearly outlines the unique value their company offers to the Receiver. The paragraph should include relevant facts and figures, maintaining a ${tone.toLowerCase()}, breezy tone.
-
-//     Structure:
-//     - Start with the Company's Core Strength
-//     - Establish Credibility
-//     - Showcase Recent Achievements or Milestones
-//     - Detail the Practical Benefits
-//     - Expand on Key Capabilities
-//     - Conclude with Advanced Features or Future Potential
-
-//     Rules:
-//     - The tone should feel ${tone.toLowerCase()} and ${tone === "Casual"
-//       ? "relaxed"
-//       : tone === "Formal"
-//         ? "professional"
-//         : tone === "Excited"
-//           ? "energetic"
-//           : tone === "Humorous"
-//             ? "witty"
-//             : "measured"
-//     }, not like a formal sales pitch
-//     - Avoid overly formal or technical language
-//     - Focus on clarity and flow
-//     - Choose modern, commonly used words and phrases
-
-//     Start with this opening phrase: ${openingPhrase}
-
-//     Context:
-//     Sender Company: ${context.senderCompanyDetails}
-//     Best Challenge/Solution: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word value proposition paragraph in a ${tone.toLowerCase()} tone.
-//   `;
-//   const vp = await generateEmailComponent(vpPrompt);
-
-//   // Generate Transition to Business
-//   const ttbPrompt = `
-//     Smoothly transition from a personal touch to addressing a specific business challenge the recipient might be facing.
-
-//     Structure:
-//     - Casual Opener: Start with a relatable comment about recent activities, news, or trends
-//     - Introduce the Challenge: Highlight a concrete challenge backed by facts and figures
-//     - Build Empathy: Acknowledge the difficulty or effort required
-//     - Lay-Up for a Solution: Prepare the recipient for a solution without presenting it
-
-//     Rules:
-//     - Keep the tone ${tone.toLowerCase()}, friendly, and highly personalized
-//     - Be specific to the recipient and their company
-//     - Ensure the paragraph is concise (${wordCount} words) with 2-4 sentences
-//     - Use the provided facts and figures to support the TTB
-//     - Do not make assumptions or hypothesize about challenges
-
-//     Prohibited Phrases:
-//     - Streamlining these processes, Operational efficiency, I recently came across
-//     - I admire your, Curious to hear more about your, Deeply excited to
-//     - Looking forward to, As someone who, Navigating the challenges
-//     - Product efficiency, Exhilarating, Resonated with me
-
-//     Context:
-//     Receiver Company Facts: ${context.receiverCompanyFacts}
-//     HPEF: ${hpef}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word TTB paragraph with 2-4 sentences in a ${tone.toLowerCase()} tone.
-//   `;
-//   const ttb = await generateEmailComponent(ttbPrompt);
-
-//   // Generate Objection Handling
-//   const objectionPrompt = `
-//     Address potential objections or concerns the recipient might have about the proposed solution or meeting.
-
-//     Structure:
-//     - Acknowledge the Objection: Show understanding of potential concerns
-//     - Provide Reassurance: Offer credible solutions or alternatives
-//     - Maintain Confidence: Keep the tone positive and solution-focused
-//     - Bridge to Next Step: Smoothly transition to the call to action
-
-//     Rules:
-//     - Use a ${tone.toLowerCase()} tone throughout
-//     - Address common objections like time constraints, budget concerns, or decision-making processes
-//     - Keep it concise (${wordCount} words) and focused
-//     - Don't be defensive or pushy
-
-//     Context:
-//     Sender Company: ${context.senderCompanyDetails}
-//     Receiver Company: ${context.receiverCompanyDetails}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word objection handling paragraph in a ${tone.toLowerCase()} tone.
-//   `;
-//   const objection = await generateEmailComponent(objectionPrompt);
-
-//   // Generate Call to Action
-//   const ctaPrompt = `
-//     Create a clear, compelling call to action that encourages the recipient to take the next step.
-
-//     Structure:
-//     - Clear Action: Specify what you want the recipient to do
-//     - Value Proposition: Remind them of the benefit
-//     - Flexibility: Show willingness to accommodate their schedule
-//     - Urgency: Create gentle urgency without being pushy
-
-//     Rules:
-//     - Use a ${tone.toLowerCase()} tone
-//     - Be specific about the next step (meeting, call, etc.)
-//     - Include the sender's availability information
-//     - Keep it concise (${wordCount} words)
-//     - Make it easy for them to respond
-
-//     Context:
-//     Sender Availability: ${context.senderAvailability}
-//     Current Date: ${context.currentDay}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word call to action paragraph in a ${tone.toLowerCase()} tone.
-//   `;
-//   const cta = await generateEmailComponent(ctaPrompt);
-
-//   return {
-//     subject,
-//     body: {
-//       hpef,
-//       value_proposition: vp,
-//       transition_to_business: ttb,
-//       objection_handling: objection,
-//       call_to_action: cta,
-//     },
-//     full_email: `${hpef}\n\n${vp}\n\n${ttb}\n\n${objection}\n\n${cta}`,
-//   };
-// }
-
-// async function generateEmail2(
-//   senderDetails,
-//   receiverDetails,
-//   previousEmails = "",
-//   tone = "Casual",
-//   length = "Medium Length"
-// ) {
-//   // Determine word count based on length
-//   const getWordCount = (length) => {
-//     switch (length) {
-//       case "Short & Concise":
-//         return "25-35";
-//       case "Long & Informative":
-//         return "45-60";
-//       case "Medium Length":
-//       default:
-//         return "35-45";
-//     }
-//   };
-
-//   const wordCount = getWordCount(length);
-
-//   // Generate Subject
-//   const subjectPrompt = `
-//     Create a brief, engaging subject line for a follow-up email.
-
-//     Rules:
-//     - Keep it short (3-6 words)
-//     - Reference the previous email or conversation
-//     - Make it intriguing but not pushy
-//     - Use a ${tone.toLowerCase()} tone
-
-//     Context:
-//     Previous Email: ${previousEmails}
-//     Sender: ${senderDetails.person?.name || ""}
-//     Receiver: ${receiverDetails.person?.name || ""}
-
-//     Write a brief subject line in a ${tone.toLowerCase()} tone.
-//   `;
-//   const subject = await generateEmailComponent(subjectPrompt);
-
-//   // Generate Body
-//   const bodyPrompt = `
-//     Write a brief follow-up email that refers back to the initial message without adding any new information.
-
-//     Rules:
-//     - Do not introduce new information or suggestions
-//     - Keep the email brief, ideally within ${wordCount} words
-//     - Include a reference to the initial email
-//     - Maintain a ${tone.toLowerCase()} tone and friendly, non-pushy demeanor
-//     - Use simple language that's easy to understand
-
-//     Tone Guidelines:
-//     ${tone === "Humorous" ? "- Include light humor or playful language" : ""}
-//     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-//     ${tone === "Formal"
-//       ? "- Maintain professional, business-appropriate language"
-//       : ""
-//     }
-//     ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
-//     }
-//     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
-
-//     Context:
-//     Previous Email: ${previousEmails}
-//     Sender: ${senderDetails.person?.name || ""}
-//     Receiver: ${receiverDetails.person?.name || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a ${wordCount} word follow-up email in a ${tone.toLowerCase()} tone.
-//   `;
-
-//   const body = await generateEmailComponent(bodyPrompt);
-//   return { subject, body };
-// }
-
-// async function generateEmail3(
-//   senderDetails,
-//   receiverDetails,
-//   previousEmails = "",
-//   tone = "Casual",
-//   length = "Medium Length"
-// ) {
-//   const paragraphs = {};
-
-//   // Determine word count based on length
-//   const getWordCount = (length) => {
-//     switch (length) {
-//       case "Short & Concise":
-//         return "60-80";
-//       case "Long & Informative":
-//         return "120-150";
-//       case "Medium Length":
-//       default:
-//         return "80-120";
-//     }
-//   };
-
-//   const wordCount = getWordCount(length);
-
-//   // Generate Subject
-//   const subjectPrompt = `
-//     Create a compelling subject line for a follow-up email that brings fresh perspective.
-
-//     Rules:
-//     - Keep it short (4-7 words)
-//     - Hint at new insights or fresh perspective
-//     - Make it intriguing but professional
-//     - Use a ${tone.toLowerCase()} tone
-//     - Don't be too salesy or pushy
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Sender: ${senderDetails.person?.name || ""}
-//     Receiver: ${receiverDetails.person?.name || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write a compelling subject line in a ${tone.toLowerCase()} tone.
-//   `;
-//   const subject = await generateEmailComponent(subjectPrompt);
-
-//   // Paragraph 1
-//   const p1Prompt = `
-//     Write a FollowUP Email with 3 paragraphs that bring fresh perspective and new facts/figures.
-
-//     Paragraph 1 - Reiterate the same challenge from the previous email, offering a new perspective
-
-//     Rules:
-//     - Avoid repeating facts and figures used in the first email
-//     - Bring a fresh angle, story, or observation
-//     - Ensure it feels engaging and relatable without sounding repetitive
-//     - Keep it ${wordCount} words
-
-//     Tone: ${tone.toLowerCase()}, friendly, and conversational
-
-//     Tone Guidelines:
-//     ${tone === "Humorous" ? "- Include light humor or witty observations" : ""}
-//     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-//     ${tone === "Formal"
-//       ? "- Maintain professional, business-appropriate language"
-//       : ""
-//     }
-//     ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
-//     }
-//     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 1 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_1 = await generateEmailComponent(p1Prompt);
-
-//   // Paragraph 2
-//   const p2Prompt = `
-//     Paragraph 2 - Link the solution to the challenge described in the first paragraph
-
-//     Rules:
-//     - Use different facts and figures from the previous email
-//     - Briefly explain how the solution addresses the problem
-//     - Focus on how it can help the recipient's company and goals
-//     - Keep it ${wordCount} words
-
-//     Tone: ${tone === "Excited"
-//       ? "Optimistic and enthusiastic"
-//       : tone === "Formal"
-//         ? "Professional and informative"
-//         : "Optimistic and informative"
-//     }
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 2 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_2 = await generateEmailComponent(p2Prompt);
-
-//   // Paragraph 3
-//   const p3Prompt = `
-//     Paragraph 3 - Propose a meeting or next steps clearly and politely
-
-//     Rules:
-//     - Suggest a time frame and show flexibility
-//     - Provide a clear next step
-//     - Offer flexibility in scheduling
-//     - Keep it ${wordCount} words
-
-//     Tone: ${tone === "Excited"
-//       ? "Friendly, inviting, and enthusiastic"
-//       : tone === "Formal"
-//         ? "Professional, inviting, and eager"
-//         : "Friendly, inviting, and eager to continue the conversation"
-//     }
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Sender Availability: ${senderDetails.availability || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 3 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_3 = await generateEmailComponent(p3Prompt);
-
-//   return {
-//     subject,
-//     body: paragraphs,
-//     full_email: Object.values(paragraphs).join("\n\n"),
-//   };
-// }
-
-// async function generateEmail4(
-//   senderDetails,
-//   receiverDetails,
-//   previousEmails = "",
-//   tone = "Casual",
-//   length = "Medium Length"
-// ) {
-//   const paragraphs = {};
-
-//   // Determine word count based on length
-//   const getWordCount = (length) => {
-//     switch (length) {
-//       case "Short & Concise":
-//         return "40-60";
-//       case "Long & Informative":
-//         return "80-100";
-//       case "Medium Length":
-//       default:
-//         return "60-80";
-//     }
-//   };
-
-//   const wordCount = getWordCount(length);
-
-//   // Generate Subject
-//   const subjectPrompt = `
-//     Create a compelling subject line for an email introducing a proprietary solution.
-
-//     Rules:
-//     - Keep it short (4-7 words)
-//     - Hint at a valuable solution or insight
-//     - Make it intriguing but professional
-//     - Use a ${tone.toLowerCase()} tone
-//     - Don't be too salesy or pushy
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Sender: ${senderDetails.person?.name || ""}
-//     Receiver: ${receiverDetails.person?.name || ""}
-
-//     Write a compelling subject line in a ${tone.toLowerCase()} tone.
-//   `;
-//   const subject = await generateEmailComponent(subjectPrompt);
-
-//   // Paragraph 1
-//   const p1Prompt = `
-//     Write a FollowUP Email with 4 paragraphs introducing a proprietary solution.
-
-//     Paragraph 1 - Introduce a relatable scenario highlighting a familiar activity but pointing out a critical oversight
-
-//     Rules:
-//     - Open by addressing a common action the reader's team is likely doing
-//     - Identify a gap in their process
-//     - Mention potential benefits they're missing out on
-//     - Keep paragraph between ${wordCount} words
-
-//     Tone: ${tone.toLowerCase()} and informative
-
-//     Tone Guidelines:
-//     ${tone === "Humorous" ? "- Include light humor or witty observations" : ""}
-//     ${tone === "Diplomatic" ? "- Use measured, respectful language" : ""}
-//     ${tone === "Formal"
-//       ? "- Maintain professional, business-appropriate language"
-//       : ""
-//     }
-//     ${tone === "Casual" ? "- Keep it relaxed, friendly, and conversational" : ""
-//     }
-//     ${tone === "Excited" ? "- Use enthusiastic, energetic language" : ""}
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 1 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_1 = await generateEmailComponent(p1Prompt);
-
-//   // Paragraph 2
-//   const p2Prompt = `
-//     Paragraph 2 - Share credibility and authority by explaining personal experience or proven approach
-
-//     Rules:
-//     - Mention a proprietary method used successfully at many companies
-//     - Include tangible outcomes like creating new streams of MQLs
-//     - Keep paragraph between ${wordCount} words
-
-//     Tone: ${tone === "Excited"
-//       ? "Confident, experienced, and enthusiastic"
-//       : tone === "Formal"
-//         ? "Confident, experienced, and professional"
-//         : "Confident and experienced"
-//     }
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 2 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_2 = await generateEmailComponent(p2Prompt);
-
-//   // Paragraph 3
-//   const p3Prompt = `
-//     Paragraph 3 - Introduce the name of the process or solution with a branded name
-
-//     Rules:
-//     - Reveal the name making it sound catchy and easy to remember
-//     - Emphasize this is just one of many tools offered
-//     - Explain full support and customization will be provided
-//     - Keep paragraph between ${wordCount} words
-
-//     Tone: ${tone === "Excited"
-//       ? "Excited, engaging, and enthusiastic"
-//       : tone === "Formal"
-//         ? "Professional, engaging, and confident"
-//         : "Excited and engaging"
-//     }
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Available Facts: ${senderDetails.company?.facts_and_figures || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 3 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_3 = await generateEmailComponent(p3Prompt);
-
-//   // Paragraph 4
-//   const p4Prompt = `
-//     Paragraph 4 - Extend an invitation to discuss the solution further
-
-//     Rules:
-//     - Propose a friendly meeting without being pushy
-//     - Mention in-person option to keep it casual
-//     - Use friendly language like 'coffee chat'
-//     - Keep paragraph between ${wordCount} words
-
-//     Tone: ${tone === "Excited"
-//       ? "Friendly, approachable, and enthusiastic"
-//       : tone === "Formal"
-//         ? "Professional, approachable, and respectful"
-//         : "Friendly and approachable"
-//     }
-
-//     Context:
-//     Previous Emails: ${previousEmails}
-//     Sender Availability: ${senderDetails.availability || ""}
-
-//     IMPORTANT: Use actual names provided in the context for sender and receiver.
-
-//     Write paragraph 4 (${wordCount} words) in a ${tone.toLowerCase()} tone.
-//   `;
-//   paragraphs.paragraph_4 = await generateEmailComponent(p4Prompt);
-
-//   return {
-//     subject,
-//     body: paragraphs,
-//     full_email: Object.values(paragraphs).join("\n\n"),
-//   };
-// }
-
-// // Main Supabase Edge Function handler
-// Deno.serve(async (req) => {
-//   if (req.method === "OPTIONS") {
-//     return new Response(null, {
-//       status: 200,
-//       headers: corsHeaders,
-//     });
-//   }
-
-//   try {
-//     const supabase = createClient(
-//       "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
-//       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
-//     );
-
-//     const userId = await getUserId(req, supabase);
-
-//     // Parse request data
-//     const data = await req.json();
-//     const {
-//       campaign_id,
-//       emailPreference = {},
-//       lead,
-//       previous_emails = "",
-//     } = data;
-
-//     // Validate required fields
-//     if (!campaign_id || !lead) {
-//       return new Response(
-//         JSON.stringify({
-//           error: "Missing required campaign_id or lead data",
-//         }),
-//         {
-//           status: 400,
-//           headers: { ...corsHeaders, "Content-Type": "application/json" },
-//         }
-//       );
-//     }
-
-//     // Extract email preferences
-//     const {
-//       toneOption = "Casual",
-//       lengthOption = "Medium Length",
-//       emailType = "Introduction",
-//     } = emailPreference;
-
-//     // Fix typo in length option
-//     const normalizedLengthOption =
-//       lengthOption === "Short & Consise" ? "Short & Concise" : lengthOption;
-
-//     // Fetch campaign data to get sender details
-//     const { data: campaignData, error: campaignError } = await supabase
-//       .from("campaigns")
-//       .select("*")
-//       .eq("id", campaign_id)
-//       .eq("user_id", userId)
-//       .single();
-
-//     if (campaignError) {
-//       return new Response(JSON.stringify({ error: campaignError.message }), {
-//         status: 500,
-//         headers: { ...corsHeaders, "Content-Type": "application/json" },
-//       });
-//     }
-
-//     // Fetch progress data for additional sender context
-//     const { data: progressData, error: progressError } = await supabase
-//       .from("campaign_progress")
-//       .select("*")
-//       .eq("id", campaignData.progress_id)
-//       .single();
-
-//     if (progressError) {
-//       return new Response(JSON.stringify({ error: progressError.message }), {
-//         status: 500,
-//         headers: { ...corsHeaders, "Content-Type": "application/json" },
-//       });
-//     }
-
-//     const {
-//       step_5_result: {
-//         linkedin_profile: { full_name: sender_name },
-//       },
-//     } = progressData;
-
-//     // Transform lead data into receiver_details format
-//     const receiver_details = {
-//       person: {
-//         name: lead.full_name || `${lead.first_name} ${lead.last_name}`,
-//         facts: `${lead.summary || ""} ${lead.headline || ""} ${lead.jobs?.map((job) => job.job_description).join(" ") || ""
-//           } ${lead.insights?.personInsights?.awards
-//             ?.map((award) => award.description)
-//             .join(" ") || ""
-//           } ${lead.insights?.personInsights?.relevantInsights
-//             ?.map((insight) => insight.description)
-//             .join(" ") || ""
-//           } ${lead.insights?.personInsights?.onlineMentions
-//             ?.map((mention) => mention.summary)
-//             .join(" ") || ""
-//           }`.trim(),
-//       },
-//       company: {
-//         name: lead.company_name,
-//         details: lead.company_description || "",
-//         facts_and_figures: `${lead.insights?.businessInsights?.detail
-//             ? `Revenue: $${lead.insights.businessInsights.detail.revenue}, Employees: ${lead.insights.businessInsights.detail.employees}, Industry: ${lead.insights.businessInsights.detail.industry}`
-//             : ""
-//           }
-//           ${lead.insights?.businessInsights?.insights
-//             ?.map((insight) => insight.description)
-//             .join(" ") || ""
-//           }
-//           ${lead.insights?.businessInsights?.whyNow
-//             ?.map((why) => why.why_now)
-//             .join(" ") || ""
-//           }
-//           ${lead.insights?.businessInsights?.commonalities
-//             ?.map((common) => common.description)
-//             .join(" ") || ""
-//           }`.trim(),
-//       },
-//     };
-
-//     // Transform campaign/progress data into sender_details format
-//     const sender_details = {
-//       person: {
-//         name: sender_name || "Your Name",
-//         facts:
-//           progressData.sender_bio ||
-//           "Experienced professional in data solutions and business transformation",
-//       },
-//       company: {
-//         name: progressData.company_name || "Artha Solutions",
-//         details:
-//           progressData.company_description ||
-//           "Leading provider of data analytics and business transformation solutions",
-//         facts_and_figures:
-//           progressData.company_metrics ||
-//           "Successfully delivered 300+ global projects, 50% reduction in data processing time, 65% improvement in data accuracy",
-//       },
-//       availability:
-//         progressData.availability ||
-//         "Available for meetings Monday-Friday, 9 AM - 5 PM EST",
-//     };
-
-//     // Map frontend email types to internal functions
-//     const emailTypeMap = {
-//       Introduction: "email1",
-//       "Follow up": "email2",
-//       "Book a meeting": "email3",
-//       Proposal: "email4",
-//       "Thank you": "email2", // Using email2 for thank you notes
-//     };
-
-//     const internalEmailType = emailTypeMap[emailType] || "email1";
-
-//     // Generate email based on type with tone and length parameters
-//     let result;
-//     switch (internalEmailType) {
-//       case "email1":
-//         result = await generateEmail1(
-//           sender_details,
-//           receiver_details,
-//           toneOption,
-//           normalizedLengthOption
-//         );
-//         break;
-//       case "email2":
-//         result = await generateEmail2(
-//           sender_details,
-//           receiver_details,
-//           previous_emails,
-//           toneOption,
-//           normalizedLengthOption
-//         );
-//         break;
-//       case "email3":
-//         result = await generateEmail3(
-//           sender_details,
-//           receiver_details,
-//           previous_emails,
-//           toneOption,
-//           normalizedLengthOption
-//         );
-//         break;
-//       case "email4":
-//         result = await generateEmail4(
-//           sender_details,
-//           receiver_details,
-//           previous_emails,
-//           toneOption,
-//           normalizedLengthOption
-//         );
-//         break;
-//       default:
-//         return new Response(
-//           JSON.stringify({ error: `Unsupported email type: ${emailType}` }),
-//           {
-//             status: 400,
-//             headers: { ...corsHeaders, "Content-Type": "application/json" },
-//           }
-//         );
-//     }
-
-//     const rawFullEamil = result.full_email;
-
-//     // More robust replacement system that handles multiple variations
-//     let updatedEmail = rawFullEamil;
-
-//     // Replace sender name variations
-//     updatedEmail = updatedEmail.replace(/\[Sender's Name\]/g, sender_details.person.name);
-//     updatedEmail = updatedEmail.replace(/\[Your Name\]/g, sender_details.person.name);
-
-//     // Replace recipient name variations - handle multiple instances
-//     updatedEmail = updatedEmail.replace(/\[Recipient's Name\]/g, receiver_details.person.name);
-//     updatedEmail = updatedEmail.replace(/\[Recipient Name\]/g, receiver_details.person.name);
-//     updatedEmail = updatedEmail.replace(/\[Receiver's Name\]/g, receiver_details.person.name);
-//     updatedEmail = updatedEmail.replace(/\[Receiver Name\]/g, receiver_details.person.name);
-
-//     // Replace company name variations
-//     updatedEmail = updatedEmail.replace(/\[Recipient's Company\]/g, receiver_details.company.name);
-//     updatedEmail = updatedEmail.replace(/\[Recipient Company\]/g, receiver_details.company.name);
-//     updatedEmail = updatedEmail.replace(/\[Sender Company\]/g, sender_details.company.name);
-
-//     result.full_email = updatedEmail;
-
-//     return new Response(
-//       JSON.stringify({
-//         success: true,
-//         campaign_id,
-//         email_type: emailType,
-//         tone: toneOption,
-//         length: normalizedLengthOption,
-//         result,
-//       }),
-//       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-//     );
-//   } catch (error) {
-//     return new Response(
-//       JSON.stringify({
-//         error: error.message,
-//         success: false,
-//       }),
-//       {
-//         status: 500,
-//         headers: { ...corsHeaders, "Content-Type": "application/json" },
-//       }
-//     );
-//   }
-// });
-// /* To invoke locally:
-
-//   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-//   2. Make an HTTP request:
-
-//   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/email-generation' \
-//     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-//     --header 'Content-Type: application/json' \
-//     --data '{"name":"Functions"}'
-
-// */
