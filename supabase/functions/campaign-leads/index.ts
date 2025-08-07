@@ -608,8 +608,8 @@ Deno.serve(async (req) => {
       })}
 
       Tasks:
-      - Generate a list of 2-3 words (one word per item) that are relevant to the role or industry for each target audience.
-      - Generate a list of 2-3 words (one word per item) that are relevant to the desired seniority for each target audience.
+      - Generate a list of 4-5 words (one word per item) that are relevant to the role or industry for each target audience.
+      - Generate a list of 4-5 words (one word per item) that are relevant to the desired seniority for each target audience.
       - Choose two child industry from the same parent from the industry list that are relevant to the target audiences industry.
 
       Keep the words simple and generic.

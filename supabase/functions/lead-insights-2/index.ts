@@ -14,6 +14,25 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
+// Helper function to clean JSON responses from OpenAI
+const cleanJsonResponse = (response: string): string => {
+  let cleaned = response.trim();
+
+  // Handle cases where there's text before the JSON
+  const jsonMatch = cleaned.match(
+    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
+  );
+  if (jsonMatch) {
+    return jsonMatch[1];
+  } else if (cleaned.startsWith("```json")) {
+    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  return cleaned;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -141,7 +160,7 @@ Deno.serve(async (req) => {
       foundation for expansion.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
-
+      IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
       Ensure that the matching challenge and solution are in the same object.
       Return the answers in the following JSON format:
       [
@@ -168,17 +187,11 @@ Deno.serve(async (req) => {
       input: solutionsPrompt,
     });
 
-    let cleanSolutionsWithChallengesOutput =
-      solutionsWithChallengesOutput.output_text.trim();
-    if (cleanSolutionsWithChallengesOutput.startsWith("```json")) {
-      cleanSolutionsWithChallengesOutput = cleanSolutionsWithChallengesOutput
-        .replace(/^```json\s*/, "")
-        .replace(/\s*```$/, "");
-    } else if (cleanSolutionsWithChallengesOutput.startsWith("```")) {
-      cleanSolutionsWithChallengesOutput = cleanSolutionsWithChallengesOutput
-        .replace(/^```\s*/, "")
-        .replace(/\s*```$/, "");
-    }
+    console.log("Open ai response:", solutionsWithChallengesOutput.output_text);
+
+    const cleanSolutionsWithChallengesOutput = cleanJsonResponse(
+      solutionsWithChallengesOutput.output_text
+    );
 
     const parsedSolutionsWithChallengesOutput = JSON.parse(
       cleanSolutionsWithChallengesOutput

@@ -34,6 +34,25 @@ const cleanDomain = (domain: string): string => {
   return cleaned;
 };
 
+// Helper function to clean JSON responses from OpenAI
+const cleanJsonResponse = (response: string): string => {
+  let cleaned = response.trim();
+
+  // Handle cases where there's text before the JSON
+  const jsonMatch = cleaned.match(
+    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
+  );
+  if (jsonMatch) {
+    return jsonMatch[1];
+  } else if (cleaned.startsWith("```json")) {
+    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  return cleaned;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -1438,19 +1457,7 @@ Deno.serve(async (req) => {
             console.log(`Response for ${fieldName}:`, response);
           }
 
-          let cleanResponse = response.trim();
-          const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
-          if (jsonMatch) {
-            cleanResponse = jsonMatch[1].trim();
-          } else if (cleanResponse.startsWith("```json")) {
-            cleanResponse = cleanResponse
-              .replace(/^```json\s*/, "")
-              .replace(/\s*```$/, "");
-          } else if (cleanResponse.startsWith("```")) {
-            cleanResponse = cleanResponse
-              .replace(/^```\s*/, "")
-              .replace(/\s*```$/, "");
-          }
+          const cleanResponse = cleanJsonResponse(response);
 
           let parsedResponse;
           try {

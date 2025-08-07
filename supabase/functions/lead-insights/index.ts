@@ -32,6 +32,27 @@ const getUserId = async (req: Request, supabase: SupabaseClient) => {
   return user.id;
 };
 
+// Helper function to clean JSON responses from OpenAI
+const cleanJsonResponse = (response: string): string => {
+  let cleaned = response.trim();
+  
+  // Handle cases where there's text before the JSON
+  const jsonMatch = cleaned.match(/```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/);
+  if (jsonMatch) {
+    return jsonMatch[1];
+  } else if (cleaned.startsWith("```json")) {
+    return cleaned
+      .replace(/^```json\s*/, "")
+      .replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    return cleaned
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "");
+  }
+  
+  return cleaned;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -169,11 +190,11 @@ Deno.serve(async (req) => {
       ● 150-200 words each.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
-
+      IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
       Return the answers in the following JSON format:
       {
         "company_name": "Acme Inc.",
-        "revenue": "$1,000,000",
+        "revenue": "USD $1,000,000",
         "employees": "100",
         "industry": "Software",
         "challenges": [
@@ -192,17 +213,9 @@ Deno.serve(async (req) => {
       input: challengesPrompt,
     });
 
-    let cleanDetailsWithChallengesOutput =
-      detailsWithChallengesOutput.output_text.trim();
-    if (cleanDetailsWithChallengesOutput.startsWith("```json")) {
-      cleanDetailsWithChallengesOutput = cleanDetailsWithChallengesOutput
-        .replace(/^```json\s*/, "")
-        .replace(/\s*```$/, "");
-    } else if (cleanDetailsWithChallengesOutput.startsWith("```")) {
-      cleanDetailsWithChallengesOutput = cleanDetailsWithChallengesOutput
-        .replace(/^```\s*/, "")
-        .replace(/\s*```$/, "");
-    }
+    const cleanDetailsWithChallengesOutput = cleanJsonResponse(
+      detailsWithChallengesOutput.output_text
+    );
 
     const parsedDetailsWithChallengesOutput = JSON.parse(
       cleanDetailsWithChallengesOutput

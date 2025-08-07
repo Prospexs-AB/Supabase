@@ -14,6 +14,25 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
+// Helper function to clean JSON responses from OpenAI
+const cleanJsonResponse = (response: string): string => {
+  let cleaned = response.trim();
+
+  // Handle cases where there's text before the JSON
+  const jsonMatch = cleaned.match(
+    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
+  );
+  if (jsonMatch) {
+    return jsonMatch[1];
+  } else if (cleaned.startsWith("```json")) {
+    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  return cleaned;
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -140,7 +159,6 @@ Deno.serve(async (req) => {
           ● 4 x 50-75 words each.
 
           IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
-
           IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
           Return the answers in the following JSON format:
           {
@@ -181,13 +199,9 @@ Deno.serve(async (req) => {
           text.substring(text.length - 500)
         );
 
-        if (text.startsWith("```json")) {
-          text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-        } else if (text.startsWith("```")) {
-          text = text.replace(/^```\s*/, "").replace(/\s*```$/, "");
-        }
+        const cleanText = cleanJsonResponse(text);
 
-        return JSON.parse(text);
+        return JSON.parse(cleanText);
       });
 
       const results = await Promise.all(solutionPromises);
