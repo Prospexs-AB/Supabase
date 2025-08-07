@@ -114,7 +114,6 @@ Deno.serve(async (req) => {
 
     // Processing data
 
-    const impactsOfSolutions = [];
     const impactPromises = challengesWithSolutions.map(async (challenge) => {
       const impactsOfSolutionsPrompt = `
         You are a senior business impact analyst at a top-tier consultancy.
@@ -193,7 +192,7 @@ Deno.serve(async (req) => {
         cleanImpactsOfSolutionsOutput
       );
 
-      impactsOfSolutions.push(parsedImpactsOfSolutionsOutput);
+      return parsedImpactsOfSolutionsOutput;
     });
 
     const impactResults = await Promise.all(impactPromises);
