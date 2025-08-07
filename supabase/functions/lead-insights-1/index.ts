@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
       .from("jobs")
       .select("*")
       .eq("job_name", "lead-insights")
-      .eq("status", "waiting_for_next_step")
-      .eq("job_step", 1)
+      .eq("status", "queued")
+      .eq("job_step", 0)
       .order("created_at", { ascending: true })
       .limit(1)
       .single();
@@ -66,9 +66,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `===== Starting job processing for job id: ${jobData.id} =====`
-    );
+    console.log("Job ID: ", jobData.id);
 
     const { error: firrstUpdateJobError } = await supabase
       .from("jobs")
@@ -86,9 +84,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { campaign_id, progress_data } = jobData;
+    const { campaign_id, progress_data: lead } = jobData;
 
-    console.log("Prosessing job for campaign:", campaign_id);
+    console.log(`=============== Start for: ${campaign_id} ===============`);
 
     const { data: campaignData, error: campaignError } = await supabase
       .from("campaigns")
@@ -116,96 +114,108 @@ Deno.serve(async (req) => {
       });
     }
 
+    let {
+      step_1_result: { language },
+    } = progressData;
+
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     const openai = new OpenAI({
       apiKey: apiKey,
     });
 
-    const {
-      step_1_result: { language },
-    } = progressData;
+    const { company_name: lead_company_name } = lead;
 
-    const { company_name: lead_company_name, linkedin_url: lead_linkedin_url } =
-      progress_data;
-    const {
-      businessInsights: { challengesWithSolutions },
-    } = progress_data.insights;
-    const updatedLead = JSON.parse(JSON.stringify(progress_data));
+    console.log("===== Getting details with challenges =====");
 
-    console.log("===== Getting solutions for challenges =====");
+    const challengesPrompt = `
+      What is the most recent publicly available annual revenue of ${lead_company_name}, in USD?
+      If exact revenue is not available, provide a credible estimate based on available data (e.g.
+      funding size, employee count, ARR benchmarks, analyst estimates, or reported growth metrics).
+      Specify:
+      - The source of the information (e.g. company report, Crunchbase, press article)
+      - The fiscal year or date the revenue figure applies to
+      If no reliable revenue estimate is available, clearly say “Unknown.”
 
-    const solutionsPrompt = `
-      You are a senior solutions strategist at a top global consultancy.
-      Prospexs has already analyzed two things:
+      What is the most recent publicly available number of employees at ${lead_company_name}?
+      If the exact number is not available, provide a credible estimate based on public data (e.g.
+      LinkedIn, company website, funding size, growth stage, or press coverage).
+      If no reliable estimate is available, clearly say “Unknown.”
 
-      The lead company's specific strategic challenges:
-      ${challengesWithSolutions.map(
-        (challenge) =>
-          `Title: ${challenge.title} Description: ${challenge.description}`
-      )}
+      What is the primary industry of ${lead_company_name}?
+      Return the answer as a single word, such as:
+      “Software”, “Retail”, “Construction”, “Logistics”, “Healthcare”, etc.
+      Use the company's core business model or primary source of revenue to determine the correct
+      industry.
+      If the company spans multiple verticals, choose the dominant one based on product focus or
+      market positioning.
+      Do not include any explanations—just return the one-word industry.
 
-      Explain how ${campaignData.company_name} directly solves this challenge.
-      ● Generate 4 tailored solutions for each identified challenge that show how the
-      user's offering directly addresses the lead company's challenges
-      ● Reference specific features, workflows, or integrations (e.g., “AI-driven procurement
-      platform reducing manual RFP processes by 80%”).
-      ● Compare to how ${lead_company_name} currently handles it (status quo or competitor
-      approach).
-      ● Cite case studies, product documentation, or press releases for validation.
+      You are a senior industry analyst and enterprise consultant.
+      Your task: For ${lead_company_name}, identify 4 key challenges they are facing in their market,
+      describe how ${campaignData.company_name} addresses these challenges.
+
+      Describe the specific operational, financial, or strategic challenge ${lead_company_name} is
+      facing.
+      ● Use public, verifiable sources:
+        ○ Annual reports & investor filings (10-Ks, earnings calls).
+        ○ Industry research (Gartner, McKinsey, PwC, BCG, IDC).
+        ○ Credible news outlets (Reuters, WSJ, Financial Times).
+        ○ Regulatory reports & benchmarks (e.g., EU labor data, SEC filings).
+      ● Include 3-5 data points (e.g., “turnover rates at 35%,” “revenue declined by 5% YoY,”
+      “average compliance fine €150,000”).
+      ● Localize the context if relevant (country/region).
       ● 150-200 words each.
-
-      compliance teams provide on-the-ground expertise for country-specific regulations, ensuring
-      Job&Talent stays ahead of changing labor laws. This partnership replaces reactive regional
-      firefighting with proactive, standardized workforce management, creating a scalable
-      foundation for expansion.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
-      Ensure that the matching challenge and solution are in the same object.
       Return the answers in the following JSON format:
-      [
-        {
-          "problemTitle": "Problem 1",
-          "problemDescription": "Description of problem 1",
-          "solutions": [
-            {
-              "solutionTitle": "Solution 1 for challenge 1",
-              "solutionDescription": "Description of solution 1 for challenge 1",
-            },
-            {
-              "solutionTitle": "Solution 2 for challenge 1",
-              "solutionDescription": "Description of solution 2 for challenge 1"
-            }
-          ]
-        }
-      ]
+      {
+        "company_name": "Acme Inc.",
+        "revenue": "USD $1,000,000",
+        "employees": "100",
+        "industry": "Software",
+        "challenges": [
+          {
+            "title": "the title of the challenge will be here",
+            "description": "Description of challenge 1",
+            "source": [ "Source 1", "Source 2" ]
+          },
+        ]
+      }
     `;
 
-    const solutionsWithChallengesOutput = await openai.responses.create({
+    const detailsWithChallengesOutput = await openai.responses.create({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],
-      input: solutionsPrompt,
+      input: challengesPrompt,
     });
 
-    console.log("Open ai response:", solutionsWithChallengesOutput.output_text);
-
-    const cleanSolutionsWithChallengesOutput = cleanJsonResponse(
-      solutionsWithChallengesOutput.output_text
+    const cleanDetailsWithChallengesOutput = cleanJsonResponse(
+      detailsWithChallengesOutput.output_text
     );
 
-    const parsedSolutionsWithChallengesOutput = JSON.parse(
-      cleanSolutionsWithChallengesOutput
+    const parsedDetailsWithChallengesOutput = JSON.parse(
+      cleanDetailsWithChallengesOutput
     );
 
-    const finishedData = progress_data;
-    finishedData.insights.businessInsights.challengesWithSolutions =
-      parsedSolutionsWithChallengesOutput;
+    const result = {
+      businessInsights: {
+        detail: {
+          company_name: parsedDetailsWithChallengesOutput.company_name,
+          revenue: parsedDetailsWithChallengesOutput.revenue,
+          employees: parsedDetailsWithChallengesOutput.employees,
+          industry: parsedDetailsWithChallengesOutput.industry,
+        },
+        challengesWithSolutions: parsedDetailsWithChallengesOutput.challenges,
+      },
+      personInsights: {},
+    };
 
     const { error: updateJobError } = await supabase
       .from("jobs")
       .update({
-        job_step: 2,
-        progress_data: finishedData,
+        job_step: 1,
+        progress_data: { ...lead, insights: result },
         status: "waiting_for_next_step",
       })
       .eq("id", jobData.id);
@@ -218,7 +228,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Done for:`, progress_data.full_name);
+    console.log(`Adding job to database:`, lead.full_name);
 
     return new Response(
       JSON.stringify({
@@ -242,7 +252,7 @@ Deno.serve(async (req) => {
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/lead-insight-2' \
+  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/lead-insights-1' \
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
     --data '{"name":"Functions"}'
