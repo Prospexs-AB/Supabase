@@ -270,6 +270,7 @@ Deno.serve(async (req) => {
         Return the name of the company and make sure it is accurate.
 
         Return the country of the company if its available in the content, if not keep it empty.
+        Return the industry of the company if its available in the content, if not keep it empty.
 
         Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks):
         {
@@ -280,7 +281,8 @@ Deno.serve(async (req) => {
           { "point of interest 3": "value" },
           ],
           "company_name": "value",
-          "country": "value"
+          "country": "value",
+          "industry": "value"
         }
     `;
 
