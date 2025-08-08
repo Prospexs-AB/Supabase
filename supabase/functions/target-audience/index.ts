@@ -8,13 +8,32 @@ import {
   createClient,
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
-import OpenAI from "https://esm.sh/openai@4.20.1";
+import OpenAI from "npm:openai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+};
+
+// Helper function to clean JSON responses from OpenAI
+const cleanJsonResponse = (response: string): string => {
+  let cleaned = response.trim();
+
+  // Handle cases where there's text before the JSON
+  const jsonMatch = cleaned.match(
+    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
+  );
+  if (jsonMatch) {
+    return jsonMatch[1];
+  } else if (cleaned.startsWith("```json")) {
+    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  return cleaned;
 };
 
 const getUserId = async (req: Request, supabase: SupabaseClient) => {
@@ -214,10 +233,8 @@ Deno.serve(async (req) => {
                 .join("\n")}`
             : ""
         }
-      - Website content and product pages:
-        ${zenrowsContent}
 
-      Task: Write a 150-200 word audience brief for the target audience:
+      Task: Write a 300-400 word audience brief for the target audience:
       [Target Audience Title] in [Country]
 
       Context:
@@ -237,116 +254,76 @@ Deno.serve(async (req) => {
 
       Output:
       ● Title: [Decision-Maker Title] at [Type of Company] in [Country]
-      ● Audience Brief: 130-180 words of analysis (consulting style, fully contextualized for the
+      ● Audience Brief: 300-400 words of analysis (consulting style, fully contextualized for the
       user's company).
-      ● Sources: 4-5 clickable sources (URLs) that support the data.
-
-      Examples for Operations Managers in Spanish Logistics
-
-      Operations Managers in Spain's logistics sector oversee workforce planning, compliance, and
-      service-level performance in a market experiencing 15% YoY e-commerce growth (CNMC,
-      2024). For a company like [user's company]—operating in the [user's industry] space—these
-      decision-makers are critical partners for expanding last-mile capacity and improving operational
-      resilience. They face turnover rates of 25-30% among warehouse staff (Eurofound, 2024)
-      and heavy administrative burdens from Registro de Jornada requirements—with fines
-      reaching €187,000 per infraction (Spanish Labor Inspectorate, 2024). According to PwC's
-      Global Ops Pulse Survey (2024), 63% of logistics leaders in Southern Europe identify
-      “scaling operations without inflating labor costs” as their top challenge. This makes them highly
-      receptive to solutions that combine AI-driven workforce management and integrated
-      compliance frameworks, positioning [user's company] as a value-driving partner in addressing
-      these pain points.
-      Sources: CNMC E-Commerce Report 2024, Eurofound Labor Market Report 2024, Spanish
-      Labor Inspectorate 2024, PwC Global Ops Pulse 2024.
+      ● Sources: 4-5 sources that support the data.
 
       For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
       2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
-      3. "reasoning": Data-backed explanation of fit (2-3 sentences)
+      3. "reasoning": Data-backed explanation of fit
       4. "metrics": Array of 2-3 relevant KPIs as objects with:
         - "value": A specific metric (e.g., "45%", "$2.5M")
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
       5. "country": The country of the target audience (e.g., "Sweden", "United States")
+      6. "sources": Array of 4-5 sources that support the data.
+
+      Try to use external sources to support the data if not available then use the company's own data.
 
       MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
-      Format: JSON array of target audience objects.
+      IMPORTANT: Return in a JSON format array of target audience objects without any other text. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
     `;
 
     console.log("Sending request to OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a senior industry analyst at a top global consultancy.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
+    const openAiResponse = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: prompt,
+      max_output_tokens: 5000
     });
 
     console.log("Successfully analyzed content with OpenAI");
-    const analysis = completion.choices[0].message.content;
+    const analysis = openAiResponse.output_text;
     console.log("OpenAI analysis:", analysis);
+    console.log("OpenAI analysis end:", analysis.slice(-50));
 
-    try {
-      let cleanAnalysis = analysis.trim();
-      if (cleanAnalysis.startsWith("```json")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```json\s*/, "")
-          .replace(/\s*```$/, "");
-      } else if (cleanAnalysis.startsWith("```")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```\s*/, "")
-          .replace(/\s*```$/, "");
-      }
+    const cleanAnalysis = cleanJsonResponse(analysis);
 
-      const parsedAnalysis = JSON.parse(cleanAnalysis);
-      console.log("Parsed analysis:", parsedAnalysis);
+    const parsedAnalysis = JSON.parse(cleanAnalysis);
+    console.log("Parsed analysis:", parsedAnalysis);
 
-      const new_latest_step = 6;
-      const cleanFurtherProgress = {};
-      for (let x = new_latest_step + 1; x <= 10; x++) {
-        const keyName = `step_${x}_result`;
-        cleanFurtherProgress[keyName] = null;
-      }
-      const { error: progressError } = await supabase
-        .from("campaign_progress")
-        .update({
-          latest_step: new_latest_step,
-          step_6_result: {
-            target_audience: parsedAnalysis,
-            locale,
-          },
-          ...cleanFurtherProgress,
-        })
-        .eq("id", campaignData.progress_id);
+    const new_latest_step = 6;
+    const cleanFurtherProgress = {};
+    for (let x = new_latest_step + 1; x <= 10; x++) {
+      const keyName = `step_${x}_result`;
+      cleanFurtherProgress[keyName] = null;
+    }
 
-      if (progressError) {
-        return new Response(JSON.stringify({ error: progressError.message }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        });
-      }
+    const { error: progressUpdateError } = await supabase
+      .from("campaign_progress")
+      .update({
+        latest_step: new_latest_step,
+        step_6_result: {
+          target_audience: parsedAnalysis,
+          locale,
+        },
+        ...cleanFurtherProgress,
+      })
+      .eq("id", campaignData.progress_id);
 
-      return new Response(JSON.stringify({ data: parsedAnalysis }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Error parsing JSON response:", error.message);
-      console.log("Raw response was:", analysis);
+    if (progressUpdateError) {
       return new Response(
-        JSON.stringify({ error: "Error parsing JSON response" }),
+        JSON.stringify({ error: progressUpdateError.message }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 500,
         }
       );
     }
+
+    return new Response(JSON.stringify({ data: parsedAnalysis }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({ error: error.message }), {

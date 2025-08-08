@@ -578,6 +578,7 @@ Deno.serve(async (req) => {
           model: "gpt-4.1",
           tools: [{ type: "web_search_preview" }],
           input: prompt,
+          max_output_tokens: 5000
         });
 
         console.log("Successfully analyzed content with OpenAI");
