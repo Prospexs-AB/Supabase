@@ -89,7 +89,10 @@ Deno.serve(async (req) => {
       console.error(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        }
       );
     }
 
@@ -148,7 +151,7 @@ Deno.serve(async (req) => {
       The lead company's specific strategic challenges:
       ${challengesWithSolutions.map(
         (challenge) =>
-          `Title: ${challenge.title} Description: ${challenge.description}`
+          `Title: ${challenge.title} Description: ${challenge.description} Sources: ${challenge.source}`
       )}
 
       Explain how ${campaignData.company_name} directly solves this challenge.
@@ -160,6 +163,7 @@ Deno.serve(async (req) => {
       approach).
       ● Cite case studies, product documentation, or press releases for validation.
       ● 150-200 words each.
+      ● Use external sources to support the data if not available then use the company's own data but always add the sources.
 
       compliance teams provide on-the-ground expertise for country-specific regulations, ensuring
       Job&Talent stays ahead of changing labor laws. This partnership replaces reactive regional
@@ -174,14 +178,26 @@ Deno.serve(async (req) => {
         {
           "problemTitle": "Problem 1",
           "problemDescription": "Description of problem 1",
+          "sources": [
+            "Source 1 for problem 1",
+            "Source 2 for problem 1"
+          ],
           "solutions": [
             {
               "solutionTitle": "Solution 1 for challenge 1",
               "solutionDescription": "Description of solution 1 for challenge 1",
+              "sources": [
+                "Source 1 for solution 1 for challenge 1",
+                "Source 2 for solution 1 for challenge 1"
+              ]
             },
             {
               "solutionTitle": "Solution 2 for challenge 1",
-              "solutionDescription": "Description of solution 2 for challenge 1"
+              "solutionDescription": "Description of solution 2 for challenge 1",
+              "sources": [
+                "Source 1 for solution 2 for challenge 1",
+                "Source 2 for solution 2 for challenge 1"
+              ]
             }
           ]
         }
@@ -192,6 +208,7 @@ Deno.serve(async (req) => {
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],
       input: solutionsPrompt,
+      max_output_tokens: 5000,
     });
 
     console.log("Open ai response:", solutionsWithChallengesOutput.output_text);

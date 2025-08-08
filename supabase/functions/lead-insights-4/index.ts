@@ -89,7 +89,10 @@ Deno.serve(async (req) => {
       console.error(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        }
       );
     }
 
@@ -173,6 +176,14 @@ Deno.serve(async (req) => {
             "solutionDescription": "Description here",
             "impactTitle": "Impact for challenge",
             "impactDescription": "Impact description here",
+            "solutionSources": [
+              "Source 1 for solution",
+              "Source 2 for solution"
+            ],
+            "impactSources": [
+              "Source 1 for impact",
+              "Source 2 for impact"
+            ],
             "objectionHandling": [
               {
                 "objection": "Objection text here",
@@ -182,6 +193,13 @@ Deno.serve(async (req) => {
             ]
           }
         `;
+
+        const objectionHandlingOutput = await openai.responses.create({
+          model: "gpt-4.1",
+          tools: [{ type: "web_search_preview" }],
+          input: objectionHandlingPrompt,
+          max_output_tokens: 5000,
+        });
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -195,20 +213,13 @@ Deno.serve(async (req) => {
           max_tokens: 1500,
         });
 
-        console.log("Successfully analyzed content with OpenAI");
-        const analysis = completion.choices[0].message.content;
-        console.log("OpenAI analysis:", analysis);
+        console.log("Open ai response:", objectionHandlingOutput.output_text);
 
-        let text = analysis.trim();
-        console.log("objection handling text", text);
-        console.log(
-          "objection handling text end:",
-          text.substring(text.length - 500)
+        const cleanObjectionHandlingOutput = cleanJsonResponse(
+          objectionHandlingOutput.output_text
         );
 
-        const cleanText = cleanJsonResponse(text);
-
-        return JSON.parse(cleanText);
+        return JSON.parse(cleanObjectionHandlingOutput);
       });
 
       const results = await Promise.all(solutionPromises);

@@ -109,7 +109,10 @@ Deno.serve(async (req) => {
       console.error(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        }
       );
     }
 
@@ -1458,6 +1461,7 @@ Deno.serve(async (req) => {
               model: "gpt-4.1",
               tools: [{ type: "web_search_preview" }],
               input: prompt,
+              max_output_tokens: 5000,
             });
 
             response = response.output_text;
@@ -1542,8 +1546,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: "Success",
-        data: updatedLead,
+        message: "Successfully finished insights generation",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

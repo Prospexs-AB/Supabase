@@ -174,6 +174,7 @@ Deno.serve(async (req) => {
         ● Support with benchmarks from public case studies, customer success stories, or
         analyst reports.
         ● 150-200 words each.
+        ● Use external sources to support the data if not available then use the company's own data but always add the sources.
 
         IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
         IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
@@ -181,18 +182,38 @@ Deno.serve(async (req) => {
         {
           "title": "The problem title will be here",
           "description": "Description of problem",
+          "sources": [
+            "Source 1 for problem",
+            "Source 2 for problem"
+          ],
           "solutions": [
             {
               "solutionTitle": "Solution 1 for challenge 1",
               "solutionDescription": "Description of solution 1 for challenge 1",
               "impactTitle": "Impact for challenge 1",
-              "impactDescription": "Description of impact of solution 1 for challenge 1"
+              "impactDescription": "Description of impact of solution 1 for challenge 1",
+              "solutionSources": [
+                "Source 1 for impact of solution 1 for challenge 1",
+                "Source 2 for impact of solution 1 for challenge 1"
+              ],
+              "impactSources": [
+                "Source 1 for impact of solution 1 for challenge 1",
+                "Source 2 for impact of solution 1 for challenge 1"
+              ]
             },
             {
               "solutionTitle": "Solution 2 for challenge 1",
               "solutionDescription": "Description of solution 2 for challenge 1",
               "impactTitle": "Impact for challenge 1",
-              "impactDescription": "Description of impact of solution 2 for challenge 1"
+              "impactDescription": "Description of impact of solution 2 for challenge 1",
+              "solutionSources": [
+                "Source 1 for impact of solution 2 for challenge 1",
+                "Source 2 for impact of solution 2 for challenge 1"
+              ],
+              "impactSources": [
+                "Source 1 for impact of solution 2 for challenge 1",
+                "Source 2 for impact of solution 2 for challenge 1"
+              ]
             }
           ]
         }
@@ -202,6 +223,7 @@ Deno.serve(async (req) => {
         model: "gpt-4.1",
         tools: [{ type: "web_search_preview" }],
         input: impactsOfSolutionsPrompt,
+        max_output_tokens: 5000,
       });
 
       console.log("Open ai response:", impactsOfSolutionsOutput.output_text);
