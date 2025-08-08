@@ -166,15 +166,16 @@ class Utils {
     const t = this.normalizeToneOption(tone);
     if (t === "Humorous" || t === "Excited") return CONFIG.TEMPERATURE.CREATIVE;
     if (t === "Casual") return CONFIG.TEMPERATURE.BALANCED;
-    if (t === "Formal" || t === "Diplomatic") return CONFIG.TEMPERATURE.CONSISTENT;
+    if (t === "Formal" || t === "Diplomatic")
+      return CONFIG.TEMPERATURE.CONSISTENT;
     return CONFIG.TEMPERATURE.BALANCED;
   }
 
   static getSentenceRange(length?: string) {
     const l = this.normalizeLengthOption(length);
     if (l === "Short & Concise") return { min: 1, max: 2 };
-    if (l === "Long & Informative") return { min: 3, max: 5 };
-    return { min: 2, max: 3 };
+    if (l === "Long & Informative") return { min: 5, max: 7 };
+    return { min: 2, max: 4 };
   }
 
   static getSentenceInstruction(length?: string) {
@@ -184,9 +185,12 @@ class Utils {
 
   static getToneInstruction(tone?: string) {
     const t = this.normalizeToneOption(tone);
-    if (t === "Humorous") return "Use a humorous tone (light, tasteful, and professional-safe)";
-    if (t === "Diplomatic") return "Use a diplomatic tone (balanced, considerate, non-confrontational)";
-    if (t === "Excited") return "Use an excited tone (positive and energetic, without hype)";
+    if (t === "Humorous")
+      return "Use a humorous tone (light, tasteful, and professional-safe)";
+    if (t === "Diplomatic")
+      return "Use a diplomatic tone (balanced, considerate, non-confrontational)";
+    if (t === "Excited")
+      return "Use an excited tone (positive and energetic, without hype)";
     return `Use a ${t.toLowerCase()} tone`;
   }
 
@@ -229,348 +233,347 @@ const PROMPTS = {
   },
   ttb: {
     context: `## CONTEXT
+      **Receiver Company Facts and Figures:**  
+      {receiver_company_facts_and_figures}
 
-**Receiver Company Facts and Figures:**  
-{receiver_company_facts_and_figures}
+      **Company Problems and Solutions:**  
+      {problems_solutions}
 
-**Company Problems and Solutions:**  
-{problems_solutions}
+      **Clients and Partners:**  
+      {clients_and_partners}
 
-**Clients and Partners:**  
-{clients_and_partners}
+      **Sender and Receiver Details:**  
+      {sender_and_receiver_details}
 
-**Sender and Receiver Details:**  
-{sender_and_receiver_details}
+      **Other parts of the email:**  
+      {other_parts_of_email}
 
-**Other parts of the email:**  
-{other_parts_of_email}
-
-`,
+      `,
     examples: `## SENDER's WRITING STYLE:
-The sender uses a friendly and conversational tone, connecting personally with the recipient before transitioning to a business-related challenge. The goal is to create a natural flow into the topic of discussion without immediately offering a solution.
+      The sender uses a friendly and conversational tone, connecting personally with the recipient before transitioning to a business-related challenge. The goal is to create a natural flow into the topic of discussion without immediately offering a solution.
 
-**Sample transition to business paragraphs:**  
-\`\`\`
-{examples}
-\`\`\`
-`,
+      **Sample transition to business paragraphs:**  
+      \`\`\`
+      {examples}
+      \`\`\`
+      `,
     system: {
       en: `## **Transition to Business:**
-In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
+      In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
 
-- **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
-- **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
-- **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
-- **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
+      - **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
+      - **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
+      - **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
+      - **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-## **Rules:**
-- Keep the tone friendly, casual, and highly personalized.
-- Be specific to the recipient and their company.
-- Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
-- Make the content feel exclusive and directly relevant to the recipient.
-- Avoid offering the value proposition in this section.
-- **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
+      ## **Rules:**
+      - Keep the tone friendly, casual, and highly personalized.
+      - Be specific to the recipient and their company.
+      - Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
+      - Make the content feel exclusive and directly relevant to the recipient.
+      - Avoid offering the value proposition in this section.
+      - **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
 
-### **Points for Better Writing:**
-- Use a conversational, informal tone with contractions for a natural feel.
-- Include specific examples or references related to the recipient’s context.
-- Build a personal connection, showing understanding or shared interests.
-- Use clear, straightforward language, avoiding jargon and complex structures.
-- Engage the reader with direct questions if relevant.
-- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+      ### **Points for Better Writing:**
+      - Use a conversational, informal tone with contractions for a natural feel.
+      - Include specific examples or references related to the recipient’s context.
+      - Build a personal connection, showing understanding or shared interests.
+      - Use clear, straightforward language, avoiding jargon and complex structures.
+      - Engage the reader with direct questions if relevant.
+      - Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
 
-### **Words/Sentences to Avoid:**
-- Avoid phrases such as:
-    - Streamlining these processes
-    - Operational efficiency
-    - I recently came across
-    - I admire your
-    - Curious to hear more about your
-    - Deeply excited to
-    - Looking forward to
-    - As someone who
-    - Navigating the challenges
-    - Product efficiency
-    - Exhilarating
-    - Resonated with me
-- Avoid exaggerated or overly formal language; keep it conversational.
-- Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
+      ### **Words/Sentences to Avoid:**
+      - Avoid phrases such as:
+          - Streamlining these processes
+          - Operational efficiency
+          - I recently came across
+          - I admire your
+          - Curious to hear more about your
+          - Deeply excited to
+          - Looking forward to
+          - As someone who
+          - Navigating the challenges
+          - Product efficiency
+          - Exhilarating
+          - Resonated with me
+      - Avoid exaggerated or overly formal language; keep it conversational.
+      - Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
 
-### **Write the following text in a natural, relaxed, and conversational tone.**
-1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
-2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
-3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
-4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+      ### **Write the following text in a natural, relaxed, and conversational tone.**
+      1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+      2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+      3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+      4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
 
-**Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
-`,
+      **Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
+      `,
       sv: `## **Transition to Business:**
-In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
+      In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
 
-- **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
-- **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
-- **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
-- **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
+      - **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
+      - **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
+      - **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
+      - **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-## **Rules:**
-- Keep the tone friendly, casual, and highly personalized.
-- Be specific to the recipient and their company.
-- Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
-- Make the content feel exclusive and directly relevant to the recipient.
-- Avoid offering the value proposition in this section.
-- **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
-- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+      ## **Rules:**
+      - Keep the tone friendly, casual, and highly personalized.
+      - Be specific to the recipient and their company.
+      - Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
+      - Make the content feel exclusive and directly relevant to the recipient.
+      - Avoid offering the value proposition in this section.
+      - **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
+      - Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
 
-### **Points for Better Writing:**
-- Use a conversational, informal tone with contractions for a natural feel.
-- Include specific examples or references related to the recipient’s context.
-- Build a personal connection, showing understanding or shared interests.
-- Use clear, straightforward language, avoiding jargon and complex structures.
-- Engage the reader with direct questions if relevant.
+      ### **Points for Better Writing:**
+      - Use a conversational, informal tone with contractions for a natural feel.
+      - Include specific examples or references related to the recipient’s context.
+      - Build a personal connection, showing understanding or shared interests.
+      - Use clear, straightforward language, avoiding jargon and complex structures.
+      - Engage the reader with direct questions if relevant.
 
-### **Words/Sentences to Avoid:**
-- Avoid phrases such as:
-    - Streamlining these processes
-    - Operational efficiency
-    - I recently came across
-    - I admire your
-    - Curious to hear more about your
-    - Deeply excited to
-    - Looking forward to
-    - As someone who
-    - Navigating the challenges
-    - Product efficiency
-    - Exhilarating
-    - Resonated with me
-- Avoid exaggerated or overly formal language; keep it conversational.
-- Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
+      ### **Words/Sentences to Avoid:**
+      - Avoid phrases such as:
+          - Streamlining these processes
+          - Operational efficiency
+          - I recently came across
+          - I admire your
+          - Curious to hear more about your
+          - Deeply excited to
+          - Looking forward to
+          - As someone who
+          - Navigating the challenges
+          - Product efficiency
+          - Exhilarating
+          - Resonated with me
+      - Avoid exaggerated or overly formal language; keep it conversational.
+      - Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
 
-**Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
-`,
+      **Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
+      `,
     },
   },
   objection: {
     context: `## CONTEXT
 
-**Sender company details:**
-{sender_company_details}
+      **Sender company details:**
+      {sender_company_details}
 
-**Receiver cmpany details:**
-{receiver_commpany_details}
+      **Receiver cmpany details:**
+      {receiver_commpany_details}
 
-**Sender and Receiver Details:**
-{sender_and_receiver_details}
+      **Sender and Receiver Details:**
+      {sender_and_receiver_details}
 
-**Other parts of the email:**
-{other_parts_of_email}
+      **Other parts of the email:**
+      {other_parts_of_email}
 
-**Clients and Partners:**
-{clients_and_partners}
+      **Clients and Partners:**
+      {clients_and_partners}
 
-`,
+      `,
     examples: `## SENDER's WRITING STYLE:
-Below are sample paragraphs that demonstrate how the sender acknowledges potential concerns and positions their solution as a natural enhancement to existing processes, addressing objections while highlighting added value.
+      Below are sample paragraphs that demonstrate how the sender acknowledges potential concerns and positions their solution as a natural enhancement to existing processes, addressing objections while highlighting added value.
 
-**Sample Objection handling paragraphs:**  
+      **Sample Objection handling paragraphs:**  
 
-\`\`\`
-{examples}
-\`\`\`
-`,
+      \`\`\`
+      {examples}
+      \`\`\`
+      `,
     system: {
       en: `---
-## **Task:**
-Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
+      ## **Task:**
+      Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-### **Key Points to Cover:**
+      ### **Key Points to Cover:**
 
-- **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
-- **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
-- **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
-- **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
-- **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
-- **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
+      - **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
+      - **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
+      - **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
+      - **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
+      - **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
+      - **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
 
----
+      ---
 
-## **Rules:**
+      ## **Rules:**
 
-- Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
-- Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
-- Use relevant details like employee count or other metrics from the context.
-- Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
-- Always back up the paragraph with **facts or figures** to support the claims.
-- If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
-- The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
-- When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+      - Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
+      - Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
+      - Use relevant details like employee count or other metrics from the context.
+      - Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
+      - Always back up the paragraph with **facts or figures** to support the claims.
+      - If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
+      - The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
+      - When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
 
----
+      ---
 
-## **Instructions:**
+      ## **Instructions:**
 
-- **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
-- Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
-- Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
-- Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
-- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+      - **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
+      - Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
+      - Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
+      - Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
+      - Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
 
----
+      ---
 
-### **Tone:**
+      ### **Tone:**
 
-- Keep the paragraph **casual and conversational**—relaxed, easy to read, and more like a friendly chat than formal communication.
-- Return the pagaraph of the Objection Handling.
+      - Keep the paragraph **casual and conversational**—relaxed, easy to read, and more like a friendly chat than formal communication.
+      - Return the pagaraph of the Objection Handling.
 
----
+      ---
 
-### **Write the following text in a natural, relaxed, and conversational tone.**
-1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
-2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
-3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
-4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
-`,
+      ### **Write the following text in a natural, relaxed, and conversational tone.**
+      1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+      2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+      3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+      4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+      `,
       sv: `---
-## **Task:**
-Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
+      ## **Task:**
+      Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-### **Key Points to Cover:**
+      ### **Key Points to Cover:**
 
-- **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
-- **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
-- **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
-- **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
-- **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
-- **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
+      - **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
+      - **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
+      - **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
+      - **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
+      - **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
+      - **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
 
----
+      ---
 
-## **Rules:**
+      ## **Rules:**
 
-- Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
-- Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
-- Use relevant details like employee count or other metrics from the context.
-- Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
-- Always back up the paragraph with **facts or figures** to support the claims.
-- If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
-- The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
-- When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+      - Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
+      - Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
+      - Use relevant details like employee count or other metrics from the context.
+      - Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
+      - Always back up the paragraph with **facts or figures** to support the claims.
+      - If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
+      - The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
+      - When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
 
----
+      ---
 
-## **Instructions:**
+      ## **Instructions:**
 
-- **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
-- Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
-- Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
-- Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
-`,
+      - **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
+      - Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
+      - Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
+      - Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
+      `,
     },
   },
   cta: {
     context: `## CONTEXT
 
-**Sender and Receiver Details:**
-{sender_and_receiver_details}
+      **Sender and Receiver Details:**
+      {sender_and_receiver_details}
 
-**Senders availability:**
-{sender_availability}
+      **Senders availability:**
+      {sender_availability}
 
-**Other parts of the email:**
-{other_parts_of_email}
+      **Other parts of the email:**
+      {other_parts_of_email}
 
-`,
+      `,
     examples: `## SENDER's WRITING STYLE:
-"Below are examples of how the sender typically crafts Call to Action (CTA) paragraphs." 
+      "Below are examples of how the sender typically crafts Call to Action (CTA) paragraphs." 
 
-**Sample CTA paragraphs:**  
+      **Sample CTA paragraphs:**  
 
-\`\`\`
-{examples}
-\`\`\`
-`,
+      \`\`\`
+      {examples}
+      \`\`\`
+      `,
     system: {
       en: `## **Task:**
-Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
+      Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-### **Key Points to Cover:**
-- A friendly, conversational tone.
-- Specific mention of the receiver's name.
-- Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
-- Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
-- Ask for a time which suits the receiver for a quick call or chat.
-- Also, ask in the end if the receiver has any related questions or wants to ask anything.
+      ### **Key Points to Cover:**
+      - A friendly, conversational tone.
+      - Specific mention of the receiver's name.
+      - Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
+      - Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
+      - Ask for a time which suits the receiver for a quick call or chat.
+      - Also, ask in the end if the receiver has any related questions or wants to ask anything.
 
-## **Rules:**
-1. Keep the tone casual but respectful, avoiding overly formal language.
-2. Use straightforward and simple sentence structures.
-3. Avoid sounding pushy; instead, focus on collaboration and exploration.
-4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+      ## **Rules:**
+      1. Keep the tone casual but respectful, avoiding overly formal language.
+      2. Use straightforward and simple sentence structures.
+      3. Avoid sounding pushy; instead, focus on collaboration and exploration.
+      4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
 
-## **Instructions:**
-- The CTA should be concise, between 30 and 50 words.
-- Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
-- Reference the goal of the meeting in a way that feels organic, not sales-driven.
-- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
-  
-### **Tone:**
-Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
+      ## **Instructions:**
+      - The CTA should be concise, between 30 and 50 words.
+      - Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
+      - Reference the goal of the meeting in a way that feels organic, not sales-driven.
+      - Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+        
+      ### **Tone:**
+      Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
 
-### **Write the following text in a natural, relaxed, and conversational tone.**
-1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
-2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
-3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
-4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+      ### **Write the following text in a natural, relaxed, and conversational tone.**
+      1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+      2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+      3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+      4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
 
-### **Format:**
-- CTA paragraph
-`,
+      ### **Format:**
+      - CTA paragraph
+      `,
       sv: `## **Task:**
-Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
+      Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
 
-**Today's Date**
-{current_day}
+      **Today's Date**
+      {current_day}
 
-### **Key Points to Cover:**
-- A friendly, conversational tone.
-- Specific mention of the receiver's name.
-- Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
-- Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
-- Ask for a time which suits the receiver for a quick call or chat.
-- Also, ask in the end if the receiver has any related questions or wants to ask anything.
+      ### **Key Points to Cover:**
+      - A friendly, conversational tone.
+      - Specific mention of the receiver's name.
+      - Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
+      - Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
+      - Ask for a time which suits the receiver for a quick call or chat.
+      - Also, ask in the end if the receiver has any related questions or wants to ask anything.
 
-## **Rules:**
-1. Keep the tone casual but respectful, avoiding overly formal language.
-2. Use straightforward and simple sentence structures.
-3. Avoid sounding pushy; instead, focus on collaboration and exploration.
-4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+      ## **Rules:**
+      1. Keep the tone casual but respectful, avoiding overly formal language.
+      2. Use straightforward and simple sentence structures.
+      3. Avoid sounding pushy; instead, focus on collaboration and exploration.
+      4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
 
-## **Instructions:**
-- The CTA should be concise, between 30 and 50 words.
-- Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
-- Reference the goal of the meeting in a way that feels organic, not sales-driven.
-- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
-  
-### **Tone:**
-Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
+      ## **Instructions:**
+      - The CTA should be concise, between 30 and 50 words.
+      - Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
+      - Reference the goal of the meeting in a way that feels organic, not sales-driven.
+      - Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+        
+      ### **Tone:**
+      Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
 
-### **Format:**
-- CTA paragraph
-`,
+      ### **Format:**
+      - CTA paragraph
+      `,
     },
   },
 } as const;
@@ -673,7 +676,8 @@ class HPEF extends EmailPart {
     const bestStory = await this.selectBestStory(
       stories,
       details.language,
-      openai
+      openai,
+      details
     );
 
     return new HPEF(bestStory.content, {
@@ -714,7 +718,8 @@ class HPEF extends EmailPart {
     const refinedStory = await this.rewriteHPEF(
       completion.choices[0].message.content || "",
       details.language,
-      openai
+      openai,
+      details
     );
 
     return refinedStory;
@@ -723,21 +728,21 @@ class HPEF extends EmailPart {
   static async rewriteHPEF(
     oldStory: string,
     language: string = "en",
-    openai: OpenAI
+    openai: OpenAI,
+    details: any
   ) {
     const prompt = `
-Rewrite this email introduction to make it more concise and engaging:
+      Rewrite this email introduction to make it more concise and engaging:
 
-${oldStory}
+      ${oldStory}
 
-Requirements:
-- Keep it under 3 sentences
-- Make it more personal and relevant
-- Maintain professional tone
-- Focus on building connection
- - Do NOT include any greetings or sign-offs (e.g., "Hi", "Dear", "Best", names/titles)
-
-Rewritten version:`;
+      Requirements:
+      - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
+      - Make it more personal and relevant
+      - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Focus on building connection
+      - Do NOT include any greetings or sign-offs (e.g., "Hi", "Dear", "Best", names/titles)
+    `;
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4_MINI,
@@ -754,24 +759,27 @@ Rewritten version:`;
   static async selectBestStory(
     stories: any[],
     language: string = "en",
-    openai: OpenAI
+    openai: OpenAI,
+    details: any
   ) {
     const storiesText = stories
       .map((s, i) => `${i + 1}. ${s.content}`)
       .join("\n");
 
     const prompt = `
-Compare these email introductions and select the best one:
+      Compare these email introductions and select the best one:
 
-${storiesText}
+      ${storiesText}
 
-Select the best introduction based on:
-- Personalization quality
-- Engagement potential
-- Professional tone
-- Relevance to business context
+      Select the best introduction based on:
+      - Personalization quality
+      - Engagement potential
+      - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
+      - Relevance to business context
 
-Respond with only the number (1, 2, etc.) of the best option:`;
+      Respond with only the number (1, 2, etc.) of the best option:
+    `;
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4_MINI,
@@ -813,7 +821,8 @@ Respond with only the number (1, 2, etc.) of the best option:`;
     const bestHPEF = await this.selectBestStory(
       hpefs,
       details.language,
-      openai
+      openai,
+      details
     );
 
     return new HPEF(bestHPEF.content, {
@@ -841,69 +850,74 @@ Respond with only the number (1, 2, etc.) of the best option:`;
 
   static buildStoryPrompt(details: any, storyId: number) {
     return `
-Generate a personalized email introduction paragraph for:
+      Generate a personalized email introduction paragraph for:
 
-Sender: ${details.sender.person.name} (${
+      Sender: ${details.sender.person.name} (${
       details.sender.person.designation
     }) at ${details.sender.company.name}
-Sender Context: ${details.sender.person.facts || "Professional in technology"}
+      Sender Context: ${
+        details.sender.person.facts || "Professional in technology"
+      }
 
-Receiver: ${details.receiver.person.name} (${
+      Receiver: ${details.receiver.person.name} (${
       details.receiver.person.designation
     }) at ${details.receiver.company.name}
-Receiver Context: ${details.receiver.person.facts || "Business professional"}
+      Receiver Context: ${
+        details.receiver.person.facts || "Business professional"
+      }
 
-Company Context: ${
-      details.receiver.company.facts_and_figures || "Established company"
-    }
+      Company Context: ${
+        details.receiver.company.facts_and_figures || "Established company"
+      }
 
-Create a story-like introduction that:
-- Builds a personal connection
-- Shows understanding of their business
-- Is relevant and engaging
-- Maintains professional tone
-- IMPORTANT: Do NOT include any greetings like "Hi", "Dear", or "Hello"
- - IMPORTANT: Do NOT include any sign-offs (e.g., "Best", "Regards", names/titles)
-- Return ONLY the introduction paragraph content
-
-Introduction:`;
+      Create a story-like introduction that:
+      - Builds a personal connection
+      - Shows understanding of their business
+      - Is relevant and engaging
+      - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
+      - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - IMPORTANT: Do NOT include any greetings like "Hi", "Dear", or "Hello"
+      - IMPORTANT: Do NOT include any sign-offs (e.g., "Best", "Regards", names/titles)
+      - Return ONLY the introduction paragraph content
+    `;
   }
 
   static buildFinetunedPrompt(details: any) {
     return `
-Generate a hyper-personalized email introduction.
+      Generate a hyper-personalized email introduction.
 
-Sender: ${details.sender.person.name} (${
+      Sender: ${details.sender.person.name} (${
       details.sender.person.designation
     }) at ${details.sender.company.name}
-Sender Context: ${details.sender.person.facts || "Professional in technology"}
+      Sender Context: ${
+        details.sender.person.facts || "Professional in technology"
+      }
 
-Receiver: ${details.receiver.person.name} (${
+      Receiver: ${details.receiver.person.name} (${
       details.receiver.person.designation
     }) at ${details.receiver.company.name}
-Receiver Context: ${details.receiver.person.facts || "Business professional"}
+      Receiver Context: ${
+        details.receiver.person.facts || "Business professional"
+      }
 
-Company Context: ${
-      details.receiver.company.facts_and_figures || "Established company"
-    }
+      Company Context: ${
+        details.receiver.company.facts_and_figures || "Established company"
+      }
 
-Format your response as:
-explanation: [brief explanation of the approach]
-hpef: [the actual introduction text]`;
+      Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
+      Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+
+      Format your response as:
+      explanation: [brief explanation of the approach]
+      hpef: [the actual introduction text]`;
   }
 
   static getContext(details: any) {
     return `
-Sender: ${details.sender.person.name} at ${details.sender.company.name}
-Receiver: ${details.receiver.person.name} at ${details.receiver.company.name}
-Context: Professional business outreach
+      Sender: ${details.sender.person.name} at ${details.sender.company.name}
+      Receiver: ${details.receiver.person.name} at ${details.receiver.company.name}
+      Context: Professional business outreach
     `;
-  }
-
-  static calculateCost(usage: any, model: string) {
-    const inputCost = usage.prompt_tokens * 0.00001;
-    const outputCost = usage.completion_tokens * 0.00003;
-    return inputCost + outputCost;
   }
 }
 
@@ -940,46 +954,40 @@ class ValueProposition extends EmailPart {
 
   static async buildOpenAIPrompt(details: any, contexts: any) {
     return `
-Create a compelling value proposition paragraph for a business outreach email.
+      Create a compelling value proposition paragraph for a business outreach email.
 
-Sender Company: ${details.sender.company.name}
-Sender Company Details: ${
-      details.sender.company.details || "Technology solutions provider"
-    }
-Sender Company Facts: ${
-      details.sender.company.facts_and_figures ||
-      "Established company with proven track record"
-    }
+      Sender Company: ${details.sender.company.name}
+      Sender Company Details: ${
+        details.sender.company.details || "Technology solutions provider"
+      }
+      Sender Company Facts: ${
+        details.sender.company.facts_and_figures ||
+        "Established company with proven track record"
+      }
 
-Receiver Company: ${details.receiver.company.name}
-Receiver Company Details: ${
-      details.receiver.company.details || "Established business"
-    }
+      Receiver Company: ${details.receiver.company.name}
+      Receiver Company Details: ${
+        details.receiver.company.details || "Established business"
+      }
 
-Requirements:
-- Make it specific and relevant to the receiver's business
-- Focus on mutual benefits
- - ${Utils.getSentenceInstruction(details.preferences?.length)}
- - ${Utils.getToneInstruction(details.preferences?.tone)}
-- Highlight unique value proposition
-- Return ONLY the value proposition paragraph, no additional text
- - Do NOT include greetings or sign-offs
+      Requirements:
+      - Make it specific and relevant to the receiver's business
+      - Focus on mutual benefits
+      - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
+      - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Highlight unique value proposition
+      - Return ONLY the value proposition paragraph, no additional text
+      - Do NOT include greetings or sign-offs
 
-Value Proposition:`;
+      Value Proposition:`;
   }
 
   static getContext(details: any, contexts: any) {
     return `
-Sender Company: ${details.sender.company.name}
-Receiver Company: ${details.receiver.company.name}
-Context: ${contexts.email || "Professional outreach"}
+      Sender Company: ${details.sender.company.name}
+      Receiver Company: ${details.receiver.company.name}
+      Context: ${contexts.email || "Professional outreach"}
     `;
-  }
-
-  static calculateCost(usage: any, model: string) {
-    const inputCost = usage.prompt_tokens * 0.00001;
-    const outputCost = usage.completion_tokens * 0.00003;
-    return inputCost + outputCost;
   }
 }
 
@@ -1124,17 +1132,12 @@ class TransitionToBusiness extends EmailPart {
     let raw =
       PROMPTS.ttb.system[language as keyof typeof PROMPTS.ttb.system] ||
       PROMPTS.ttb.system.en;
-    // Adjust tone/length instructions inline
     raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
       preferences?.tone
-    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    )}.\n- Length: ${Utils.getSentenceInstruction(
+      preferences?.length
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
-  }
-
-  static calculateCost(usage: any, model: string) {
-    const inputCost = usage.prompt_tokens * 0.00001;
-    const outputCost = usage.completion_tokens * 0.00003;
-    return inputCost + outputCost;
   }
 }
 
@@ -1192,14 +1195,10 @@ class ObjectionHandling extends EmailPart {
       ] || PROMPTS.objection.system.en;
     raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
       preferences?.tone
-    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    )}.\n- Length: ${Utils.getSentenceInstruction(
+      preferences?.length
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
-  }
-
-  static calculateCost(usage: any, model: string) {
-    const inputCost = usage.prompt_tokens * 0.00001;
-    const outputCost = usage.completion_tokens * 0.00003;
-    return inputCost + outputCost;
   }
 }
 
@@ -1263,14 +1262,10 @@ class CallToAction extends EmailPart {
       PROMPTS.cta.system.en;
     raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
       preferences?.tone
-    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    )}.\n- Length: ${Utils.getSentenceInstruction(
+      preferences?.length
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
-  }
-
-  static calculateCost(usage: any, model: string) {
-    const inputCost = usage.prompt_tokens * 0.00001;
-    const outputCost = usage.completion_tokens * 0.00003;
-    return inputCost + outputCost;
   }
 }
 
@@ -1409,11 +1404,17 @@ class Email1 {
       emailType.includes("follow-up")
     ) {
       body = [ttb, vp, cta];
-    } else if (emailType.includes("book a meeting") || emailType.includes("meeting")) {
+    } else if (
+      emailType.includes("book a meeting") ||
+      emailType.includes("meeting")
+    ) {
       body = [ttb, vp, cta];
     } else if (emailType.includes("proposal")) {
       body = [ttb, vp, objection, cta];
-    } else if (emailType.includes("thank you") || emailType.includes("thanks")) {
+    } else if (
+      emailType.includes("thank you") ||
+      emailType.includes("thanks")
+    ) {
       body = [hpef, cta];
     } else {
       body = [hpef, ttb, vp, objection, cta];
