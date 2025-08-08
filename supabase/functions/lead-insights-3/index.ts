@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .eq("job_step", 2)
       .order("created_at", { ascending: true })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (jobError) {
       console.log("Error getting job:", jobError);
@@ -72,19 +72,26 @@ Deno.serve(async (req) => {
       `===== Starting job processing for job id: ${jobData.id} =====`
     );
 
-    const { error: firrstUpdateJobError } = await supabase
+    if (!jobData) {
+      return new Response(JSON.stringify({ message: "No jobs" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 204,
+      });
+    }
+
+    const { data: claimedJob, error: claimError } = await supabase
       .from("jobs")
       .update({ status: "processing" })
-      .eq("id", jobData.id);
+      .eq("id", jobData.id)
+      .eq("status", "waiting_for_next_step")
+      .select()
+      .single();
 
-    if (firrstUpdateJobError) {
-      console.error(`Error updating job ${jobData.id}:`, firrstUpdateJobError);
+    if (claimError || !claimedJob) {
+      console.error(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
-        JSON.stringify({ error: firrstUpdateJobError.message }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
+        JSON.stringify({ error: "Job already claimed by another worker" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
       );
     }
 
