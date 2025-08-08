@@ -1136,7 +1136,9 @@ class TransitionToBusiness extends EmailPart {
       preferences?.tone
     )}.\n- Length: ${Utils.getSentenceInstruction(
       preferences?.length
-    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}
+    .\n- Do not use any greetings in this section, just the main content.
+    .\n- Do not use any sign-offs in this section, just the main content.`;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 }
@@ -1325,8 +1327,13 @@ class Email1 {
     ]);
 
     // Clean up any potential duplication or unwanted content
-    // Remove HPEF duplication from TTB if model echoed it
-    ttb.content = ttb.content.replace(hpef.content, "").trim();
+    // Remove HPEF duplication from TTB only if it appears at the very start to avoid mid-sentence cuts
+    const ttbBeforeDedup = ttb.content;
+    const hpefText = hpef.content;
+    if (ttbBeforeDedup.trim().startsWith(hpefText.trim())) {
+      ttb.content = ttbBeforeDedup.slice(hpefText.length).trim();
+      console.log("Removed leading HPEF duplication from TTB");
+    }
 
     const cleanHPEF = hpef.content
       .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
@@ -1338,16 +1345,19 @@ class Email1 {
       )
       .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
+    console.log("ttb content", ttb.content);
     const cleanTTB = ttb.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
-      .replace(
-        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
-        "$1"
-      )
-      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
+      // Remove a prefixed Subject line only at the start
+      .replace(/^\s*Subject:.*?(\r?\n|$)/i, "")
+      // Remove greeting line only at the start (e.g., "Hi John, ")
+      .replace(/^\s*(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/i, "")
+      // Remove just the generic well-wish phrase at the start, not the entire line
+      .replace(/^\s*(I\s*hope\s*you'?re\s*(doing\s*well|well)[,.\s]*)/i, "")
+      .replace(/^\s*(Hope\s*you'?re\s*(doing\s*well|well)[,.\s]*)/i, "")
+      // Remove stray leading punctuation (e.g., leading !, ., commas, dashes)
+      .replace(/^\s*[!.,;:\-–—•·]+\s*/, "")
       .trim();
+    const safeTTB = cleanTTB.length > 0 ? cleanTTB : ttb.content.trim();
     const cleanVP = vp.content
       .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
       .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
@@ -1383,7 +1393,10 @@ class Email1 {
     const senderName = details.sender?.person?.name || "";
     const companyName = details.sender?.company?.name || "";
     hpef.content = Utils.stripSignOffs(cleanHPEF, senderName, companyName);
-    ttb.content = Utils.stripSignOffs(cleanTTB, senderName, companyName);
+    console.log("cleanTTB", cleanTTB);
+    console.log("safeTTB (post-fallback)", safeTTB);
+    ttb.content = Utils.stripSignOffs(safeTTB, senderName, companyName);
+    console.log("stripped ttb", ttb.content);
     vp.content = Utils.stripSignOffs(cleanVP, senderName, companyName);
     objection.content = Utils.stripSignOffs(
       cleanObjection,
@@ -1392,33 +1405,7 @@ class Email1 {
     );
     cta.content = Utils.stripSignOffs(cleanCTA, senderName, companyName);
 
-    // Assemble body based on email type preference
-    let body: EmailPart[] = [];
-    const emailType = (details.preferences?.emailType || "Full")
-      .toString()
-      .toLowerCase();
-    if (emailType.includes("intro") || emailType.includes("introduction")) {
-      body = [hpef, ttb, cta];
-    } else if (
-      emailType.includes("follow") ||
-      emailType.includes("follow-up")
-    ) {
-      body = [ttb, vp, cta];
-    } else if (
-      emailType.includes("book a meeting") ||
-      emailType.includes("meeting")
-    ) {
-      body = [ttb, vp, cta];
-    } else if (emailType.includes("proposal")) {
-      body = [ttb, vp, objection, cta];
-    } else if (
-      emailType.includes("thank you") ||
-      emailType.includes("thanks")
-    ) {
-      body = [hpef, cta];
-    } else {
-      body = [hpef, ttb, vp, objection, cta];
-    }
+    const body: EmailPart[] = [hpef, ttb, vp, objection, cta];
 
     return { subject, body };
   }
