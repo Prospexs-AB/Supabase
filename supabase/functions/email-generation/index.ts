@@ -66,9 +66,514 @@ class Utils {
   }
 
   static cleanContent(text: string) {
-    return text.trim().replace(/\n+/g, "\n").replace(/\s+/g, " ");
+    // Preserve paragraph breaks while trimming extra spaces
+    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalized.split("\n").map((line) => line.trim());
+    // Collapse 3+ blank lines to 2, keep paragraph structure
+    const compact = lines.join("\n").replace(/\n{3,}/g, "\n\n");
+    // Collapse spaces/tabs within lines but keep newlines
+    return compact.replace(/[ \t]+/g, " ").trim();
+  }
+
+  static stripSignOffs(
+    text: string,
+    senderName?: string,
+    companyName?: string
+  ) {
+    const lines = text.split("\n");
+    const signOffPattern =
+      /^(best regards|best|regards|sincerely|thanks|thank you|cheers)[,\s]*$/i;
+    const placeholderNamePattern = /^\s*\[?your name\]?\s*$/i;
+    const looksLikeSignature = (line: string) => {
+      const trimmed = line.trim();
+      if (!trimmed) return false;
+      if (placeholderNamePattern.test(trimmed)) return true;
+      if (
+        senderName &&
+        trimmed.toLowerCase().includes(senderName.toLowerCase())
+      )
+        return true;
+      if (
+        companyName &&
+        trimmed.toLowerCase().includes(companyName.toLowerCase())
+      )
+        return true;
+      // Common title keywords
+      if (
+        /(lead|manager|director|engineer|analyst|consultant|founder|ceo|cto|technical|sales|marketing)/i.test(
+          trimmed
+        )
+      )
+        return true;
+      return false;
+    };
+
+    const output: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isSignOff = signOffPattern.test(line.trim());
+
+      // Remove explicit placeholders like "Best, [Your Name]" on one line
+      if (
+        /^(best( regards)?|regards|sincerely|thanks|thank you|cheers)[,\s]*\[?your name\]?/i.test(
+          line.trim()
+        )
+      ) {
+        continue;
+      }
+
+      if (isSignOff) {
+        // If next line looks like a signature (name/title/company), skip it too
+        const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
+        if (looksLikeSignature(nextLine)) {
+          i++; // skip next line
+        }
+        continue; // skip sign-off line
+      }
+      output.push(line);
+    }
+
+    return output.join("\n");
+  }
+
+  static normalizeToneOption(tone?: string) {
+    const t = (tone || "Professional").toLowerCase();
+    if (t.includes("humor")) return "Humorous";
+    if (t.includes("diplomatic")) return "Diplomatic";
+    if (t.includes("formal")) return "Formal";
+    if (t.includes("casual") || t.includes("friendly")) return "Casual";
+    if (t.includes("excited") || t.includes("enthusiastic")) return "Excited";
+    if (t.includes("professional")) return "Professional";
+    return "Professional";
+  }
+
+  static normalizeLengthOption(length?: string) {
+    const l = (length || "Medium Length").toLowerCase();
+    if (l.includes("short")) return "Short & Concise";
+    if (l.includes("long")) return "Long & Informative";
+    return "Medium Length";
+  }
+
+  static getPreferences(tone?: string, length?: string, emailType?: string) {
+    return {
+      tone: this.normalizeToneOption(tone),
+      length: this.normalizeLengthOption(length),
+      emailType: (emailType || "Full").toString(),
+    };
+  }
+
+  static getTemperatureForTone(tone?: string) {
+    const t = this.normalizeToneOption(tone);
+    if (t === "Humorous" || t === "Excited") return CONFIG.TEMPERATURE.CREATIVE;
+    if (t === "Casual") return CONFIG.TEMPERATURE.BALANCED;
+    if (t === "Formal" || t === "Diplomatic") return CONFIG.TEMPERATURE.CONSISTENT;
+    return CONFIG.TEMPERATURE.BALANCED;
+  }
+
+  static getSentenceRange(length?: string) {
+    const l = this.normalizeLengthOption(length);
+    if (l === "Short & Concise") return { min: 1, max: 2 };
+    if (l === "Long & Informative") return { min: 3, max: 5 };
+    return { min: 2, max: 3 };
+  }
+
+  static getSentenceInstruction(length?: string) {
+    const { min, max } = this.getSentenceRange(length);
+    return `Limit to ${min}-${max} sentences`;
+  }
+
+  static getToneInstruction(tone?: string) {
+    const t = this.normalizeToneOption(tone);
+    if (t === "Humorous") return "Use a humorous tone (light, tasteful, and professional-safe)";
+    if (t === "Diplomatic") return "Use a diplomatic tone (balanced, considerate, non-confrontational)";
+    if (t === "Excited") return "Use an excited tone (positive and energetic, without hype)";
+    return `Use a ${t.toLowerCase()} tone`;
+  }
+
+  static getMaxTokens(length: string | undefined, base: number) {
+    const l = this.normalizeLengthOption(length);
+    if (l === "Short & Concise") return Math.min(base, 160);
+    if (l === "Long & Informative") return base + 120;
+    return base;
+  }
+
+  static getGreetingForTone(tone: string | undefined, name: string) {
+    const t = this.normalizeToneOption(tone);
+    if (t === "Formal" || t === "Diplomatic") return `Dear ${name},`;
+    return `Hi ${name},`;
+  }
+
+  static getClosingForTone(tone: string | undefined) {
+    const t = this.normalizeToneOption(tone);
+    if (t === "Formal" || t === "Diplomatic") return "Sincerely,";
+    if (t === "Casual" || t === "Humorous") return "Thanks,";
+    return "Best regards,";
   }
 }
+
+function renderTemplate(
+  template: string,
+  vars: Record<string, string>
+): string {
+  return template.replace(/\{\{\s*(\w+)\s*\}|\{(\w+)\}/g, (_m, a, b) => {
+    const key = a || b;
+    return vars[key] ?? "";
+  });
+}
+
+// Inline prompt templates copied from email/ directory
+const PROMPTS = {
+  subject: {
+    // No dedicated subject template found that matches our usage.
+    // Keeping inline prompt in Subject.buildPrompt below.
+  },
+  ttb: {
+    context: `## CONTEXT
+
+**Receiver Company Facts and Figures:**  
+{receiver_company_facts_and_figures}
+
+**Company Problems and Solutions:**  
+{problems_solutions}
+
+**Clients and Partners:**  
+{clients_and_partners}
+
+**Sender and Receiver Details:**  
+{sender_and_receiver_details}
+
+**Other parts of the email:**  
+{other_parts_of_email}
+
+`,
+    examples: `## SENDER's WRITING STYLE:
+The sender uses a friendly and conversational tone, connecting personally with the recipient before transitioning to a business-related challenge. The goal is to create a natural flow into the topic of discussion without immediately offering a solution.
+
+**Sample transition to business paragraphs:**  
+\`\`\`
+{examples}
+\`\`\`
+`,
+    system: {
+      en: `## **Transition to Business:**
+In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
+
+- **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
+- **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
+- **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
+- **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
+
+**Today's Date**
+{current_day}
+
+## **Rules:**
+- Keep the tone friendly, casual, and highly personalized.
+- Be specific to the recipient and their company.
+- Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
+- Make the content feel exclusive and directly relevant to the recipient.
+- Avoid offering the value proposition in this section.
+- **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
+
+### **Points for Better Writing:**
+- Use a conversational, informal tone with contractions for a natural feel.
+- Include specific examples or references related to the recipient’s context.
+- Build a personal connection, showing understanding or shared interests.
+- Use clear, straightforward language, avoiding jargon and complex structures.
+- Engage the reader with direct questions if relevant.
+- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+
+### **Words/Sentences to Avoid:**
+- Avoid phrases such as:
+    - Streamlining these processes
+    - Operational efficiency
+    - I recently came across
+    - I admire your
+    - Curious to hear more about your
+    - Deeply excited to
+    - Looking forward to
+    - As someone who
+    - Navigating the challenges
+    - Product efficiency
+    - Exhilarating
+    - Resonated with me
+- Avoid exaggerated or overly formal language; keep it conversational.
+- Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
+
+### **Write the following text in a natural, relaxed, and conversational tone.**
+1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+
+**Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
+`,
+      sv: `## **Transition to Business:**
+In this section, the sender smoothly transitions from a personal touch to addressing a specific business challenge the recipient might be facing. The transition should:
+
+- **Casual Opener:** Start with a relatable comment about recent activities, news, or trends related to their company, connecting this to the HPEF.
+- **Introduce the Challenge (Backed by Data):** Highlight a concrete challenge the recipient’s company may be dealing with, supported by **facts and figures provided**. **No hypothesis or assumptions should be made.**
+- **Build Empathy:** Acknowledge the difficulty or effort required to manage this challenge, showing understanding and appreciation for their efforts.
+- **Lay-Up for a Solution:** Prepare the recipient for a solution without directly presenting it.
+
+**Today's Date**
+{current_day}
+
+## **Rules:**
+- Keep the tone friendly, casual, and highly personalized.
+- Be specific to the recipient and their company.
+- Ensure the paragraph is concise (150-250 words) with 2-4 sentences.
+- Make the content feel exclusive and directly relevant to the recipient.
+- Avoid offering the value proposition in this section.
+- **Use the provided facts and figures to support the TTB. Do not make assumptions or hypothesize about challenges.**
+- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+
+### **Points for Better Writing:**
+- Use a conversational, informal tone with contractions for a natural feel.
+- Include specific examples or references related to the recipient’s context.
+- Build a personal connection, showing understanding or shared interests.
+- Use clear, straightforward language, avoiding jargon and complex structures.
+- Engage the reader with direct questions if relevant.
+
+### **Words/Sentences to Avoid:**
+- Avoid phrases such as:
+    - Streamlining these processes
+    - Operational efficiency
+    - I recently came across
+    - I admire your
+    - Curious to hear more about your
+    - Deeply excited to
+    - Looking forward to
+    - As someone who
+    - Navigating the challenges
+    - Product efficiency
+    - Exhilarating
+    - Resonated with me
+- Avoid exaggerated or overly formal language; keep it conversational.
+- Refrain from using fluff words like resonate, streamline, operational efficiency, etc.
+
+**Note:** The Transition to Business paragraph should smoothly introduce and highlight a specific challenge faced by the recipient without presenting the sender's solution.
+`,
+    },
+  },
+  objection: {
+    context: `## CONTEXT
+
+**Sender company details:**
+{sender_company_details}
+
+**Receiver cmpany details:**
+{receiver_commpany_details}
+
+**Sender and Receiver Details:**
+{sender_and_receiver_details}
+
+**Other parts of the email:**
+{other_parts_of_email}
+
+**Clients and Partners:**
+{clients_and_partners}
+
+`,
+    examples: `## SENDER's WRITING STYLE:
+Below are sample paragraphs that demonstrate how the sender acknowledges potential concerns and positions their solution as a natural enhancement to existing processes, addressing objections while highlighting added value.
+
+**Sample Objection handling paragraphs:**  
+
+\`\`\`
+{examples}
+\`\`\`
+`,
+    system: {
+      en: `---
+## **Task:**
+Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
+
+**Today's Date**
+{current_day}
+
+### **Key Points to Cover:**
+
+- **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
+- **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
+- **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
+- **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
+- **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
+- **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
+
+---
+
+## **Rules:**
+
+- Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
+- Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
+- Use relevant details like employee count or other metrics from the context.
+- Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
+- Always back up the paragraph with **facts or figures** to support the claims.
+- If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
+- The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
+- When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+
+---
+
+## **Instructions:**
+
+- **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
+- Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
+- Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
+- Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
+- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+
+---
+
+### **Tone:**
+
+- Keep the paragraph **casual and conversational**—relaxed, easy to read, and more like a friendly chat than formal communication.
+- Return the pagaraph of the Objection Handling.
+
+---
+
+### **Write the following text in a natural, relaxed, and conversational tone.**
+1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+`,
+      sv: `---
+## **Task:**
+Write a 30-55 word paragraph that addresses the receiver's existing setup or solution while introducing the sender’s offering.
+
+**Today's Date**
+{current_day}
+
+### **Key Points to Cover:**
+
+- **Acknowledge Existing Setup:** Start by recognizing the receiver’s current solution, showing respect for their efforts.
+- **Complement & Enhance:** Transition into how the sender’s solution seamlessly complements and improves their current setup.
+- **Highlight Benefits:** Briefly touch on unique benefits, using specific, tangible outcomes like increased efficiency or relevant statistics.
+- **Current Usage Recognition:** If the receiver is using a similar solution, note this and explain how the sender’s product adds more value.
+- **Client/Partner Recognition:** Mention the receiver’s notable clients or partners, appreciating them while suggesting how the sender’s offering can enhance those relationships.
+- **Facts & Figures:** Include concrete facts or figures that show the sender’s offering has delivered measurable results to similar clients or partners.
+
+---
+
+## **Rules:**
+
+- Reference the **Transition to Business (TTB)** and **Value Proposition** sections to understand the challenge and solution being addressed, but do **not** reuse content directly.
+- Be as specific as possible. Avoid vague terms like "operational efficiency" and instead focus on clear, concrete challenges.
+- Use relevant details like employee count or other metrics from the context.
+- Recognize the receiver’s existing clients/partners (if not already mentioned in TTB or Value Proposition) and explain how the sender’s solution can help enhance those relationships.
+- Always back up the paragraph with **facts or figures** to support the claims.
+- If the receiver already uses a similar tool/service, acknowledge this and show how the sender’s solution adds more value.
+- The tone should be **friendly, casual, and conversational**—avoid sounding too formal or like a sales pitch.
+- When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+
+---
+
+## **Instructions:**
+
+- **Do not copy** or directly reuse content from the **Transition to Business (TTB)** or **Value Proposition** sections. The **Objection Handling** paragraph should be distinct but related to addressing the same challenge and solution.
+- Be proactive in handling objections: acknowledge the receiver’s current setup, then position the sender’s solution as an enhancement, not a disruption.
+- Highlight what sets the sender’s offering apart, focusing on specific benefits that align with the receiver's challenges.
+- Keep the tone **casual and conversational**: simple sentence structures, easy-to-follow language, and a natural flow that feels like a relaxed chat.
+`,
+    },
+  },
+  cta: {
+    context: `## CONTEXT
+
+**Sender and Receiver Details:**
+{sender_and_receiver_details}
+
+**Senders availability:**
+{sender_availability}
+
+**Other parts of the email:**
+{other_parts_of_email}
+
+`,
+    examples: `## SENDER's WRITING STYLE:
+"Below are examples of how the sender typically crafts Call to Action (CTA) paragraphs." 
+
+**Sample CTA paragraphs:**  
+
+\`\`\`
+{examples}
+\`\`\`
+`,
+    system: {
+      en: `## **Task:**
+Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
+
+**Today's Date**
+{current_day}
+
+### **Key Points to Cover:**
+- A friendly, conversational tone.
+- Specific mention of the receiver's name.
+- Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
+- Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
+- Ask for a time which suits the receiver for a quick call or chat.
+- Also, ask in the end if the receiver has any related questions or wants to ask anything.
+
+## **Rules:**
+1. Keep the tone casual but respectful, avoiding overly formal language.
+2. Use straightforward and simple sentence structures.
+3. Avoid sounding pushy; instead, focus on collaboration and exploration.
+4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+
+## **Instructions:**
+- The CTA should be concise, between 30 and 50 words.
+- Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
+- Reference the goal of the meeting in a way that feels organic, not sales-driven.
+- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+  
+### **Tone:**
+Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
+
+### **Write the following text in a natural, relaxed, and conversational tone.**
+1. Avoid overly formal or technical language – the writing should feel approachable and easy to read, as if you're speaking directly to the reader.
+2. Focus on clarity and flow – make sure the sentences flow smoothly and are easy to understand. Rephrase any awkward or stiff wording to sound more natural in everyday English.
+3. Choose modern, commonly used words and phrases – avoid outdated or overly complex terms. If something feels too formal, rephrase it to make it sound more natural and relatable. For example, instead of saying “telecommuting,” use “remote work” for a more current and conversational tone.
+4. Be mindful of tone – keep the tone friendly and engaging. The text should feel approachable and personal, as if you're having a conversation with the reader.
+
+### **Format:**
+- CTA paragraph
+`,
+      sv: `## **Task:**
+Write a 30-50 word Call to Action (CTA) paragraph that invites the receiver to schedule a meeting or a call.
+
+**Today's Date**
+{current_day}
+
+### **Key Points to Cover:**
+- A friendly, conversational tone.
+- Specific mention of the receiver's name.
+- Reference to the purpose of the meeting (e.g., exploring synergies, discussing how the sender’s solution can benefit the receiver). Refer to the **Subject, HPEF, Transition to Business, Value Proposition, and Objection Handling** sections to understand the context and purpose.
+- Optionally, include a personal touch (e.g., asking about an interest of the receiver or referencing shared experiences).
+- Ask for a time which suits the receiver for a quick call or chat.
+- Also, ask in the end if the receiver has any related questions or wants to ask anything.
+
+## **Rules:**
+1. Keep the tone casual but respectful, avoiding overly formal language.
+2. Use straightforward and simple sentence structures.
+3. Avoid sounding pushy; instead, focus on collaboration and exploration.
+4. When using the receiver’s company name, shorten it (e.g., "Lendo" instead of "Lendo AB").
+
+## **Instructions:**
+- The CTA should be concise, between 30 and 50 words.
+- Personalize the message by using the **recipient’s first name in the middle of the paragraph**, and if relevant, include a personal detail.
+- Reference the goal of the meeting in a way that feels organic, not sales-driven.
+- Only include a time-based greeting (e.g., ‘Have a great weekend!’) if it is relevant to the **Today's Date**
+  
+### **Tone:**
+Maintain a breezy, conversational tone throughout the paragraph. It should feel friendly and flexible, while keeping the meeting request clear and specific.
+
+### **Format:**
+- CTA paragraph
+`,
+    },
+  },
+} as const;
 
 // Base Email Part Class
 class EmailPart {
@@ -107,7 +612,7 @@ class Subject extends EmailPart {
     contexts: any,
     openai: OpenAI
   ) {
-    const prompt = this.buildPrompt(details, contexts);
+    const prompt = await this.buildPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4_MINI,
@@ -122,7 +627,8 @@ class Subject extends EmailPart {
     });
   }
 
-  static buildPrompt(details: any, contexts: any) {
+  static async buildPrompt(details: any, contexts: any) {
+    // Fallback to inline subject template if not provided elsewhere
     return `
 Generate a compelling email subject line for a professional outreach email.
 
@@ -229,6 +735,7 @@ Requirements:
 - Make it more personal and relevant
 - Maintain professional tone
 - Focus on building connection
+ - Do NOT include any greetings or sign-offs (e.g., "Hi", "Dear", "Best", names/titles)
 
 Rewritten version:`;
 
@@ -356,6 +863,7 @@ Create a story-like introduction that:
 - Is relevant and engaging
 - Maintains professional tone
 - IMPORTANT: Do NOT include any greetings like "Hi", "Dear", or "Hello"
+ - IMPORTANT: Do NOT include any sign-offs (e.g., "Best", "Regards", names/titles)
 - Return ONLY the introduction paragraph content
 
 Introduction:`;
@@ -416,13 +924,13 @@ class ValueProposition extends EmailPart {
   }
 
   static async getFromOpenAI(details: any, contexts: any, openai: OpenAI) {
-    const prompt = this.buildOpenAIPrompt(details, contexts);
+    const prompt = await this.buildOpenAIPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4_MINI,
       messages: [{ role: "user", content: prompt }],
-      temperature: CONFIG.TEMPERATURE.CONSISTENT,
-      max_tokens: 300,
+      temperature: Utils.getTemperatureForTone(details.preferences?.tone),
+      max_tokens: Utils.getMaxTokens(details.preferences?.length, 300),
     });
 
     return {
@@ -430,7 +938,7 @@ class ValueProposition extends EmailPart {
     };
   }
 
-  static buildOpenAIPrompt(details: any, contexts: any) {
+  static async buildOpenAIPrompt(details: any, contexts: any) {
     return `
 Create a compelling value proposition paragraph for a business outreach email.
 
@@ -451,10 +959,11 @@ Receiver Company Details: ${
 Requirements:
 - Make it specific and relevant to the receiver's business
 - Focus on mutual benefits
-- Keep it concise (2-3 sentences)
-- Maintain professional tone
+ - ${Utils.getSentenceInstruction(details.preferences?.length)}
+ - ${Utils.getToneInstruction(details.preferences?.tone)}
 - Highlight unique value proposition
 - Return ONLY the value proposition paragraph, no additional text
+ - Do NOT include greetings or sign-offs
 
 Value Proposition:`;
   }
@@ -501,7 +1010,7 @@ class TransitionToBusiness extends EmailPart {
   }
 
   static async getFinetuned(details: any, contexts: any, openai: OpenAI) {
-    const prompt = this.buildPrompt(details, contexts);
+    const prompt = await this.buildPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.FINETUNED_TTB,
@@ -521,7 +1030,7 @@ class TransitionToBusiness extends EmailPart {
   }
 
   static async getUsingOnlyPrompt(details: any, contexts: any, openai: OpenAI) {
-    const prompt = this.buildPrompt(details, contexts);
+    const prompt = await this.buildPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4,
@@ -540,8 +1049,11 @@ class TransitionToBusiness extends EmailPart {
   }
 
   static async getWithExamples(details: any, contexts: any, openai: OpenAI) {
-    const context = this.getContext(details, contexts);
-    const systemPrompt = this.getSystemPrompt(details.language);
+    const context = await this.getContext(details, contexts);
+    const systemPrompt = await this.getSystemPrompt(
+      details.language,
+      details.preferences
+    );
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -551,8 +1063,8 @@ class TransitionToBusiness extends EmailPart {
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4,
       messages: messages,
-      temperature: CONFIG.TEMPERATURE.BALANCED,
-      max_tokens: 200,
+      temperature: Utils.getTemperatureForTone(details.preferences?.tone),
+      max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
     return new TransitionToBusiness(
@@ -582,45 +1094,41 @@ class TransitionToBusiness extends EmailPart {
   }
 
   static buildPrompt(details: any, contexts: any) {
-    const context = this.getContext(details, contexts);
-    const examples = this.getExamples(details.language);
-    const systemPrompt = this.getSystemPrompt(details.language);
+    return this.buildPromptAsync(details, contexts);
+  }
 
+  static async buildPromptAsync(details: any, contexts: any) {
+    const context = await this.getContext(details, contexts);
+    const examples = await this.getExamples(details.language);
+    const systemPrompt = await this.getSystemPrompt(details.language);
     return `${context}\n\n${examples}\n\n${systemPrompt}`;
   }
 
-  static getContext(details: any, contexts: any) {
-    return `
-Receiver Company Facts: ${
-      details.receiver.company.facts_and_figures || "Established company"
-    }
-Sender & Receiver Details: ${
-      details.sender_receiver_yaml || "Professional communication"
-    }
-Email Context: ${contexts.email || "Professional outreach"}
-    `;
+  static async getContext(details: any, contexts: any) {
+    const tmpl = PROMPTS.ttb.context;
+    return renderTemplate(tmpl, {
+      receiver_company_facts_and_figures:
+        details.receiver.company.facts_and_figures || "",
+      sender_and_receiver_details: details.sender_receiver_yaml || "",
+      other_parts_of_email: contexts.email || "",
+      clients_and_partners: contexts?.similarities?.company?.similarity || "",
+      problems_solutions: contexts?.problem_solution?.best_match?.content || "",
+    });
   }
 
-  static getExamples(language: string = "en") {
-    const examples = {
-      en: `
-Examples of good transitions:
-- "Given your company's focus on innovation, I believe our solution could be particularly relevant."
-- "I noticed your company's recent expansion, which aligns perfectly with what we offer."
-- "Based on your industry position, I think there's a great opportunity for collaboration."
-      `,
-    };
-
-    return examples[language as keyof typeof examples] || examples.en;
+  static async getExamples(language: string = "en") {
+    return PROMPTS.ttb.examples;
   }
 
-  static getSystemPrompt(language: string = "en") {
-    const prompts = {
-      en: `You are a professional business communicator. Create a smooth transition paragraph from personal engagement to business discussion. Return ONLY the transition paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
-      es: `Eres un comunicador empresarial profesional. Crea una transición suave del compromiso personal a la discusión empresarial. Hoy es ${Utils.getCurrentDay()}.`,
-    };
-
-    return prompts[language as keyof typeof prompts] || prompts.en;
+  static async getSystemPrompt(language: string = "en", preferences?: any) {
+    let raw =
+      PROMPTS.ttb.system[language as keyof typeof PROMPTS.ttb.system] ||
+      PROMPTS.ttb.system.en;
+    // Adjust tone/length instructions inline
+    raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
+      preferences?.tone
+    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 
   static calculateCost(usage: any, model: string) {
@@ -637,13 +1145,13 @@ class ObjectionHandling extends EmailPart {
     contexts: any,
     openai: OpenAI
   ) {
-    const prompt = this.buildPrompt(details, contexts);
+    const prompt = await this.buildPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
-      temperature: CONFIG.TEMPERATURE.CONSISTENT,
-      max_tokens: 200,
+      temperature: Utils.getTemperatureForTone(details.preferences?.tone),
+      max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
     return new ObjectionHandling(completion.choices[0].message.content || "", {
@@ -652,49 +1160,40 @@ class ObjectionHandling extends EmailPart {
     }).cleanContent();
   }
 
-  static buildPrompt(details: any, contexts: any) {
-    const context = this.getContext(details, contexts);
-    const examples = this.getExamples(details.language);
-    const systemPrompt = this.getSystemPrompt(details.language);
-
+  static async buildPrompt(details: any, contexts: any) {
+    const context = await this.getContext(details, contexts);
+    const examples = await this.getExamples(details.language);
+    const systemPrompt = await this.getSystemPrompt(
+      details.language,
+      details.preferences
+    );
     return `${context}\n\n${examples}\n\n${systemPrompt}`;
   }
 
-  static getContext(details: any, contexts: any) {
-    return `
-Sender Company Details: ${
-      details.sender.company.details || "Technology solutions provider"
-    }
-Receiver Company Details: ${
-      details.receiver.company.details || "Established business"
-    }
-Sender & Receiver Details: ${
-      details.sender_receiver_yaml || "Professional communication"
-    }
-Email Context: ${contexts.email || "Professional outreach"}
-    `;
+  static async getContext(details: any, contexts: any) {
+    const tmpl = PROMPTS.objection.context;
+    return renderTemplate(tmpl, {
+      sender_company_details: details.sender.company.details || "",
+      receiver_commpany_details: details.receiver.company.details || "",
+      sender_and_receiver_details: details.sender_receiver_yaml || "",
+      other_parts_of_email: contexts.email || "",
+      clients_and_partners: contexts?.similarities?.company?.similarity || "",
+    });
   }
 
-  static getExamples(language: string = "en") {
-    const examples = {
-      en: `
-        Examples of objection handling:
-        - "I understand you may be busy, but this could save you significant time in the long run."
-        - "While this might seem like an additional cost, the ROI typically pays for itself within 3 months."
-        - "I know you have existing solutions, but our approach offers unique advantages."
-      `,
-    };
-
-    return examples[language as keyof typeof examples] || examples.en;
+  static async getExamples(language: string = "en") {
+    return PROMPTS.objection.examples;
   }
 
-  static getSystemPrompt(language: string = "en") {
-    const prompts = {
-      en: `Address potential objections professionally and persuasively in a single paragraph. Return ONLY the objection handling paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
-      es: `Aborda las objeciones potenciales de manera profesional y persuasiva. Hoy es ${Utils.getCurrentDay()}.`,
-    };
-
-    return prompts[language as keyof typeof prompts] || prompts.en;
+  static async getSystemPrompt(language: string = "en", preferences?: any) {
+    let raw =
+      PROMPTS.objection.system[
+        language as keyof typeof PROMPTS.objection.system
+      ] || PROMPTS.objection.system.en;
+    raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
+      preferences?.tone
+    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 
   static calculateCost(usage: any, model: string) {
@@ -711,13 +1210,13 @@ class CallToAction extends EmailPart {
     contexts: any,
     openai: OpenAI
   ) {
-    const prompt = this.buildPrompt(details, contexts);
+    const prompt = await this.buildPrompt(details, contexts);
 
     const completion = await openai.chat.completions.create({
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
-      temperature: CONFIG.TEMPERATURE.CONSISTENT,
-      max_tokens: 200,
+      temperature: Utils.getTemperatureForTone(details.preferences?.tone),
+      max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
     return new CallToAction(completion.choices[0].message.content || "", {
@@ -726,15 +1225,18 @@ class CallToAction extends EmailPart {
     }).cleanContent();
   }
 
-  static buildPrompt(details: any, contexts: any) {
-    const context = this.getContext(details, contexts);
-    const examples = this.getExamples(details.language);
-    const systemPrompt = this.getSystemPrompt(details.language);
-
+  static async buildPrompt(details: any, contexts: any) {
+    const context = await this.getContext(details, contexts);
+    const examples = await this.getExamples(details.language);
+    const systemPrompt = await this.getSystemPrompt(
+      details.language,
+      details.preferences
+    );
     return `${context}\n\n${examples}\n\n${systemPrompt}`;
   }
 
-  static getContext(details: any, contexts: any) {
+  static async getContext(details: any, contexts: any) {
+    const tmpl = PROMPTS.cta.context;
     const now = new Date();
     const availability = now.toLocaleDateString("en-US", {
       weekday: "long",
@@ -744,41 +1246,25 @@ class CallToAction extends EmailPart {
       hour: "2-digit",
       minute: "2-digit",
     });
-
-    return `
-Sender & Receiver Details: ${
-      details.sender_receiver_yaml || "Professional communication"
-    }
-Sender Availability: ${details.sender.availability || availability}
-Email Context: ${contexts.email || "Professional outreach"}
-    `;
+    return renderTemplate(tmpl, {
+      sender_and_receiver_details: details.sender_receiver_yaml || "",
+      sender_availability: details.sender?.availability || availability,
+      other_parts_of_email: contexts.email || "",
+    });
   }
 
-  static getExamples(language: string = "en") {
-    const examples = {
-      en: `
-Examples of effective calls to action:
-- "Would you be available for a 15-minute call this week to discuss this further?"
-- "I'd love to schedule a brief meeting to explore how we might collaborate."
-- "Could we set up a time to discuss this opportunity in more detail?"
-      `,
-      es: `
-Ejemplos de llamadas a la acción efectivas:
-- "¿Estaría disponible para una llamada de 15 minutos esta semana para discutir esto más a fondo?"
-- "Me encantaría programar una breve reunión para explorar cómo podríamos colaborar."
-      `,
-    };
-
-    return examples[language as keyof typeof examples] || examples.en;
+  static async getExamples(language: string = "en") {
+    return PROMPTS.cta.examples;
   }
 
-  static getSystemPrompt(language: string = "en") {
-    const prompts = {
-      en: `Create a clear, professional call to action paragraph that encourages a specific next step. Return ONLY the call to action paragraph, no additional text. Today is ${Utils.getCurrentDay()}.`,
-      es: `Crea una llamada a la acción clara y profesional que fomente un siguiente paso específico. Hoy es ${Utils.getCurrentDay()}.`,
-    };
-
-    return prompts[language as keyof typeof prompts] || prompts.en;
+  static async getSystemPrompt(language: string = "en", preferences?: any) {
+    let raw =
+      PROMPTS.cta.system[language as keyof typeof PROMPTS.cta.system] ||
+      PROMPTS.cta.system.en;
+    raw += `\n\n## Additional Constraints:\n- ${Utils.getToneInstruction(
+      preferences?.tone
+    )}.\n- ${Utils.getSentenceInstruction(preferences?.length)}.`;
+    return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 
   static calculateCost(usage: any, model: string) {
@@ -821,61 +1307,117 @@ class Email1 {
   }
 
   static async getSubjectAndBody(details: any, contexts: any, openai: OpenAI) {
-    // Generate all parts in parallel with clean contexts
-    const [subject, hpef, vp, ttb, objection, cta] = await Promise.all([
-      Subject.fromDetailsAndContexts(details, { ...contexts }, openai),
+    // Stage 1: Generate initial parts (HPEF + VP) in parallel
+    const [hpef, vp] = await Promise.all([
       HPEF.fromDetails(details, openai),
       ValueProposition.fromDetailsAndContexts(details, { ...contexts }, openai),
+    ]);
+
+    // Update context with initial parts for conditioning the final parts
+    contexts.email = `Hyper Personalized Engagement Framework (First paragraph that builds a connection with the receiver): ${hpef.content}\n\nValue Proposition (This paragraph states the benefits of the sender company's solution): ${vp.content}`;
+
+    // Stage 2: Generate final parts (Subject, TTB, Objection, CTA) in parallel using updated context
+    const [subject, ttb, objection, cta] = await Promise.all([
+      Subject.fromDetailsAndContexts(details, contexts, openai),
       TransitionToBusiness.fromDetailsAndContexts(
         details,
-        { ...contexts },
+        contexts,
         openai,
         "examples"
       ),
-      ObjectionHandling.fromDetailsAndContexts(
-        details,
-        { ...contexts },
-        openai
-      ),
-      CallToAction.fromDetailsAndContexts(details, { ...contexts }, openai),
+      ObjectionHandling.fromDetailsAndContexts(details, contexts, openai),
+      CallToAction.fromDetailsAndContexts(details, contexts, openai),
     ]);
 
     // Clean up any potential duplication or unwanted content
+    // Remove HPEF duplication from TTB if model echoed it
+    ttb.content = ttb.content.replace(hpef.content, "").trim();
+
     const cleanHPEF = hpef.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
+      .replace(
+        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
+        "$1"
+      )
+      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
     const cleanTTB = ttb.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
+      .replace(
+        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
+        "$1"
+      )
+      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
     const cleanVP = vp.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
+      .replace(
+        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
+        "$1"
+      )
+      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
     const cleanObjection = objection.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
+      .replace(
+        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
+        "$1"
+      )
+      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
     const cleanCTA = cta.content
-      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|$)/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,]+,\s*/gi, "")
-      .replace(/^(Hi|Dear|Hello)\s+[^,\n]+[,\n]/gi, "")
+      .replace(/Subject:.*?(?=\n|Hi|Dear|Hello|Hey|$)/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,]+,\s*/gi, "")
+      .replace(/^(Hi|Dear|Hello|Hey)\s+[^,\n]+[,\n]/gi, "")
+      .replace(
+        /(^|\n)\s*(I\s+hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi,
+        "$1"
+      )
+      .replace(/(^|\n)\s*(Hope\s+you'?re\s+doing\s+well[^\n]*)(?=\n|$)/gi, "$1")
       .trim();
 
     // Update the components with cleaned content
-    hpef.content = cleanHPEF;
-    ttb.content = cleanTTB;
-    vp.content = cleanVP;
-    objection.content = cleanObjection;
-    cta.content = cleanCTA;
+    const senderName = details.sender?.person?.name || "";
+    const companyName = details.sender?.company?.name || "";
+    hpef.content = Utils.stripSignOffs(cleanHPEF, senderName, companyName);
+    ttb.content = Utils.stripSignOffs(cleanTTB, senderName, companyName);
+    vp.content = Utils.stripSignOffs(cleanVP, senderName, companyName);
+    objection.content = Utils.stripSignOffs(
+      cleanObjection,
+      senderName,
+      companyName
+    );
+    cta.content = Utils.stripSignOffs(cleanCTA, senderName, companyName);
 
-    // Assemble body in the correct order
-    const body = [hpef, ttb, vp, objection, cta];
+    // Assemble body based on email type preference
+    let body: EmailPart[] = [];
+    const emailType = (details.preferences?.emailType || "Full")
+      .toString()
+      .toLowerCase();
+    if (emailType.includes("intro") || emailType.includes("introduction")) {
+      body = [hpef, ttb, cta];
+    } else if (
+      emailType.includes("follow") ||
+      emailType.includes("follow-up")
+    ) {
+      body = [ttb, vp, cta];
+    } else if (emailType.includes("book a meeting") || emailType.includes("meeting")) {
+      body = [ttb, vp, cta];
+    } else if (emailType.includes("proposal")) {
+      body = [ttb, vp, objection, cta];
+    } else if (emailType.includes("thank you") || emailType.includes("thanks")) {
+      body = [hpef, cta];
+    } else {
+      body = [hpef, ttb, vp, objection, cta];
+    }
 
     return { subject, body };
   }
@@ -1033,22 +1575,20 @@ Deno.serve(async (req) => {
     };
 
     // Transform campaign/progress data into sender_details format
+    const {
+      step_2_result: { company_name, summary, points_of_interest },
+      step_5_result: { linkedin_profile },
+    } = progressData;
     const sender_details = {
       person: {
         name: sender_name || "Your Name",
-        designation: "Business Development",
-        facts:
-          progressData.sender_bio ||
-          "Experienced professional in data solutions and business transformation",
+        designation: linkedin_profile.headline || "Business Development",
+        facts: linkedin_profile.summary || "",
       },
       company: {
-        name: progressData.company_name || "Artha Solutions",
-        details:
-          progressData.company_description ||
-          "Leading provider of data analytics and business transformation solutions",
-        facts_and_figures:
-          progressData.company_metrics ||
-          "Successfully delivered 300+ global projects, 50% reduction in data processing time, 65% improvement in data accuracy",
+        name: company_name || "",
+        details: summary || "",
+        facts_and_figures: points_of_interest || "",
       },
       availability:
         progressData.availability ||
@@ -1082,12 +1622,26 @@ Deno.serve(async (req) => {
     };
 
     // Generate email using the new structured approach
+    // Map email preferences
+    const preferences = Utils.getPreferences(
+      toneOption,
+      lengthOption,
+      emailTypeOption ||
+        (typeof emailType !== "undefined" ? emailType : undefined)
+    );
+    (details as any).preferences = preferences;
+
     const email = await Email1.generateAll(details, contexts, openai);
 
     // Format the response to match the expected structure
-    const greeting = `Hi ${receiver_details.person.name},`;
+    const greeting = Utils.getGreetingForTone(
+      preferences.tone,
+      receiver_details.person.name
+    );
     const bodyParts = email.body.map((part) => part.toText());
-    const closing = `Best regards,\n${sender_details.person.name}\n${sender_details.person.designation}\n${sender_details.company.name}`;
+    const closing = `${Utils.getClosingForTone(preferences.tone)}\n${
+      sender_details.person.name
+    }\n${sender_details.person.designation}\n${sender_details.company.name}`;
 
     const fullEmail = `${greeting}\n\n${bodyParts.join("\n\n")}\n\n${closing}`;
 
