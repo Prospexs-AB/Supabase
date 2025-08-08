@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
     );
 
     if (!jobData) {
-      return new Response(JSON.stringify({ message: "No jobs" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(null, {
+        headers: { ...corsHeaders },
         status: 204,
       });
     }
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (claimError || !claimedJob) {
-      console.error(`Failed to claim job ${jobData.id}:`, claimError);
+      console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
         {

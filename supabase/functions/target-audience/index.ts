@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
             : ""
         }
 
-      Task: Write a 300-400 word audience brief for the target audience:
+      Task: Write a 200-250 word audience brief for the target audience:
       [Target Audience Title] in [Country]
 
       Context:
@@ -254,14 +254,14 @@ Deno.serve(async (req) => {
 
       Output:
       ● Title: [Decision-Maker Title] at [Type of Company] in [Country]
-      ● Audience Brief: 300-400 words of analysis (consulting style, fully contextualized for the
+      ● Audience Brief: 200-250 words of analysis (consulting style, fully contextualized for the
       user's company).
       ● Sources: 4-5 sources that support the data.
 
       For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
       2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
-      3. "audience_brief": Audience brief for the target audience (Min 300 words)
+      3. "audience_brief": Audience brief for the target audience
       4. "metrics": Array of 2-3 relevant KPIs as objects with:
         - "value": A specific metric (e.g., "45%", "$2.5M")
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")

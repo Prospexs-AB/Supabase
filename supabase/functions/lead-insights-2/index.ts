@@ -66,16 +66,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `===== Starting job processing for job id: ${jobData.id} =====`
-    );
-
     if (!jobData) {
-      return new Response(JSON.stringify({ message: "No jobs" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(null, {
+        headers: { ...corsHeaders },
         status: 204,
       });
     }
+
+    console.log(
+      `===== Starting job processing for job id: ${jobData.id} =====`
+    );
 
     const { data: claimedJob, error: claimError } = await supabase
       .from("jobs")
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (claimError || !claimedJob) {
-      console.error(`Failed to claim job ${jobData.id}:`, claimError);
+      console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
         {
@@ -164,6 +164,7 @@ Deno.serve(async (req) => {
       ● Cite case studies, product documentation, or press releases for validation.
       ● 150-200 words each.
       ● Use external sources to support the data if not available then use the company's own data but always add the sources.
+      ● Only keep the source urls and not the name of the source.
 
       compliance teams provide on-the-ground expertise for country-specific regulations, ensuring
       Job&Talent stays ahead of changing labor laws. This partnership replaces reactive regional

@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
     );
 
     if (!jobData) {
-      return new Response(JSON.stringify({ message: "No jobs" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(null, {
+        headers: { ...corsHeaders },
         status: 204,
       });
     }
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (claimError || !claimedJob) {
-      console.error(`Failed to claim job ${jobData.id}:`, claimError);
+      console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
         {
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
           For each objection, follow this format:
           1. Objection
           2. Rebuttal
-          3. Sources
+          3. Sources (URLS)
 
           ● List 4 realistic objections decision-makers at ${lead_company_name} might raise (e.g., cost,
           integration complexity, ROI skepticism, vendor risk).
@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
             ○ Security/compliance references (ISO certifications, GDPR compliance).
             ○ Cost/ROI comparisons from credible reports or competitor case studies.
           ● 4 x 50-75 words each.
+          ● Only keep the source urls and not the name of the source.
 
           IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
           IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.

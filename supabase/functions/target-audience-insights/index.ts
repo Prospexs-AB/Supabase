@@ -463,6 +463,8 @@ Deno.serve(async (req) => {
           ● Scaling Without Cost Inflation: 63% of logistics leaders in Southern Europe cite
           efficient scaling as their top challenge. (PwC Global Ops Survey, 2024)
 
+          Example:
+
           USPs
           PwC-Enhanced Compliance and Reporting
           Managing compliance in Spain's logistics sector is complex, with requirements like Registro de
@@ -494,21 +496,6 @@ Deno.serve(async (req) => {
           maintaining service quality under fluctuating demand.
           Sources: CNMC 2024, PwC Workforce Benchmark 2024, PwC Logistics Case Studies 2023.
 
-          Standardized Multi-Site Payroll Management
-          As logistics companies expand across regions in Spain and Southern Europe, inconsistent
-          payroll systems create administrative inefficiencies and compliance risks. Job&Talent addresses
-          core workforce payments, but PwC adds multi-site payroll harmonization, unifying pay
-          structures and automating compliance checks across different collective agreements. This
-          reduces payroll cycle times by 40% (PwC Payroll Modernization Report, 2023) and minimizes
-          errors that can trigger legal disputes. For operations managers overseeing multi-warehouse
-          networks, this ensures consistent, transparent pay practices—essential for maintaining worker
-          satisfaction and retention in a sector where turnover averages 25-30% (Eurofound, 2024).
-          Harmonized payroll also facilitates real-time workforce cost tracking, enabling managers to
-          make data-driven decisions on labor allocation. This strategic integration transforms payroll from
-          a reactive process into a forward-looking tool for workforce planning and cost control.
-          Sources: PwC Payroll Modernization Report 2023, Eurofound Labor Market Report 2024,
-          Spanish Ministry of Transport 2024.
-
           Pain Points
           Administrative Overload in Compliance
           Operations managers in Spanish logistics spend up to 35% of their time on compliance
@@ -534,15 +521,6 @@ Deno.serve(async (req) => {
           consistency in time-sensitive delivery networks.
           Sources: Eurofound 2024, PwC Workforce Cost Analysis 2023.
 
-          Scaling for Volatile Demand
-          E-commerce growth (15% YoY) has amplified demand volatility, leaving managers scrambling
-          to scale operations quickly (CNMC, 2024). Traditional staffing models are too slow to meet
-          peaks, leading to missed SLAs and penalty fees. PwC's AI-driven onboarding workflows
-          reduce time-to-fill by up to 40% (PwC Case Study Iberdrola, 2023), helping Job&Talent provide
-          workforce continuity during demand surges. This reduces operational firefighting, enabling
-          proactive labor planning.
-          Sources: CNMC 2024, PwC Case Study Iberdrola 2023.
-
           Benefits
           Reduced Compliance Risk and Cost
           PwC's compliance solutions reduce the likelihood of non-compliance fines by over 60%
@@ -559,13 +537,6 @@ Deno.serve(async (req) => {
           margins while maintaining service levels.
           Sources: PwC Workforce Benchmark 2024, CNMC 2024.
 
-          Improved SLA and Client Retention
-          By streamlining workforce planning and compliance, operations managers achieve on-time
-          delivery improvements of up to 12%, enhancing SLA adherence and boosting client
-          satisfaction (PwC Logistics Performance Study, 2023). This strengthens Job&Talent's reputation
-          as a reliable workforce partner for enterprise clients in Spain's competitive logistics sector.
-          Sources: PwC Logistics Performance Study 2023, Eurofound 2024.
-
           Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
           Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
           Ensure that every usp, pain point, and benefit will have a title, analysis and a source array for one or more sources.
@@ -578,7 +549,7 @@ Deno.serve(async (req) => {
           model: "gpt-4.1",
           tools: [{ type: "web_search_preview" }],
           input: prompt,
-          max_output_tokens: 5000
+          max_output_tokens: 6000
         });
 
         console.log("Successfully analyzed content with OpenAI");

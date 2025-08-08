@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
     );
 
     if (!jobData) {
-      return new Response(JSON.stringify({ message: "No jobs" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(null, {
+        headers: { ...corsHeaders },
         status: 204,
       });
     }
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (claimError || !claimedJob) {
-      console.error(`Failed to claim job ${jobData.id}:`, claimError);
+      console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
@@ -175,6 +175,7 @@ Deno.serve(async (req) => {
         analyst reports.
         ● 150-200 words each.
         ● Use external sources to support the data if not available then use the company's own data but always add the sources.
+        ● Only keep the source urls and not the name of the source.
 
         IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
         IMPORTANT: You must return ONLY valid JSON in the exact format specified below. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
