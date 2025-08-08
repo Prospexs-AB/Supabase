@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
       For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
       2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
-      3. "reasoning": Data-backed explanation of fit
+      3. "audience_brief": Audience brief for the target audience (Min 300 words)
       4. "metrics": Array of 2-3 relevant KPIs as objects with:
         - "value": A specific metric (e.g., "45%", "$2.5M")
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
