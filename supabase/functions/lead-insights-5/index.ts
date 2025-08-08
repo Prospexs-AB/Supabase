@@ -1517,6 +1517,7 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error(`RPC Error ${jobData.id}:`, error);
+      throw new Error(`RPC Error ${jobData.id}: ${error.message}`);
     }
 
     const { error: updateJobError } = await supabase
