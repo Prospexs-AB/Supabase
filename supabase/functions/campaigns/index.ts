@@ -59,6 +59,20 @@ Deno.serve(async (req) => {
             .eq("user_id", userId)
             .order("created_at", { ascending: false });
 
+          for (const campaign of data) {
+            const { data: campaignProgressData, error: campaignProgressError } =
+              await supabase
+                .from("campaign_progress")
+                .select("step_10_result")
+                .eq("id", campaign.progress_id)
+                .single();
+
+            if (campaignProgressData) {
+              campaign.number_of_leads =
+                campaignProgressData.step_10_result?.length || null;
+            }
+          }
+
           if (error) {
             return new Response(JSON.stringify({ error: error.message }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
