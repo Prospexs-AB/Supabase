@@ -740,6 +740,7 @@ class HPEF extends EmailPart {
       - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
       - Make it more personal and relevant
       - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Return in this language: ${language}
       - Focus on building connection
       - Do NOT include any greetings or sign-offs (e.g., "Hi", "Dear", "Best", names/titles)
     `;
@@ -775,6 +776,7 @@ class HPEF extends EmailPart {
       - Personalization quality
       - Engagement potential
       - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Return in this language: ${language}
       - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
       - Relevance to business context
 
@@ -876,6 +878,7 @@ class HPEF extends EmailPart {
       - Is relevant and engaging
       - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
       - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Return in this language: ${details.language}
       - IMPORTANT: Do NOT include any greetings like "Hi", "Dear", or "Hello"
       - IMPORTANT: Do NOT include any sign-offs (e.g., "Best", "Regards", names/titles)
       - Return ONLY the introduction paragraph content
@@ -1137,6 +1140,7 @@ class TransitionToBusiness extends EmailPart {
     )}.\n- Length: ${Utils.getSentenceInstruction(
       preferences?.length
     )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}
+    .\n- Return in this language: ${language}
     .\n- Do not use any greetings in this section, just the main content.
     .\n- Do not use any sign-offs in this section, just the main content.`;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
@@ -1199,7 +1203,9 @@ class ObjectionHandling extends EmailPart {
       preferences?.tone
     )}.\n- Length: ${Utils.getSentenceInstruction(
       preferences?.length
-    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}
+    .\n- Return in this language: ${language}
+    `;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 }
@@ -1266,7 +1272,9 @@ class CallToAction extends EmailPart {
       preferences?.tone
     )}.\n- Length: ${Utils.getSentenceInstruction(
       preferences?.length
-    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}`;
+    )}.\n- Tone: ${Utils.getToneInstruction(preferences?.tone)}
+    .\n- Return in this language: ${language}
+    `;
     return renderTemplate(raw, { current_day: Utils.getCurrentDay() });
   }
 }
