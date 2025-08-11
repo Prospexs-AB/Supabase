@@ -256,7 +256,8 @@ Deno.serve(async (req) => {
       ● Title: [Decision-Maker Title] at [Type of Company] in [Country]
       ● Audience Brief: 200-250 words of analysis (consulting style, fully contextualized for the
       user's company).
-      ● Sources: 4-5 sources that support the data.
+      ● Sources: 4-5 sources that support the data (Only URL).
+      ● Only keep the source urls and not the name of the source.
 
       For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
       1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
@@ -266,7 +267,7 @@ Deno.serve(async (req) => {
         - "value": A specific metric (e.g., "45%", "$2.5M")
         - "label": Description of the metric (e.g., "Average Cost Reduction", "Annual Revenue")
       5. "country": The country of the target audience (e.g., "Sweden", "United States")
-      6. "sources": Array of 4-5 sources that support the data.
+      6. "sources": Array of 4-5 sources that support the data (Only URL).
 
       Try to use external sources to support the data if not available then use the company's own data.
 

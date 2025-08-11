@@ -540,6 +540,24 @@ Deno.serve(async (req) => {
           Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
           Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
           Ensure that every usp, pain point, and benefit will have a title, analysis and a source array for one or more sources.
+          IMPORTANT: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
+          IMPORTANT: Ensure the json follows the format:
+          {
+            "industry": "Industry of the audience",
+            "industry_english": "English name of the industry",
+            "role": "Role of the audience",
+            "role_english": "English name of the role",
+            "reasoning": "Reasoning for the audience",
+            "metrics": [ { "value": "Value of the metric","label": "Label of the metric" } ],
+            "country": "Country of the audience",
+            "country_english": "English name of the country",
+            "audience_profile": "Profile of the audience",
+            "sources": ["source1", "source2"],
+            "key_data_points": [ { "title": "Key Data Point 1", "summary": "Summary of the key data point", "source": "source1" } ],
+            "usps": [ { "title": "Usp 1", "analysis": "Analysis of the usp", "source": ["source1", "source2"] ] } ],
+            "pain_points": [ { "title": "Pain Point 1", "analysis": "Analysis of the pain point", "source": ["source1", "source2"] } ],
+            "benefits": [ { "title": "Benefit 1", "analysis": "Analysis of the benefit", "source": ["source1", "source2"] } ]
+          }
         `;
 
         console.log("Prompt:", prompt);
@@ -549,7 +567,7 @@ Deno.serve(async (req) => {
           model: "gpt-4.1",
           tools: [{ type: "web_search_preview" }],
           input: prompt,
-          max_output_tokens: 6000
+          max_output_tokens: 6000,
         });
 
         console.log("Successfully analyzed content with OpenAI");

@@ -584,9 +584,9 @@ Deno.serve(async (req) => {
 
   const targetAudienceList = target_audiences.map((targetAudience) => {
     return {
-      role: targetAudience.role,
-      industry: targetAudience.industry,
-      country: targetAudience.country,
+      role: targetAudience.role_english,
+      industry: targetAudience.industry_english,
+      country: targetAudience.country_english,
     };
   });
 
