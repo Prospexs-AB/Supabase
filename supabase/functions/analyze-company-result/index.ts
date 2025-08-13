@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -690,34 +692,39 @@ Deno.serve(async (req) => {
       },
     ];
 
+    const analysisSchema = z.object({
+      analysis: z.array(
+        z.object({
+          title: z.string(),
+          value: z.string(),
+          source: z.array(
+            z.object({
+              name: z.string(),
+              url: z.string(),
+            })
+          ),
+        })
+      ),
+    });
+
     const resultList = {};
     const promises = promptList.map(async ({ prompt, type }) => {
       console.log("Sending request to OpenAI API...");
-      const openAiResponse = await openai.responses.create({
-        model: "gpt-4.1",
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1-mini-2025-04-14",
         tools: [{ type: "web_search_preview" }],
-        input: prompt,
+        input: [{ role: "user", content: prompt }],
         max_output_tokens: 4096,
+        text: {
+          format: zodTextFormat(analysisSchema, "analysis"),
+        },
       });
 
       console.log("Successfully analyzed content with OpenAI");
-      const analysis = openAiResponse.output_text;
+      const { analysis } = openAiResponse.output_parsed;
       console.log("OpenAI analysis:", analysis);
 
-      let cleanAnalysis = analysis.trim();
-      if (cleanAnalysis.startsWith("```json")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```json\s*/, "")
-          .replace(/\s*```$/, "");
-      } else if (cleanAnalysis.startsWith("```")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```\s*/, "")
-          .replace(/\s*```$/, "");
-      }
-
-      const parsedAnalysis = JSON.parse(cleanAnalysis);
-      console.log("Parsed analysis:", parsedAnalysis);
-      resultList[type] = parsedAnalysis;
+      resultList[type] = analysis;
     });
 
     await Promise.all(promises);
