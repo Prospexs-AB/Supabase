@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
       Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
       then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array, do not include citations in the analysis value.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
@@ -497,7 +497,7 @@ Deno.serve(async (req) => {
       Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
       then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array, do not include citations in the analysis value.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
@@ -666,7 +666,7 @@ Deno.serve(async (req) => {
       Ensure source has name. For example, if the source url is "www.bbcnews.com/news/some-article-name"
       then the name of the source should be "BBC News" and not "BBC News - Some Article Name".
       Please analyze the content and create a company analysis following this structure and dont forget the source for each point AND USE THE LANGUAGNE FROM THE LANGUAGE CODE: ${language_code}.
-      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array.
+      IMPORTANT: Make sure that the link for sources are not shown in the actual analysis value but put in the source array, do not include citations in the analysis value.
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
