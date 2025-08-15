@@ -210,6 +210,12 @@ Deno.serve(async (req) => {
       }
     `;
 
+    console.log("prompt", challengesPrompt);
+    console.log("model", "gpt-4.1");
+    console.log("approach", "openai.responses.create")
+    console.log("tools", [{ type: "web_search_preview" }]);
+
+    console.log("Sending request to OpenAI API...");
     const detailsWithChallengesOutput = await openai.responses.create({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],

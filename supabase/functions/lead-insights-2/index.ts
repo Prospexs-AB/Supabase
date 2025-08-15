@@ -205,6 +205,12 @@ Deno.serve(async (req) => {
       ]
     `;
 
+    console.log("prompt", solutionsPrompt);
+    console.log("model", "gpt-4.1");
+    console.log("approach", "openai.responses.create")
+    console.log("max_output_tokens", 5000);
+    console.log("tools", [{ type: "web_search_preview" }]);
+
     const solutionsWithChallengesOutput = await openai.responses.create({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],

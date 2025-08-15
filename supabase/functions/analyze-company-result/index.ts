@@ -710,6 +710,13 @@ Deno.serve(async (req) => {
     const resultList = {};
     const promises = promptList.map(async ({ prompt, type }) => {
       console.log("Sending request to OpenAI API...");
+
+      console.log("prompt", prompt);
+      console.log("model", "gpt-4.1-mini-2025-04-14");
+      console.log("approach", "openai.responses.parse")
+      console.log("max_output_tokens", 4096);
+      console.log("tools", [{ type: "web_search_preview" }]);
+
       const openAiResponse = await openai.responses.parse({
         model: "gpt-4.1-mini-2025-04-14",
         tools: [{ type: "web_search_preview" }],

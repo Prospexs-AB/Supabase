@@ -276,6 +276,13 @@ Deno.serve(async (req) => {
     `;
 
     console.log("Sending request to OpenAI API...");
+
+    console.log("prompt", prompt);
+    console.log("model", "gpt-4.1");
+    console.log("approach", "openai.responses.create")
+    console.log("max_output_tokens", 5000);
+    console.log("tools", [{ type: "web_search_preview" }]);
+
     const openAiResponse = await openai.responses.create({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],

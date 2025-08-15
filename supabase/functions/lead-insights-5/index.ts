@@ -1449,6 +1449,12 @@ Deno.serve(async (req) => {
 
           let response;
           if (useChatCompletion) {
+            console.log("prompt", prompt);
+            console.log("model", "gpt-4o");
+            console.log("approach", "openai.chat.completions.create")
+            console.log("max_output_tokens", 1500);
+            console.log("tools", [{ type: "web_search_preview" }]);
+            console.log("Sending request to OpenAI API...");
             const completion = await openai.chat.completions.create({
               model: "gpt-4o",
               messages: [{ role: "user", content: prompt }],
@@ -1457,6 +1463,12 @@ Deno.serve(async (req) => {
             });
             response = completion.choices[0].message.content;
           } else {
+            console.log("prompt", prompt);
+            console.log("model", "gpt-4.1");
+            console.log("approach", "openai.responses.create")
+            console.log("max_output_tokens", 5000);
+            console.log("tools", [{ type: "web_search_preview" }]);
+            console.log("Sending request to OpenAI API...");
             response = await openai.responses.create({
               model: "gpt-4.1",
               tools: [{ type: "web_search_preview" }],
