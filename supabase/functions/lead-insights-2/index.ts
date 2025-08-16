@@ -205,11 +205,28 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    console.log("prompt", solutionsPrompt);
     console.log("model", "gpt-4.1");
     console.log("approach", "openai.responses.create")
     console.log("max_output_tokens", 5000);
     console.log("tools", [{ type: "web_search_preview" }]);
+
+    const promptLength = solutionsPrompt.length;
+    const batchSize = 9800;
+    const totalBatches = Math.ceil(promptLength / batchSize);
+
+    console.log(
+      `Prompt length: ${promptLength} characters, logging in ${totalBatches} batches:`
+    );
+
+    for (let i = 0; i < totalBatches; i++) {
+      const start = i * batchSize;
+      const end = Math.min(start + batchSize, promptLength);
+      const batch = solutionsPrompt.substring(start, end);
+      console.log(
+        `Prompt batch ${i + 1}/${totalBatches} (chars ${start + 1}-${end}):`,
+        batch
+      );
+    }
 
     const solutionsWithChallengesOutput = await openai.responses.create({
       model: "gpt-4.1",

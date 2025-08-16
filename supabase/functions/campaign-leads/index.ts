@@ -688,8 +688,8 @@ Deno.serve(async (req) => {
           [...targetAudience.seniorityList],
         ],
       ],
-      industries: targetAudience.recommendedIndustries,
-      limit_by: 100,
+      lead_industries: targetAudience.recommendedIndustries,
+      limit_by: 300,
     };
 
     console.log("Generect body:", generectBody);
