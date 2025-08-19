@@ -17,21 +17,19 @@ const corsHeaders = {
 // Helper function to clean JSON responses from OpenAI
 const cleanJsonResponse = (response: string): string => {
   let cleaned = response.trim();
-  
+
   // Handle cases where there's text before the JSON
-  const jsonMatch = cleaned.match(/```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/);
+  const jsonMatch = cleaned.match(
+    /```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/
+  );
   if (jsonMatch) {
     return jsonMatch[1];
   } else if (cleaned.startsWith("```json")) {
-    return cleaned
-      .replace(/^```json\s*/, "")
-      .replace(/\s*```$/, "");
+    return cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
   } else if (cleaned.startsWith("```")) {
-    return cleaned
-      .replace(/^```\s*/, "")
-      .replace(/\s*```$/, "");
+    return cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
   }
-  
+
   return cleaned;
 };
 
@@ -68,16 +66,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `===== Starting job processing for job id: ${jobData.id} =====`
-    );
-
     if (!jobData) {
+      console.log("No job found");
       return new Response(null, {
         headers: { ...corsHeaders },
         status: 204,
       });
     }
+
+    console.log(
+      `===== Starting job processing for job id: ${jobData.id} =====`
+    );
 
     const { data: claimedJob, error: claimError } = await supabase
       .from("jobs")
@@ -91,7 +90,10 @@ Deno.serve(async (req) => {
       console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        }
       );
     }
 
@@ -222,7 +224,7 @@ Deno.serve(async (req) => {
 
       console.log("prompt", impactsOfSolutionsPrompt);
       console.log("model", "gpt-4.1");
-      console.log("approach", "openai.responses.create")
+      console.log("approach", "openai.responses.create");
       console.log("max_output_tokens", 5000);
       console.log("tools", [{ type: "web_search_preview" }]);
       console.log("Sending request to OpenAI API...");

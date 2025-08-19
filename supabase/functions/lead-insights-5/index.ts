@@ -86,16 +86,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `===== Starting job processing for job id: ${jobData.id} =====`
-    );
-
     if (!jobData) {
+      console.log("No job found");
       return new Response(null, {
         headers: { ...corsHeaders },
         status: 204,
       });
     }
+
+    console.log(
+      `===== Starting job processing for job id: ${jobData.id} =====`
+    );
 
     const { data: claimedJob, error: claimError } = await supabase
       .from("jobs")
@@ -1451,7 +1452,7 @@ Deno.serve(async (req) => {
           if (useChatCompletion) {
             console.log("prompt", prompt);
             console.log("model", "gpt-4o");
-            console.log("approach", "openai.chat.completions.create")
+            console.log("approach", "openai.chat.completions.create");
             console.log("max_output_tokens", 1500);
             console.log("tools", [{ type: "web_search_preview" }]);
             console.log("Sending request to OpenAI API...");
@@ -1465,7 +1466,7 @@ Deno.serve(async (req) => {
           } else {
             console.log("prompt", prompt);
             console.log("model", "gpt-4.1");
-            console.log("approach", "openai.responses.create")
+            console.log("approach", "openai.responses.create");
             console.log("max_output_tokens", 5000);
             console.log("tools", [{ type: "web_search_preview" }]);
             console.log("Sending request to OpenAI API...");

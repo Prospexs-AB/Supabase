@@ -66,16 +66,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(
-      `===== Starting job processing for job id: ${jobData.id} =====`
-    );
-
     if (!jobData) {
+      console.log("No job found");
       return new Response(null, {
         headers: { ...corsHeaders },
         status: 204,
       });
     }
+
+    console.log(
+      `===== Starting job processing for job id: ${jobData.id} =====`
+    );
 
     const { data: claimedJob, error: claimError } = await supabase
       .from("jobs")

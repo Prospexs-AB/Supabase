@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
     }
 
     if (!jobData) {
+      console.log("No job found");
       return new Response(null, {
         headers: { ...corsHeaders },
         status: 204,
