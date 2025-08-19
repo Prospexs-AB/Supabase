@@ -30,25 +30,96 @@ Deno.serve(async (req) => {
     );
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const nowIso = new Date().toISOString();
+    const MAX_RETRIES = 5;
 
-    await supabase
+    // Step 0 jobs: move back to queued and increment retries
+    const { data: step0Jobs, error: step0FetchError } = await supabase
       .from("jobs")
-      .update({ status: "queued", updated_at: new Date().toISOString() })
+      .select("id,retries")
       .eq("job_name", "lead-insights")
       .eq("status", "processing")
       .eq("job_step", 0)
       .lt("updated_at", fiveMinutesAgo);
 
-    await supabase
+    if (step0FetchError) throw step0FetchError;
+
+    if (step0Jobs && step0Jobs.length > 0) {
+      const step0ToFail = step0Jobs.filter((job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES);
+      const step0ToRetry = step0Jobs.filter((job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES);
+
+      if (step0ToRetry.length > 0) {
+        const step0RetryUpdates = step0ToRetry.map((job: { id: string; retries: number | null }) => ({
+          id: job.id,
+          status: "queued",
+          updated_at: nowIso,
+          retries: (job.retries ?? 0) + 1,
+        }));
+
+        const { error: step0RetryError } = await supabase
+          .from("jobs")
+          .upsert(step0RetryUpdates);
+        if (step0RetryError) throw step0RetryError;
+      }
+
+      if (step0ToFail.length > 0) {
+        const step0FailUpdates = step0ToFail.map((job: { id: string; retries: number | null }) => ({
+          id: job.id,
+          status: "failed",
+          updated_at: nowIso,
+          retries: Math.max(job.retries ?? 0, MAX_RETRIES),
+        }));
+
+        const { error: step0FailError } = await supabase
+          .from("jobs")
+          .upsert(step0FailUpdates);
+        if (step0FailError) throw step0FailError;
+      }
+    }
+
+    // Non-step 0 jobs: move to waiting_for_next_step and increment retries
+    const { data: nextStepJobs, error: nextStepFetchError } = await supabase
       .from("jobs")
-      .update({
-        status: "waiting_for_next_step",
-        updated_at: new Date().toISOString(),
-      })
+      .select("id,retries")
       .eq("job_name", "lead-insights")
       .eq("status", "processing")
       .neq("job_step", 0)
       .lt("updated_at", fiveMinutesAgo);
+
+    if (nextStepFetchError) throw nextStepFetchError;
+
+    if (nextStepJobs && nextStepJobs.length > 0) {
+      const nextToFail = nextStepJobs.filter((job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES);
+      const nextToRetry = nextStepJobs.filter((job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES);
+
+      if (nextToRetry.length > 0) {
+        const nextRetryUpdates = nextToRetry.map((job: { id: string; retries: number | null }) => ({
+          id: job.id,
+          status: "waiting_for_next_step",
+          updated_at: nowIso,
+          retries: (job.retries ?? 0) + 1,
+        }));
+
+        const { error: nextRetryError } = await supabase
+          .from("jobs")
+          .upsert(nextRetryUpdates);
+        if (nextRetryError) throw nextRetryError;
+      }
+
+      if (nextToFail.length > 0) {
+        const nextFailUpdates = nextToFail.map((job: { id: string; retries: number | null }) => ({
+          id: job.id,
+          status: "failed",
+          updated_at: nowIso,
+          retries: Math.max(job.retries ?? 0, MAX_RETRIES),
+        }));
+
+        const { error: nextFailError } = await supabase
+          .from("jobs")
+          .upsert(nextFailUpdates);
+        if (nextFailError) throw nextFailError;
+      }
+    }
 
     return new Response(
       JSON.stringify({ message: "Job updated successfully" }),
