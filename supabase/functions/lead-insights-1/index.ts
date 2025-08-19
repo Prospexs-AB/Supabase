@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
         job_step: 1,
         progress_data: { ...lead, insights: result },
         status: "waiting_for_next_step",
+        retries: null,
       })
       .eq("id", jobData.id);
 
