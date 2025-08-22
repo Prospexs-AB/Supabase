@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
     if (campaignError) {
       return new Response(JSON.stringify({ error: campaignError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 500,  
       });
     }
 
@@ -198,37 +200,56 @@ Deno.serve(async (req) => {
 
         console.log("prompt", objectionHandlingPrompt);
         console.log("model", "gpt-4.1");
-        console.log("approach", "openai.responses.create")
+        console.log("approach", "openai.responses.create");
         console.log("max_output_tokens", 5000);
         console.log("tools", [{ type: "web_search_preview" }]);
         console.log("Sending request to OpenAI API...");
 
-        const objectionHandlingOutput = await openai.responses.create({
+        // const objectionHandlingOutput = await openai.responses.create({
+        //   model: "gpt-4.1",
+        //   tools: [{ type: "web_search_preview" }],
+        //   input: objectionHandlingPrompt,
+        //   max_output_tokens: 5000,
+        // });
+
+        const analysisSchema = z.object({
+          objectionHandlingOutput: z.object({
+            solutionTitle: z.string(),
+            solutionDescription: z.string(),
+            impactTitle: z.string(),
+            impactDescription: z.string(),
+            solutionSources: z.array(z.string()),
+            impactSources: z.array(z.string()),
+            objectionHandling: z.array(
+              z.object({
+                objection: z.string(),
+                rebuttal: z.string(),
+                source: z.array(z.string()),
+              })
+            ),
+          }),
+        });
+
+        const openAiResponse = await openai.responses.parse({
           model: "gpt-4.1",
           tools: [{ type: "web_search_preview" }],
-          input: objectionHandlingPrompt,
+          input: [{ role: "user", content: objectionHandlingPrompt }],
           max_output_tokens: 5000,
+          text: {
+            format: zodTextFormat(analysisSchema, "objectionHandlingOutput"),
+          },
         });
 
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "user",
-              content: objectionHandlingPrompt,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 1500,
-        });
+        const { objectionHandlingOutput } = openAiResponse.output_parsed;
 
-        console.log("Open ai response:", objectionHandlingOutput.output_text);
+        console.log("Open ai response:", objectionHandlingOutput);
 
-        const cleanObjectionHandlingOutput = cleanJsonResponse(
-          objectionHandlingOutput.output_text
-        );
+        // const cleanObjectionHandlingOutput = cleanJsonResponse(
+        //   objectionHandlingOutput.output_text
+        // );
 
-        return JSON.parse(cleanObjectionHandlingOutput);
+        // return JSON.parse(cleanObjectionHandlingOutput);
+        return objectionHandlingOutput;
       });
 
       const results = await Promise.all(solutionPromises);

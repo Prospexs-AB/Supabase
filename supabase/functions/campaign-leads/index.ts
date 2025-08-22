@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -642,41 +644,69 @@ Deno.serve(async (req) => {
     apiKey: OPENAI_API_KEY,
   });
 
-  const completion = await openai.chat.completions.create({
+  // const completion = await openai.chat.completions.create({
+  //   model: "gpt-4o-mini",
+  //   messages: [
+  //     {
+  //       role: "system",
+  //       content:
+  //         "You are a world class lead generation expert. You are given a target audience and you need to generate extra information for finding leads using generect leads api.",
+  //     },
+  //     {
+  //       role: "user",
+  //       content: prompt,
+  //     },
+  //   ],
+  //   temperature: 0.7,
+  //   max_tokens: 1000,
+  // });
+
+  const analysisSchema = z.object({
+    response: z.array(z.object({
+      role: z.string(),
+      industry: z.string(),
+      country: z.string(),
+      roleList: z.array(z.string()),
+      seniorityList: z.array(z.string()),
+      recommendedIndustries: z.array(z.string()),
+    })),
+  });
+
+  const openAiResponse = await openai.responses.parse({
     model: "gpt-4o-mini",
-    messages: [
+    input: [
       {
         role: "system",
         content:
           "You are a world class lead generation expert. You are given a target audience and you need to generate extra information for finding leads using generect leads api.",
       },
-      {
-        role: "user",
-        content: prompt,
-      },
+      { role: "user", content: prompt },
     ],
-    temperature: 0.7,
-    max_tokens: 1000,
+    max_output_tokens: 1000,
+    text: {
+      format: zodTextFormat(analysisSchema, "response"),
+    },
   });
 
   console.log("Successfully analyzed content with OpenAI");
-  const response = completion.choices[0].message.content;
+  // const response = completion.choices[0].message.content;
+  const { response } = openAiResponse.output_parsed;
   console.log("OpenAI response:", response);
 
-  let cleanResponse = response.trim();
-  if (cleanResponse.startsWith("```json")) {
-    cleanResponse = cleanResponse
-      .replace(/^```json\s*/, "")
-      .replace(/\s*```$/, "");
-  } else if (cleanResponse.startsWith("```")) {
-    cleanResponse = cleanResponse.replace(/^```\s*/, "").replace(/\s*```$/, "");
-  }
+  // let cleanResponse = response.trim();
+  // if (cleanResponse.startsWith("```json")) {
+  //   cleanResponse = cleanResponse
+  //     .replace(/^```json\s*/, "")
+  //     .replace(/\s*```$/, "");
+  // } else if (cleanResponse.startsWith("```")) {
+  //   cleanResponse = cleanResponse.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  // }
 
-  const parsedResponse = JSON.parse(cleanResponse);
-  console.log("Role and seniority lists:", parsedResponse);
+  // const parsedResponse = JSON.parse(cleanResponse);
+  // console.log("Role and seniority lists:", parsedResponse);
 
   // Lead Promises
-  const leadsPromises = parsedResponse.map(async (targetAudience) => {
+  const leadsPromises = response.map(async (targetAudience) => {
     const generectBody = {
       without_company: true,
       locations: [targetAudience.country],

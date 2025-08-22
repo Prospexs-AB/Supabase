@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1337,55 +1339,126 @@ Deno.serve(async (req) => {
     const additionalPrompts = [
       {
         prompt: conversationStarterPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              title: z.string(),
+              description: z.string(),
+            })
+          ),
+        }),
         fieldName: "conversationStarters",
         category: "businessInsights",
       },
       {
         prompt: commonalitiesPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              title: z.string(),
+              description: z.string(),
+            })
+          ),
+        }),
         fieldName: "commonalities",
         category: "businessInsights",
       },
       {
         prompt: insightsPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              title: z.string(),
+              description: z.string(),
+              source: z.array(z.string()),
+            })
+          ),
+        }),
         fieldName: "insights",
         category: "businessInsights",
       },
       {
         prompt: discoveryPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              challenge: z.string(),
+              discovery_questions: z.array(
+                z.object({
+                  question: z.string(),
+                  answer: z.string(),
+                })
+              ),
+            })
+          ),
+        }),
         fieldName: "discovery",
         category: "businessInsights",
       },
       {
         prompt: whyNotPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              challenge: z.string(),
+              why_now: z.string(),
+            })
+          ),
+        }),
         fieldName: "whyNow",
         category: "businessInsights",
       },
       {
         prompt: awardsPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              award: z.string(),
+              description: z.string(),
+            })
+          ),
+        }),
         fieldName: "awards",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: interestsPrompt,
+        schema: z.object({
+          response: z.array(z.string()),
+        }),
         fieldName: "interests",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: educationPrompt,
+        schema: z.object({
+          response: z.array(z.string()),
+        }),
         fieldName: "education",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: relevantInsightsPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              title: z.string(),
+              description: z.string(),
+            })
+          ),
+        }),
         fieldName: "relevantInsights",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: similaritiesPrompt,
+        schema: z.object({
+          response: z.array(z.string()),
+        }),
         fieldName: "similarities",
         category: "personInsights",
         getLinkedinData: true,
@@ -1393,18 +1466,46 @@ Deno.serve(async (req) => {
       },
       {
         prompt: onlineMentionsPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              mention_type: z.string(),
+              summary: z.string(),
+              link: z.string(),
+            })
+          ),
+        }),
         fieldName: "onlineMentions",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: relevantActivitiesPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              summary: z.string(),
+              type: z.string(),
+              link: z.string(),
+              when: z.string(),
+              relevance: z.string(),
+            })
+          ),
+        }),
         fieldName: "relevantActivities",
         category: "personInsights",
         getLinkedinData: true,
       },
       {
         prompt: personConversationalStarterPrompt,
+        schema: z.object({
+          response: z.array(
+            z.object({
+              title: z.string(),
+              content: z.string(),
+            })
+          ),
+        }),
         fieldName: "personConversationalStarters",
         category: "personInsights",
         getLinkedinData: true,
@@ -1415,6 +1516,7 @@ Deno.serve(async (req) => {
       async (
         {
           prompt,
+          schema,
           fieldName,
           category,
           getLinkedinData,
@@ -1462,7 +1564,18 @@ Deno.serve(async (req) => {
               temperature: 0.7,
               max_tokens: 1500,
             });
-            response = completion.choices[0].message.content;
+
+            const openAiResponse = await openai.responses.parse({
+              model: "gpt-4o",
+              input: [{ role: "user", content: prompt }],
+              max_output_tokens: 1500,
+              text: {
+                format: zodTextFormat(schema, "response"),
+              },
+            });
+
+            response = openAiResponse.output_parsed.response;
+            console.log(`Response for ${fieldName}:`, response);
           } else {
             console.log("prompt", prompt);
             console.log("model", "gpt-4.1");
@@ -1470,30 +1583,40 @@ Deno.serve(async (req) => {
             console.log("max_output_tokens", 5000);
             console.log("tools", [{ type: "web_search_preview" }]);
             console.log("Sending request to OpenAI API...");
-            response = await openai.responses.create({
+            // response = await openai.responses.create({
+            //   model: "gpt-4.1",
+            //   tools: [{ type: "web_search_preview" }],
+            //   input: prompt,
+            //   max_output_tokens: 5000,
+            // });
+
+            const openAiResponse = await openai.responses.parse({
               model: "gpt-4.1",
               tools: [{ type: "web_search_preview" }],
-              input: prompt,
+              input: [{ role: "user", content: prompt }],
               max_output_tokens: 5000,
+              text: {
+                format: zodTextFormat(schema, "response"),
+              },
             });
 
-            response = response.output_text;
+            response = openAiResponse.output_parsed.response;
             console.log(`Response for ${fieldName}:`, response);
           }
 
-          const cleanResponse = cleanJsonResponse(response);
+          // const cleanResponse = cleanJsonResponse(response);
 
-          let parsedResponse;
-          try {
-            parsedResponse = JSON.parse(cleanResponse);
-          } catch (error) {
-            console.error(`Failed to parse ${fieldName} output:`, error);
-            throw new Error(`Failed to parse AI response for ${fieldName}`);
-          }
+          // let parsedResponse;
+          // try {
+          //   parsedResponse = JSON.parse(cleanResponse);
+          // } catch (error) {
+          //   console.error(`Failed to parse ${fieldName} output:`, error);
+          //   throw new Error(`Failed to parse AI response for ${fieldName}`);
+          // }
 
-          updatedLead.insights[category][fieldName] = parsedResponse;
+          updatedLead.insights[category][fieldName] = response;
 
-          return parsedResponse;
+          return response;
         } catch (error) {
           updatedLead.insights[category][fieldName] = [];
           console.error(

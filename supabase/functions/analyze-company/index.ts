@@ -9,6 +9,8 @@ import {
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -288,32 +290,44 @@ Deno.serve(async (req) => {
         }
     `;
 
+    const analysisSchema = z.object({
+      analysis: z.object({
+        summary: z.string(),
+        points_of_interest: z.array(
+          z.object({
+            point_of_interest: z.string(),
+            value: z.string(),
+          })
+        ),
+        company_name: z.string(),
+        country: z.string(),
+        industry: z.string(),
+        company_size: z.string(),
+      }),
+    });
+
     console.log("Sending request to OpenAI API...");
-    const openAiResponse = await openai.responses.create({
+    // const openAiResponse = await openai.responses.create({
+    //   model: "gpt-4.1",
+    //   tools: [{ type: "web_search_preview" }],
+    //   input: prompt,
+    // });
+
+    const openAiResponse = await openai.responses.parse({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],
-      input: prompt,
+      input: [{ role: "user", content: prompt }],
+      max_output_tokens: 4096,
+      text: {
+        format: zodTextFormat(analysisSchema, "analysis"),
+      },
     });
 
     console.log("Successfully analyzed content with OpenAI");
-    const analysis = openAiResponse.output_text;
+    const { analysis } = openAiResponse.output_parsed;
     console.log("OpenAI analysis:", analysis);
 
     try {
-      let cleanAnalysis = analysis.trim();
-      if (cleanAnalysis.startsWith("```json")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```json\s*/, "")
-          .replace(/\s*```$/, "");
-      } else if (cleanAnalysis.startsWith("```")) {
-        cleanAnalysis = cleanAnalysis
-          .replace(/^```\s*/, "")
-          .replace(/\s*```$/, "");
-      }
-
-      const parsedAnalysis = JSON.parse(cleanAnalysis);
-      console.log("Parsed analysis:", parsedAnalysis);
-
       const new_latest_step = 2;
       const cleanFurtherProgress = {};
       for (let x = new_latest_step + 1; x <= 10; x++) {
@@ -325,12 +339,12 @@ Deno.serve(async (req) => {
         .from("campaign_progress")
         .update({
           latest_step: new_latest_step,
-          step_2_result: parsedAnalysis,
+          step_2_result: analysis,
           ...cleanFurtherProgress,
         })
         .eq("id", campaignData.progress_id);
 
-      return new Response(JSON.stringify({ data: parsedAnalysis }), {
+      return new Response(JSON.stringify({ data: analysis }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (error) {

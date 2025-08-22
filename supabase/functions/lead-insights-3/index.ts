@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -229,24 +231,54 @@ Deno.serve(async (req) => {
       console.log("tools", [{ type: "web_search_preview" }]);
       console.log("Sending request to OpenAI API...");
 
-      const impactsOfSolutionsOutput = await openai.responses.create({
-        model: "gpt-4.1",
-        tools: [{ type: "web_search_preview" }],
-        input: impactsOfSolutionsPrompt,
-        max_output_tokens: 5000,
+      // const impactsOfSolutionsOutput = await openai.responses.create({
+      //   model: "gpt-4.1",
+      //   tools: [{ type: "web_search_preview" }],
+      //   input: impactsOfSolutionsPrompt,
+      //   max_output_tokens: 5000,
+      // });
+
+      const analysisSchema = z.object({
+        impactsOfSolutionsOutput: z.object({
+          title: z.string(),
+          description: z.string(),
+          sources: z.array(z.string()),
+          solutions: z.array(
+            z.object({
+              solutionTitle: z.string(),
+              solutionDescription: z.string(),
+              impactTitle: z.string(),
+              impactDescription: z.string(),
+              solutionSources: z.array(z.string()),
+              impactSources: z.array(z.string()),
+            })
+          ),
+        }),
       });
 
-      console.log("Open ai response:", impactsOfSolutionsOutput.output_text);
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: [{ role: "user", content: impactsOfSolutionsPrompt }],
+        max_output_tokens: 4096,
+        text: {
+          format: zodTextFormat(analysisSchema, "impactsOfSolutionsOutput"),
+        },
+      });
 
-      const cleanImpactsOfSolutionsOutput = cleanJsonResponse(
-        impactsOfSolutionsOutput.output_text
-      );
+      const { impactsOfSolutionsOutput } = openAiResponse.output_parsed;
 
-      const parsedImpactsOfSolutionsOutput = JSON.parse(
-        cleanImpactsOfSolutionsOutput
-      );
+      console.log("Open ai response:", impactsOfSolutionsOutput);
 
-      return parsedImpactsOfSolutionsOutput;
+      // const cleanImpactsOfSolutionsOutput = cleanJsonResponse(
+      //   impactsOfSolutionsOutput.output_text
+      // );
+
+      // const parsedImpactsOfSolutionsOutput = JSON.parse(
+      //   cleanImpactsOfSolutionsOutput
+      // );
+
+      return impactsOfSolutionsOutput;
     });
 
     const impactResults = await Promise.all(impactPromises);

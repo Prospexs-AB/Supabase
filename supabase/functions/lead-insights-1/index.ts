@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,7 +107,10 @@ Deno.serve(async (req) => {
       console.log(`Failed to claim job ${jobData.id}:`, claimError);
       return new Response(
         JSON.stringify({ error: "Job already claimed by another worker" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        }
       );
     }
 
@@ -213,33 +218,63 @@ Deno.serve(async (req) => {
 
     console.log("prompt", challengesPrompt);
     console.log("model", "gpt-4.1");
-    console.log("approach", "openai.responses.create")
+    console.log("approach", "openai.responses.create");
     console.log("tools", [{ type: "web_search_preview" }]);
 
     console.log("Sending request to OpenAI API...");
-    const detailsWithChallengesOutput = await openai.responses.create({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: challengesPrompt,
+    // const detailsWithChallengesOutput = await openai.responses.create({
+    //   model: "gpt-4.1",
+    //   tools: [{ type: "web_search_preview" }],
+    //   input: challengesPrompt,
+    // });
+
+    const analysisSchema = z.object({
+      detailsWithChallengesOutput: z.object({
+        company_name: z.string(),
+        revenue: z.string(),
+        employees: z.string(),
+        industry: z.string(),
+        challenges: z.array(
+          z.object({
+            title: z.string(),
+            description: z.string(),
+            source: z.array(z.string()),
+          })
+        ),
+      }),
     });
 
-    const cleanDetailsWithChallengesOutput = cleanJsonResponse(
-      detailsWithChallengesOutput.output_text
-    );
+    const openAiResponse = await openai.responses.parse({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: [{ role: "user", content: challengesPrompt }],
+      max_output_tokens: 4096,
+      text: {
+        format: zodTextFormat(analysisSchema, "detailsWithChallengesOutput"),
+      },
+    });
 
-    const parsedDetailsWithChallengesOutput = JSON.parse(
-      cleanDetailsWithChallengesOutput
-    );
+    const { detailsWithChallengesOutput } = openAiResponse.output_parsed;
+
+    console.log("detailsWithChallengesOutput", detailsWithChallengesOutput);
+
+    // const cleanDetailsWithChallengesOutput = cleanJsonResponse(
+    //   detailsWithChallengesOutput.output_text
+    // );
+
+    // const parsedDetailsWithChallengesOutput = JSON.parse(
+    //   cleanDetailsWithChallengesOutput
+    // );
 
     const result = {
       businessInsights: {
         detail: {
-          company_name: parsedDetailsWithChallengesOutput.company_name,
-          revenue: parsedDetailsWithChallengesOutput.revenue,
-          employees: parsedDetailsWithChallengesOutput.employees,
-          industry: parsedDetailsWithChallengesOutput.industry,
+          company_name: detailsWithChallengesOutput.company_name,
+          revenue: detailsWithChallengesOutput.revenue,
+          employees: detailsWithChallengesOutput.employees,
+          industry: detailsWithChallengesOutput.industry,
         },
-        challengesWithSolutions: parsedDetailsWithChallengesOutput.challenges,
+        challengesWithSolutions: detailsWithChallengesOutput.challenges,
       },
       personInsights: {},
     };

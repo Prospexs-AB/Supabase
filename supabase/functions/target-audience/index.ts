@@ -9,6 +9,8 @@ import {
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -301,22 +303,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    const openAiResponse = await openai.responses.create({
+    // const openAiResponse = await openai.responses.create({
+    //   model: "gpt-4.1",
+    //   tools: [{ type: "web_search_preview" }],
+    //   input: prompt,
+    //   max_output_tokens: 5000,
+    // });
+
+    const targetAudienceSchema = z.object({
+      target_audience: z.array(
+        z.object({
+          industry: z.string(),
+          role: z.string(),
+          audience_brief: z.string(),
+          metrics: z.array(z.object({ value: z.string(), label: z.string() })),
+          country: z.string(),
+          sources: z.array(z.string()),
+        })
+      ),
+    });
+
+    const openAiResponse = await openai.responses.parse({
       model: "gpt-4.1",
       tools: [{ type: "web_search_preview" }],
-      input: prompt,
+      input: [{ role: "user", content: prompt }],
       max_output_tokens: 5000,
+      text: {
+        format: zodTextFormat(targetAudienceSchema, "target_audience"),
+      },
     });
 
     console.log("Successfully analyzed content with OpenAI");
-    const analysis = openAiResponse.output_text;
-    console.log("OpenAI analysis:", analysis);
-    console.log("OpenAI analysis end:", analysis.slice(-50));
-
-    const cleanAnalysis = cleanJsonResponse(analysis);
-
-    const parsedAnalysis = JSON.parse(cleanAnalysis);
-    console.log("Parsed analysis:", parsedAnalysis);
+    const { target_audience } = openAiResponse.output_parsed;
+    console.log("OpenAI analysis:", target_audience);
+    console.log("OpenAI analysis end:", target_audience.slice(-50));
 
     const new_latest_step = 6;
     const cleanFurtherProgress = {};
@@ -330,7 +350,7 @@ Deno.serve(async (req) => {
       .update({
         latest_step: new_latest_step,
         step_6_result: {
-          target_audience: parsedAnalysis,
+          target_audience,
           locale,
         },
         ...cleanFurtherProgress,
@@ -347,7 +367,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    return new Response(JSON.stringify({ data: parsedAnalysis }), {
+    return new Response(JSON.stringify({ data: target_audience }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

@@ -6,6 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -207,7 +209,7 @@ Deno.serve(async (req) => {
     `;
 
     console.log("model", "gpt-4.1");
-    console.log("approach", "openai.responses.create")
+    console.log("approach", "openai.responses.create");
     console.log("max_output_tokens", 5000);
     console.log("tools", [{ type: "web_search_preview" }]);
 
@@ -229,26 +231,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    const solutionsWithChallengesOutput = await openai.responses.create({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: solutionsPrompt,
-      max_output_tokens: 5000,
+    // const solutionsWithChallengesOutput = await openai.responses.create({
+    //   model: "gpt-4.1",
+    //   tools: [{ type: "web_search_preview" }],
+    //   input: solutionsPrompt,
+    //   max_output_tokens: 5000,
+    // });
+
+    const analysisSchema = z.object({
+      solutionsWithChallengesOutput: z.array(
+        z.object({
+          problemTitle: z.string(),
+          problemDescription: z.string(),
+          sources: z.array(z.string()),
+          solutions: z.array(
+            z.object({
+              solutionTitle: z.string(),
+              solutionDescription: z.string(),
+              sources: z.array(z.string()),
+            })
+          ),
+        })
+      ),
     });
 
-    console.log("Open ai response:", solutionsWithChallengesOutput.output_text);
+    const openAiResponse = await openai.responses.parse({
+      model: "gpt-4.1",
+      tools: [{ type: "web_search_preview" }],
+      input: [{ role: "user", content: solutionsPrompt }],
+      max_output_tokens: 5000,
+      text: {
+        format: zodTextFormat(analysisSchema, "solutionsWithChallengesOutput"),
+      },
+    });
 
-    const cleanSolutionsWithChallengesOutput = cleanJsonResponse(
-      solutionsWithChallengesOutput.output_text
-    );
+    const { solutionsWithChallengesOutput } = openAiResponse.output_parsed;
 
-    const parsedSolutionsWithChallengesOutput = JSON.parse(
-      cleanSolutionsWithChallengesOutput
-    );
+    console.log("Open ai response:", solutionsWithChallengesOutput);
+
+    // const cleanSolutionsWithChallengesOutput = cleanJsonResponse(
+    //   solutionsWithChallengesOutput.output_text
+    // );
+
+    // const parsedSolutionsWithChallengesOutput = JSON.parse(
+    //   cleanSolutionsWithChallengesOutput
+    // );
 
     const finishedData = progress_data;
     finishedData.insights.businessInsights.challengesWithSolutions =
-      parsedSolutionsWithChallengesOutput;
+      solutionsWithChallengesOutput;
 
     const { error: updateJobError } = await supabase
       .from("jobs")

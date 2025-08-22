@@ -9,6 +9,8 @@ import {
   SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import { z } from "npm:zod@3.25.76";
+import { zodTextFormat } from "npm:openai/helpers/zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -562,47 +564,102 @@ Deno.serve(async (req) => {
 
         console.log("Prompt:", prompt);
         console.log("model", "gpt-4.1");
-        console.log("approach", "openai.responses.create")
+        console.log("approach", "openai.responses.create");
         console.log("max_output_tokens", 6000);
         console.log("tools", [{ type: "web_search_preview" }]);
 
         console.log("Sending request to OpenAI API...");
-        const openAiResponse = await openai.responses.create({
+        // const openAiResponse = await openai.responses.create({
+        //   model: "gpt-4.1",
+        //   tools: [{ type: "web_search_preview" }],
+        //   input: prompt,
+        //   max_output_tokens: 6000,
+        // });
+
+        const insightsSchema = z.object({
+          insights: z.object({
+            industry: z.string(),
+            industry_english: z.string(),
+            role: z.string(),
+            role_english: z.string(),
+            reasoning: z.string(),
+            metrics: z.array(
+              z.object({ value: z.string(), label: z.string() })
+            ),
+            country: z.string(),
+            country_english: z.string(),
+            audience_profile: z.string(),
+            sources: z.array(z.string()),
+            key_data_points: z.array(
+              z.object({
+                title: z.string(),
+                summary: z.string(),
+                source: z.string(),
+              })
+            ),
+            usps: z.array(
+              z.object({
+                title: z.string(),
+                analysis: z.string(),
+                source: z.array(z.string()),
+              })
+            ),
+            pain_points: z.array(
+              z.object({
+                title: z.string(),
+                analysis: z.string(),
+                source: z.array(z.string()),
+              })
+            ),
+            benefits: z.array(
+              z.object({
+                title: z.string(),
+                analysis: z.string(),
+                source: z.array(z.string()),
+              })
+            ),
+          }),
+        });
+
+        const openAiResponse = await openai.responses.parse({
           model: "gpt-4.1",
           tools: [{ type: "web_search_preview" }],
-          input: prompt,
+          input: [{ role: "user", content: prompt }],
           max_output_tokens: 6000,
+          text: {
+            format: zodTextFormat(insightsSchema, "insights"),
+          },
         });
 
         console.log("Successfully analyzed content with OpenAI");
-        const analysis = openAiResponse.output_text;
-        console.log("OpenAI analysis:", analysis);
-        console.log(
-          "OpenAI analysis preview:",
-          analysis.substring(0, analysis.length)
-        );
-        console.log(
-          "OpenAI analysis end:",
-          analysis.substring(analysis.length - 500)
-        );
+        const { insights } = openAiResponse.output_parsed;
+        console.log("OpenAI analysis:", insights);
+        // console.log(
+        //   "OpenAI analysis preview:",
+        //   insights.substring(0, insights.length)
+        // );
+        // console.log(
+        //   "OpenAI analysis end:",
+        //   insights.substring(insights.length - 500)
+        // );
 
-        let cleanAnalysis = analysis.trim();
-        if (cleanAnalysis.startsWith("```json")) {
-          cleanAnalysis = cleanAnalysis
-            .replace(/^```json\s*/, "")
-            .replace(/\s*```$/, "");
-        } else if (cleanAnalysis.startsWith("```")) {
-          cleanAnalysis = cleanAnalysis
-            .replace(/^```\s*/, "")
-            .replace(/\s*```$/, "");
-        }
+        // let cleanAnalysis = insights.trim();
+        // if (cleanAnalysis.startsWith("```json")) {
+        //   cleanAnalysis = cleanAnalysis
+        //     .replace(/^```json\s*/, "")
+        //     .replace(/\s*```$/, "");
+        // } else if (cleanAnalysis.startsWith("```")) {
+        //   cleanAnalysis = cleanAnalysis
+        //     .replace(/^```\s*/, "")
+        //     .replace(/\s*```$/, "");
+        // }
 
-        const parsedAnalysis = JSON.parse(cleanAnalysis);
-        console.log("Parsed analysis:", parsedAnalysis);
+        // const parsedAnalysis = JSON.parse(cleanAnalysis);
+        // console.log("Parsed analysis:", parsedAnalysis);
         // finalInsights.insights[name] = parsedAnalysis;
         // }
 
-        listOfInsights.push({ ...recommendation, ...parsedAnalysis });
+        listOfInsights.push({ ...recommendation, ...insights });
       }
     );
 
