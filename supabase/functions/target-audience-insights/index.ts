@@ -11,6 +11,7 @@ import {
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -562,20 +563,6 @@ Deno.serve(async (req) => {
           }
         `;
 
-        console.log("Prompt:", prompt);
-        console.log("model", "gpt-4.1");
-        console.log("approach", "openai.responses.create");
-        console.log("max_output_tokens", 6000);
-        console.log("tools", [{ type: "web_search_preview" }]);
-
-        console.log("Sending request to OpenAI API...");
-        // const openAiResponse = await openai.responses.create({
-        //   model: "gpt-4.1",
-        //   tools: [{ type: "web_search_preview" }],
-        //   input: prompt,
-        //   max_output_tokens: 6000,
-        // });
-
         const insightsSchema = z.object({
           insights: z.object({
             industry: z.string(),
@@ -621,44 +608,35 @@ Deno.serve(async (req) => {
           }),
         });
 
-        const openAiResponse = await openai.responses.parse({
-          model: "gpt-4.1",
-          tools: [{ type: "web_search_preview" }],
-          input: [{ role: "user", content: prompt }],
-          max_output_tokens: 6000,
-          text: {
-            format: zodTextFormat(insightsSchema, "insights"),
-          },
-        });
-
-        console.log("Successfully analyzed content with OpenAI");
-        const { insights } = openAiResponse.output_parsed;
-        console.log("OpenAI analysis:", insights);
-        // console.log(
-        //   "OpenAI analysis preview:",
-        //   insights.substring(0, insights.length)
-        // );
-        // console.log(
-        //   "OpenAI analysis end:",
-        //   insights.substring(insights.length - 500)
-        // );
-
-        // let cleanAnalysis = insights.trim();
-        // if (cleanAnalysis.startsWith("```json")) {
-        //   cleanAnalysis = cleanAnalysis
-        //     .replace(/^```json\s*/, "")
-        //     .replace(/\s*```$/, "");
-        // } else if (cleanAnalysis.startsWith("```")) {
-        //   cleanAnalysis = cleanAnalysis
-        //     .replace(/^```\s*/, "")
-        //     .replace(/\s*```$/, "");
-        // }
-
-        // const parsedAnalysis = JSON.parse(cleanAnalysis);
-        // console.log("Parsed analysis:", parsedAnalysis);
-        // finalInsights.insights[name] = parsedAnalysis;
-        // }
-
+        let insights;
+        try {
+          console.log("Sending request to OpenAI API...");
+          const openAiResponse = await openai.responses.parse({
+            model: "gpt-4.1",
+            tools: [{ type: "web_search_preview" }],
+            input: [{ role: "user", content: prompt }],
+            max_output_tokens: 6000,
+            text: {
+              format: zodTextFormat(insightsSchema, "insights"),
+            },
+          });
+          insights = openAiResponse.output_parsed.insights;
+          console.log("OpenAI analysis:", insights);
+        } catch (error) {
+          console.log("Error OpenAI:", error);
+          console.log("Sending request to Anthropic API...");
+          const client = new Anthropic({
+            apiKey:
+              "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",
+          });
+          const anthropicResponse = await client.messages.create({
+            model: "claude-3-7-sonnet-20250219",
+            max_tokens: 7000,
+            messages: [{ role: "user", content: prompt }],
+          });
+          insights = JSON.parse(anthropicResponse.content[0].text);
+          console.log("Anthropic analysis:", insights);
+        }
         listOfInsights.push({ ...recommendation, ...insights });
       }
     );

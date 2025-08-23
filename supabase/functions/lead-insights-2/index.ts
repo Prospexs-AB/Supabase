@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,11 +209,6 @@ Deno.serve(async (req) => {
       ]
     `;
 
-    console.log("model", "gpt-4.1");
-    console.log("approach", "openai.responses.create");
-    console.log("max_output_tokens", 5000);
-    console.log("tools", [{ type: "web_search_preview" }]);
-
     const promptLength = solutionsPrompt.length;
     const batchSize = 9800;
     const totalBatches = Math.ceil(promptLength / batchSize);
@@ -231,13 +227,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // const solutionsWithChallengesOutput = await openai.responses.create({
-    //   model: "gpt-4.1",
-    //   tools: [{ type: "web_search_preview" }],
-    //   input: solutionsPrompt,
-    //   max_output_tokens: 5000,
-    // });
-
     const analysisSchema = z.object({
       solutionsWithChallengesOutput: z.array(
         z.object({
@@ -255,27 +244,42 @@ Deno.serve(async (req) => {
       ),
     });
 
-    const openAiResponse = await openai.responses.parse({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: [{ role: "user", content: solutionsPrompt }],
-      max_output_tokens: 5000,
-      text: {
-        format: zodTextFormat(analysisSchema, "solutionsWithChallengesOutput"),
-      },
-    });
-
-    const { solutionsWithChallengesOutput } = openAiResponse.output_parsed;
-
-    console.log("Open ai response:", solutionsWithChallengesOutput);
-
-    // const cleanSolutionsWithChallengesOutput = cleanJsonResponse(
-    //   solutionsWithChallengesOutput.output_text
-    // );
-
-    // const parsedSolutionsWithChallengesOutput = JSON.parse(
-    //   cleanSolutionsWithChallengesOutput
-    // );
+    let solutionsWithChallengesOutput;
+    try {
+      console.log("Sending request to OpenAI API...");
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: [{ role: "user", content: solutionsPrompt }],
+        max_output_tokens: 7000,
+        text: {
+          format: zodTextFormat(
+            analysisSchema,
+            "solutionsWithChallengesOutput"
+          ),
+        },
+      });
+      solutionsWithChallengesOutput =
+        openAiResponse.output_parsed.solutionsWithChallengesOutput;
+      console.log("Open ai response:", solutionsWithChallengesOutput);
+    } catch (error) {
+      console.log("Error OpenAI:", error);
+      console.log("Sending request to Anthropic API...");
+      const client = new Anthropic({
+        apiKey:
+          "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",
+      });
+      const anthropicResponse = await client.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 7000,
+        messages: [{ role: "user", content: solutionsPrompt }],
+      });
+      console.log("Anthropic response:", anthropicResponse.content[0].text);
+      let cleanResponse = anthropicResponse.content[0].text.trim();
+      const parsedResponse = cleanJsonResponse(cleanResponse);
+      solutionsWithChallengesOutput = JSON.parse(parsedResponse);
+      console.log("Anthropic response:", parsedResponse);
+    }
 
     const finishedData = progress_data;
     finishedData.insights.businessInsights.challengesWithSolutions =

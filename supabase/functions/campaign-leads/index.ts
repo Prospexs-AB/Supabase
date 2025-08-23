@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -644,66 +645,59 @@ Deno.serve(async (req) => {
     apiKey: OPENAI_API_KEY,
   });
 
-  // const completion = await openai.chat.completions.create({
-  //   model: "gpt-4o-mini",
-  //   messages: [
-  //     {
-  //       role: "system",
-  //       content:
-  //         "You are a world class lead generation expert. You are given a target audience and you need to generate extra information for finding leads using generect leads api.",
-  //     },
-  //     {
-  //       role: "user",
-  //       content: prompt,
-  //     },
-  //   ],
-  //   temperature: 0.7,
-  //   max_tokens: 1000,
-  // });
-
   const analysisSchema = z.object({
-    response: z.array(z.object({
-      role: z.string(),
-      industry: z.string(),
-      country: z.string(),
-      roleList: z.array(z.string()),
-      seniorityList: z.array(z.string()),
-      recommendedIndustries: z.array(z.string()),
-    })),
+    response: z.array(
+      z.object({
+        role: z.string(),
+        industry: z.string(),
+        country: z.string(),
+        roleList: z.array(z.string()),
+        seniorityList: z.array(z.string()),
+        recommendedIndustries: z.array(z.string()),
+      })
+    ),
   });
 
-  const openAiResponse = await openai.responses.parse({
-    model: "gpt-4o-mini",
-    input: [
-      {
-        role: "system",
-        content:
-          "You are a world class lead generation expert. You are given a target audience and you need to generate extra information for finding leads using generect leads api.",
-      },
-      { role: "user", content: prompt },
-    ],
-    max_output_tokens: 1000,
-    text: {
-      format: zodTextFormat(analysisSchema, "response"),
-    },
-  });
-
-  console.log("Successfully analyzed content with OpenAI");
-  // const response = completion.choices[0].message.content;
-  const { response } = openAiResponse.output_parsed;
-  console.log("OpenAI response:", response);
-
-  // let cleanResponse = response.trim();
-  // if (cleanResponse.startsWith("```json")) {
-  //   cleanResponse = cleanResponse
-  //     .replace(/^```json\s*/, "")
-  //     .replace(/\s*```$/, "");
-  // } else if (cleanResponse.startsWith("```")) {
-  //   cleanResponse = cleanResponse.replace(/^```\s*/, "").replace(/\s*```$/, "");
-  // }
-
-  // const parsedResponse = JSON.parse(cleanResponse);
-  // console.log("Role and seniority lists:", parsedResponse);
+  let response;
+  try {
+    console.log("Sending request to OpenAI API...");
+    const openAiResponse = await openai.responses.parse({
+      model: "gpt-4o-mini",
+      input: [{ role: "user", content: prompt }],
+      max_output_tokens: 2000,
+      text: { format: zodTextFormat(analysisSchema, "response") },
+    });
+    response = openAiResponse.output_parsed.response;
+    console.log("OpenAI response:", response);
+  } catch (error) {
+    console.log("Error OpenAI:", error);
+    console.log("Sending request to Anthropic API...");
+    const client = new Anthropic({
+      apiKey:
+        "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",
+    });
+    const anthropicResponse = await client.messages.create({
+      model: "claude-3-7-sonnet-20250219",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    });
+    console.log(
+      "Anthropic response:",
+      anthropicResponse.content[0].text.slice(-199)
+    );
+    let cleanResponse = anthropicResponse.content[0].text.trim();
+    if (cleanResponse.startsWith("```json")) {
+      cleanResponse = cleanResponse
+        .replace(/^```json\s*/, "")
+        .replace(/\s*```$/, "");
+    } else if (cleanResponse.startsWith("```")) {
+      cleanResponse = cleanResponse
+        .replace(/^```\s*/, "")
+        .replace(/\s*```$/, "");
+    }
+    response = JSON.parse(cleanResponse);
+    console.log("Anthropic response:", response);
+  }
 
   // Lead Promises
   const leadsPromises = response.map(async (targetAudience) => {

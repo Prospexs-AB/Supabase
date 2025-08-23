@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
     if (campaignError) {
       return new Response(JSON.stringify({ error: campaignError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,  
+        status: 500,
       });
     }
 
@@ -198,20 +199,6 @@ Deno.serve(async (req) => {
           }
         `;
 
-        console.log("prompt", objectionHandlingPrompt);
-        console.log("model", "gpt-4.1");
-        console.log("approach", "openai.responses.create");
-        console.log("max_output_tokens", 5000);
-        console.log("tools", [{ type: "web_search_preview" }]);
-        console.log("Sending request to OpenAI API...");
-
-        // const objectionHandlingOutput = await openai.responses.create({
-        //   model: "gpt-4.1",
-        //   tools: [{ type: "web_search_preview" }],
-        //   input: objectionHandlingPrompt,
-        //   max_output_tokens: 5000,
-        // });
-
         const analysisSchema = z.object({
           objectionHandlingOutput: z.object({
             solutionTitle: z.string(),
@@ -230,35 +217,48 @@ Deno.serve(async (req) => {
           }),
         });
 
-        const openAiResponse = await openai.responses.parse({
-          model: "gpt-4.1",
-          tools: [{ type: "web_search_preview" }],
-          input: [{ role: "user", content: objectionHandlingPrompt }],
-          max_output_tokens: 5000,
-          text: {
-            format: zodTextFormat(analysisSchema, "objectionHandlingOutput"),
-          },
-        });
-
-        const { objectionHandlingOutput } = openAiResponse.output_parsed;
-
-        console.log("Open ai response:", objectionHandlingOutput);
-
-        // const cleanObjectionHandlingOutput = cleanJsonResponse(
-        //   objectionHandlingOutput.output_text
-        // );
-
-        // return JSON.parse(cleanObjectionHandlingOutput);
+        let objectionHandlingOutput;
+        try {
+          console.log("Sending request to OpenAI API...");
+          const openAiResponse = await openai.responses.parse({
+            model: "gpt-4.1",
+            tools: [{ type: "web_search_preview" }],
+            input: [{ role: "user", content: objectionHandlingPrompt }],
+            max_output_tokens: 7000,
+            text: {
+              format: zodTextFormat(analysisSchema, "objectionHandlingOutput"),
+            },
+          });
+          objectionHandlingOutput =
+            openAiResponse.output_parsed.objectionHandlingOutput;
+          console.log("Open ai response:", objectionHandlingOutput);
+        } catch (error) {
+          console.log("Error OpenAI:", error);
+          console.log("Sending request to Anthropic API...");
+          const client = new Anthropic({
+            apiKey:
+              "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",
+          });
+          const anthropicResponse = await client.messages.create({
+            model: "claude-3-7-sonnet-20250219",
+            max_tokens: 7000,
+            messages: [{ role: "user", content: objectionHandlingPrompt }],
+          });
+          let cleanResponse = anthropicResponse.content[0].text.trim();
+          const parsedResponse = cleanJsonResponse(cleanResponse);
+          objectionHandlingOutput = JSON.parse(parsedResponse);
+          console.log("Anthropic response:", parsedResponse);
+        }
         return objectionHandlingOutput;
       });
 
       const results = await Promise.all(solutionPromises);
-      challenge.solutions = results;
+      challenge.solutions = JSON.parse(JSON.stringify(results));
       return challenge;
     });
 
     const finalChallenges = await Promise.all(challengePromises);
-    const finishedData = progress_data;
+    const finishedData = JSON.parse(JSON.stringify(progress_data));
     finishedData.insights.businessInsights.challengesWithSolutions =
       finalChallenges;
 

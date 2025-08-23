@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -221,13 +222,6 @@ Deno.serve(async (req) => {
     console.log("approach", "openai.responses.create");
     console.log("tools", [{ type: "web_search_preview" }]);
 
-    console.log("Sending request to OpenAI API...");
-    // const detailsWithChallengesOutput = await openai.responses.create({
-    //   model: "gpt-4.1",
-    //   tools: [{ type: "web_search_preview" }],
-    //   input: challengesPrompt,
-    // });
-
     const analysisSchema = z.object({
       detailsWithChallengesOutput: z.object({
         company_name: z.string(),
@@ -244,19 +238,44 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const openAiResponse = await openai.responses.parse({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: [{ role: "user", content: challengesPrompt }],
-      max_output_tokens: 4096,
-      text: {
-        format: zodTextFormat(analysisSchema, "detailsWithChallengesOutput"),
-      },
-    });
+    let detailsWithChallengesOutput;
+    try {
+      console.log("Sending request to OpenAI API...");
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: [{ role: "user", content: challengesPrompt }],
+        max_output_tokens: 4096,
+        text: {
+          format: zodTextFormat(analysisSchema, "detailsWithChallengesOutput"),
+        },
+      });
+      detailsWithChallengesOutput =
+        openAiResponse.output_parsed.detailsWithChallengesOutput;
+      console.log("OpenAI response:", detailsWithChallengesOutput);
+    } catch (error) {
+      console.log("Error OpenAI:", error);
+      console.log("Sending request to Anthropic API...");
+      const client = new Anthropic({
+        apiKey:
+          "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",
+      });
+      const anthropicResponse = await client.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: challengesPrompt }],
+      });
+      console.log("Anthropic response:", anthropicResponse.content[0].text);
+      let cleanResponse = anthropicResponse.content[0].text.trim();
+      const cleanedResponse = cleanJsonResponse(cleanResponse);
+      const parsedResponse = JSON.parse(cleanedResponse);
+      detailsWithChallengesOutput = parsedResponse;
+      console.log("Anthropic response:", parsedResponse);
+    }
 
-    const { detailsWithChallengesOutput } = openAiResponse.output_parsed;
+    // const { detailsWithChallengesOutput } = openAiResponse.output_parsed;
 
-    console.log("detailsWithChallengesOutput", detailsWithChallengesOutput);
+    // console.log("detailsWithChallengesOutput", detailsWithChallengesOutput);
 
     // const cleanDetailsWithChallengesOutput = cleanJsonResponse(
     //   detailsWithChallengesOutput.output_text

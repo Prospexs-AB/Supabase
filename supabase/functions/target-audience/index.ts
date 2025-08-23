@@ -11,6 +11,7 @@ import {
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -275,14 +276,17 @@ Deno.serve(async (req) => {
 
       MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
       IMPORTANT: Return in a JSON format array of target audience objects without any other text. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
-    `;
-
-    console.log("Sending request to OpenAI API...");
-
-    console.log("model", "gpt-4.1");
-    console.log("approach", "openai.responses.create");
-    console.log("max_output_tokens", 5000);
-    console.log("tools", [{ type: "web_search_preview" }]);
+      [
+        {
+          "industry": "Manufacturing",
+          "role": "HR Director",
+          "audience_brief": "The HR Director is responsible for the company's workforce and is a high-value target for the company.",
+          "metrics": [{ "value": "45%", "label": "Average Cost Reduction" }],
+          "country": "Sweden",
+          "sources": ["https://www.google.com"]
+        }
+      ]
+      `;
 
     // Log prompt in batches of 10,000 characters for better readability
     const promptLength = prompt.length;
@@ -303,13 +307,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // const openAiResponse = await openai.responses.create({
-    //   model: "gpt-4.1",
-    //   tools: [{ type: "web_search_preview" }],
-    //   input: prompt,
-    //   max_output_tokens: 5000,
-    // });
-
     const targetAudienceSchema = z.object({
       target_audience: z.array(
         z.object({
@@ -323,20 +320,39 @@ Deno.serve(async (req) => {
       ),
     });
 
-    const openAiResponse = await openai.responses.parse({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: [{ role: "user", content: prompt }],
-      max_output_tokens: 5000,
-      text: {
-        format: zodTextFormat(targetAudienceSchema, "target_audience"),
-      },
-    });
-
-    console.log("Successfully analyzed content with OpenAI");
-    const { target_audience } = openAiResponse.output_parsed;
-    console.log("OpenAI analysis:", target_audience);
-    console.log("OpenAI analysis end:", target_audience.slice(-50));
+    let targetAudience;
+    try {
+      console.log("Sending request to OpenAI API...");
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: [{ role: "user", content: prompt }],
+        max_output_tokens: 7000,
+        text: {
+          format: zodTextFormat(targetAudienceSchema, "target_audience"),
+        },
+      });
+      targetAudience = openAiResponse.output_parsed.target_audience;
+    } catch (error) {
+      console.log("Error OpenAI:", error);
+      console.log("Sending request to Anthropic API...");
+      const client = new Anthropic({
+        apiKey:
+          "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",
+      });
+      const anthropicResponse = await client.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 7000,
+        messages: [{ role: "user", content: prompt }],
+      });
+      console.log(
+        "Anthropic response:",
+        anthropicResponse.content[0].text.slice(-199)
+      );
+      targetAudience = JSON.parse(anthropicResponse.content[0].text);
+      console.log("Anthropic analysis:", targetAudience);
+      console.log("Successfully analyzed content with Anthropic");
+    }
 
     const new_latest_step = 6;
     const cleanFurtherProgress = {};
@@ -350,7 +366,7 @@ Deno.serve(async (req) => {
       .update({
         latest_step: new_latest_step,
         step_6_result: {
-          target_audience,
+          target_audience: targetAudience,
           locale,
         },
         ...cleanFurtherProgress,
@@ -367,7 +383,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    return new Response(JSON.stringify({ data: target_audience }), {
+    return new Response(JSON.stringify({ data: targetAudience }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

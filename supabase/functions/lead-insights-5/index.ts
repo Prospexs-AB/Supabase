@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1462,7 +1463,6 @@ Deno.serve(async (req) => {
         fieldName: "similarities",
         category: "personInsights",
         getLinkedinData: true,
-        useChatCompletion: true,
       },
       {
         prompt: onlineMentionsPrompt,
@@ -1514,14 +1514,7 @@ Deno.serve(async (req) => {
 
     const promises = additionalPrompts.map(
       async (
-        {
-          prompt,
-          schema,
-          fieldName,
-          category,
-          getLinkedinData,
-          useChatCompletion = false,
-        },
+        { prompt, schema, fieldName, category, getLinkedinData },
         index
       ) => {
         try {
@@ -1551,45 +1544,9 @@ Deno.serve(async (req) => {
           }
 
           let response;
-          if (useChatCompletion) {
-            console.log("prompt", prompt);
-            console.log("model", "gpt-4o");
-            console.log("approach", "openai.chat.completions.create");
-            console.log("max_output_tokens", 1500);
-            console.log("tools", [{ type: "web_search_preview" }]);
+          let result;
+          try {
             console.log("Sending request to OpenAI API...");
-            const completion = await openai.chat.completions.create({
-              model: "gpt-4o",
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.7,
-              max_tokens: 1500,
-            });
-
-            const openAiResponse = await openai.responses.parse({
-              model: "gpt-4o",
-              input: [{ role: "user", content: prompt }],
-              max_output_tokens: 1500,
-              text: {
-                format: zodTextFormat(schema, "response"),
-              },
-            });
-
-            response = openAiResponse.output_parsed.response;
-            console.log(`Response for ${fieldName}:`, response);
-          } else {
-            console.log("prompt", prompt);
-            console.log("model", "gpt-4.1");
-            console.log("approach", "openai.responses.create");
-            console.log("max_output_tokens", 5000);
-            console.log("tools", [{ type: "web_search_preview" }]);
-            console.log("Sending request to OpenAI API...");
-            // response = await openai.responses.create({
-            //   model: "gpt-4.1",
-            //   tools: [{ type: "web_search_preview" }],
-            //   input: prompt,
-            //   max_output_tokens: 5000,
-            // });
-
             const openAiResponse = await openai.responses.parse({
               model: "gpt-4.1",
               tools: [{ type: "web_search_preview" }],
@@ -1599,21 +1556,30 @@ Deno.serve(async (req) => {
                 format: zodTextFormat(schema, "response"),
               },
             });
-
-            response = openAiResponse.output_parsed.response;
-            console.log(`Response for ${fieldName}:`, response);
+            result = openAiResponse.output_parsed.response;
+            console.log("OpenAI response:", result);
+          } catch (error) {
+            console.log("Error OpenAI:", error);
+            console.log("Sending request to Anthropic API...");
+            const client = new Anthropic({
+              apiKey:
+                "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",
+            });
+            const anthropicResponse = await client.messages.create({
+              model: "claude-3-7-sonnet-20250219",
+              max_tokens: 5000,
+              messages: [{ role: "user", content: prompt }],
+            });
+            const parsedResponse = cleanJsonResponse(
+              anthropicResponse.content[0].text
+            );
+            console.log("Anthropic response 1:", parsedResponse);
+            result = JSON.parse(parsedResponse);
+            console.log("Anthropic response 2:", response);
           }
 
-          // const cleanResponse = cleanJsonResponse(response);
-
-          // let parsedResponse;
-          // try {
-          //   parsedResponse = JSON.parse(cleanResponse);
-          // } catch (error) {
-          //   console.error(`Failed to parse ${fieldName} output:`, error);
-          //   throw new Error(`Failed to parse AI response for ${fieldName}`);
-          // }
-
+          response = JSON.parse(JSON.stringify(result));
+          console.log(`Response for ${fieldName}:`, response);
           updatedLead.insights[category][fieldName] = response;
 
           return response;

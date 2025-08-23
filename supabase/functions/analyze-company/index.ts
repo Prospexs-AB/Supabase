@@ -11,6 +11,7 @@ import {
 import OpenAI from "npm:openai";
 import { z } from "npm:zod@3.25.76";
 import { zodTextFormat } from "npm:openai/helpers/zod";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -306,26 +307,38 @@ Deno.serve(async (req) => {
       }),
     });
 
-    console.log("Sending request to OpenAI API...");
-    // const openAiResponse = await openai.responses.create({
-    //   model: "gpt-4.1",
-    //   tools: [{ type: "web_search_preview" }],
-    //   input: prompt,
-    // });
-
-    const openAiResponse = await openai.responses.parse({
-      model: "gpt-4.1",
-      tools: [{ type: "web_search_preview" }],
-      input: [{ role: "user", content: prompt }],
-      max_output_tokens: 4096,
-      text: {
-        format: zodTextFormat(analysisSchema, "analysis"),
-      },
-    });
-
-    console.log("Successfully analyzed content with OpenAI");
-    const { analysis } = openAiResponse.output_parsed;
-    console.log("OpenAI analysis:", analysis);
+    let analysis;
+    try {
+      console.log("Sending request to OpenAI API...");
+      const openAiResponse = await openai.responses.parse({
+        model: "gpt-4.1",
+        tools: [{ type: "web_search_preview" }],
+        input: [{ role: "user", content: prompt }],
+        max_output_tokens: 4096,
+        text: {
+          format: zodTextFormat(analysisSchema, "analysis"),
+        },
+      });
+      analysis = openAiResponse.output_parsed.analysis;
+      console.log("OpenAI analysis:", analysis);
+      console.log("Successfully analyzed content with OpenAI");
+    } catch (error) {
+      console.log("Error OpenAI:", error);
+      console.log("Sending request to Anthropic API...");
+      const client = new Anthropic({
+        apiKey:
+          "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",
+      });
+      const anthropicResponse = await client.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      });
+      console.log("Anthropic response:", anthropicResponse);
+      analysis = JSON.parse(anthropicResponse.content[0].text);
+      console.log("Anthropic analysis:", analysis);
+      console.log("Successfully analyzed content with Anthropic");
+    }
 
     try {
       const new_latest_step = 2;
