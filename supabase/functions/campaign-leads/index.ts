@@ -625,6 +625,8 @@ Deno.serve(async (req) => {
     "Chiefs": ["Chief"]
     "Sales or Data Managers/Directors": ["Manager", "Director"]
 
+    IMPORTANT only return an industry that is in the industry list.
+
     IMPORTANT: If the data provided is not in english, please return the data in english.
     IMPORTANT: Return the answers in the following JSON format for each target audience:
     [
@@ -697,8 +699,55 @@ Deno.serve(async (req) => {
     console.log("Anthropic response:", response);
   }
 
-  // Lead Promises
+  const matchIndustry = (aiIndustry: string): string => {
+    if (!aiIndustry || typeof aiIndustry !== "string") return "";
+
+    const normalizedAI = aiIndustry.toLowerCase().trim();
+
+    // Check parent industries first
+    for (const industry of industryList) {
+      if (industry.parent.toLowerCase() === normalizedAI) {
+        return industry.parent;
+      }
+    }
+
+    // Check children industries
+    for (const industry of industryList) {
+      for (const child of industry.children) {
+        if (child.toLowerCase() === normalizedAI) {
+          return child;
+        }
+      }
+    }
+
+    for (const industry of industryList) {
+      if (
+        industry.parent.toLowerCase().includes(normalizedAI) ||
+        normalizedAI.includes(industry.parent.toLowerCase())
+      ) {
+        return industry.parent;
+      }
+    }
+
+    for (const industry of industryList) {
+      for (const child of industry.children) {
+        if (
+          child.toLowerCase().includes(normalizedAI) ||
+          normalizedAI.includes(child.toLowerCase())
+        ) {
+          return child;
+        }
+      }
+    }
+
+    return "";
+  };
+
   const leadsPromises = response.map(async (targetAudience) => {
+    const cleanIndustries = targetAudience.recommendedIndustries.map(
+      (industry) => matchIndustry(industry)
+    );
+
     const generectBody = {
       without_company: true,
       locations: [targetAudience.country],
@@ -710,7 +759,7 @@ Deno.serve(async (req) => {
           [...targetAudience.seniorityList],
         ],
       ],
-      lead_industries: targetAudience.recommendedIndustries,
+      lead_industries: cleanIndustries,
       limit_by: 300,
     };
 
