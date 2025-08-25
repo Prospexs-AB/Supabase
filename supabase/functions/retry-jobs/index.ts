@@ -24,10 +24,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const nowIso = new Date().toISOString();
@@ -45,16 +44,22 @@ Deno.serve(async (req) => {
     if (step0FetchError) throw step0FetchError;
 
     if (step0Jobs && step0Jobs.length > 0) {
-      const step0ToFail = step0Jobs.filter((job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES);
-      const step0ToRetry = step0Jobs.filter((job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES);
+      const step0ToFail = step0Jobs.filter(
+        (job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES
+      );
+      const step0ToRetry = step0Jobs.filter(
+        (job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES
+      );
 
       if (step0ToRetry.length > 0) {
-        const step0RetryUpdates = step0ToRetry.map((job: { id: string; retries: number | null }) => ({
-          id: job.id,
-          status: "queued",
-          updated_at: nowIso,
-          retries: (job.retries ?? 0) + 1,
-        }));
+        const step0RetryUpdates = step0ToRetry.map(
+          (job: { id: string; retries: number | null }) => ({
+            id: job.id,
+            status: "queued",
+            updated_at: nowIso,
+            retries: (job.retries ?? 0) + 1,
+          })
+        );
 
         const { error: step0RetryError } = await supabase
           .from("jobs")
@@ -63,12 +68,14 @@ Deno.serve(async (req) => {
       }
 
       if (step0ToFail.length > 0) {
-        const step0FailUpdates = step0ToFail.map((job: { id: string; retries: number | null }) => ({
-          id: job.id,
-          status: "failed",
-          updated_at: nowIso,
-          retries: Math.max(job.retries ?? 0, MAX_RETRIES),
-        }));
+        const step0FailUpdates = step0ToFail.map(
+          (job: { id: string; retries: number | null }) => ({
+            id: job.id,
+            status: "failed",
+            updated_at: nowIso,
+            retries: Math.max(job.retries ?? 0, MAX_RETRIES),
+          })
+        );
 
         const { error: step0FailError } = await supabase
           .from("jobs")
@@ -89,16 +96,22 @@ Deno.serve(async (req) => {
     if (nextStepFetchError) throw nextStepFetchError;
 
     if (nextStepJobs && nextStepJobs.length > 0) {
-      const nextToFail = nextStepJobs.filter((job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES);
-      const nextToRetry = nextStepJobs.filter((job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES);
+      const nextToFail = nextStepJobs.filter(
+        (job: { retries: number | null }) => (job.retries ?? 0) >= MAX_RETRIES
+      );
+      const nextToRetry = nextStepJobs.filter(
+        (job: { retries: number | null }) => (job.retries ?? 0) < MAX_RETRIES
+      );
 
       if (nextToRetry.length > 0) {
-        const nextRetryUpdates = nextToRetry.map((job: { id: string; retries: number | null }) => ({
-          id: job.id,
-          status: "waiting_for_next_step",
-          updated_at: nowIso,
-          retries: (job.retries ?? 0) + 1,
-        }));
+        const nextRetryUpdates = nextToRetry.map(
+          (job: { id: string; retries: number | null }) => ({
+            id: job.id,
+            status: "waiting_for_next_step",
+            updated_at: nowIso,
+            retries: (job.retries ?? 0) + 1,
+          })
+        );
 
         const { error: nextRetryError } = await supabase
           .from("jobs")
@@ -107,12 +120,14 @@ Deno.serve(async (req) => {
       }
 
       if (nextToFail.length > 0) {
-        const nextFailUpdates = nextToFail.map((job: { id: string; retries: number | null }) => ({
-          id: job.id,
-          status: "failed",
-          updated_at: nowIso,
-          retries: Math.max(job.retries ?? 0, MAX_RETRIES),
-        }));
+        const nextFailUpdates = nextToFail.map(
+          (job: { id: string; retries: number | null }) => ({
+            id: job.id,
+            status: "failed",
+            updated_at: nowIso,
+            retries: Math.max(job.retries ?? 0, MAX_RETRIES),
+          })
+        );
 
         const { error: nextFailError } = await supabase
           .from("jobs")

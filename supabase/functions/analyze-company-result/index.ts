@@ -70,10 +70,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const userId = await getUserId(req, supabase);
     const { campaign_id } = await req.json();
 
@@ -134,14 +133,10 @@ Deno.serve(async (req) => {
 
     const params = new URLSearchParams({
       url: company_website,
-      apikey: "76b884f7acc89f1e898567300acc7d8f95157c1c",
+      apikey: Deno.env.get("ZENROWS_API_KEY"),
     });
 
     console.log("Scraping URL:", company_website);
-    console.log(
-      "Using ZenRows API key:",
-      Deno.env.get("ZENROWS_API") ? "Present" : "Missing"
-    );
 
     const response = await fetch(
       `https://api.zenrows.com/v1/?${params.toString()}`
@@ -729,8 +724,7 @@ Deno.serve(async (req) => {
         console.log("Error OpenAI:", error);
         console.log("Sending request to Anthropic API...");
         const client = new Anthropic({
-          apiKey:
-            "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",
+          apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
         });
         const anthropicResponse = await client.messages.create({
           model: "claude-3-7-sonnet-20250219",

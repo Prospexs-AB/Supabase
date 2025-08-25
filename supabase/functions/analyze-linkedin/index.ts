@@ -62,10 +62,9 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabase = createClient(
-    "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
-  );
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
     const userId = await getUserId(req, supabase);
