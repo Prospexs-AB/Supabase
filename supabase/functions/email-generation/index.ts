@@ -6,6 +6,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import OpenAI from "npm:openai";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -213,6 +214,42 @@ class Utils {
     if (t === "Casual" || t === "Humorous") return "Thanks,";
     return "Best regards,";
   }
+}
+
+async function createOpenAICompletion(
+  openai: OpenAI,
+  options: {
+    model: string;
+    messages: any[];
+    temperature?: number;
+    max_tokens?: number;
+    n?: number;
+  }
+) {
+  let result;
+  try {
+    console.log("Sending request to OpenAI API...");
+    const completion = await openai.chat.completions.create(options);
+    result = completion.choices[0].message.content;
+    console.log("OpenAI response:", result);
+  } catch (error) {
+    console.log("Error OpenAI:", error);
+    console.log("Sending request to Anthropic API...");
+    const client = new Anthropic({
+      apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
+    });
+    const userPrompt = options.messages.filter(
+      (message) => message.role === "user"
+    );
+    const anthropicResponse = await client.messages.create({
+      model: "claude-3-7-sonnet-20250219",
+      max_tokens: 4096,
+      messages: userPrompt,
+    });
+    result = anthropicResponse.content[0].text;
+    console.log("Anthropic response:", result);
+  }
+  return result;
 }
 
 function renderTemplate(
@@ -617,14 +654,14 @@ class Subject extends EmailPart {
   ) {
     const prompt = await this.buildPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4_MINI,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.CONSISTENT,
       max_tokens: 100,
     });
 
-    return new Subject(completion.choices[0].message.content || "", {
+    return new Subject(completion || "", {
       context: prompt,
       language: details.language,
     });
@@ -708,7 +745,7 @@ class HPEF extends EmailPart {
   ) {
     const prompt = this.buildStoryPrompt(details, storyId);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.BALANCED,
@@ -716,7 +753,7 @@ class HPEF extends EmailPart {
     });
 
     const refinedStory = await this.rewriteHPEF(
-      completion.choices[0].message.content || "",
+      completion || "",
       details.language,
       openai,
       details
@@ -745,7 +782,7 @@ class HPEF extends EmailPart {
       - Do NOT include any greetings or sign-offs (e.g., "Hi", "Dear", "Best", names/titles)
     `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4_MINI,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.CREATIVE,
@@ -753,7 +790,7 @@ class HPEF extends EmailPart {
     });
 
     return {
-      content: completion.choices[0].message.content || "",
+      content: completion || "",
     };
   }
 
@@ -783,17 +820,14 @@ class HPEF extends EmailPart {
       Respond with only the number (1, 2, etc.) of the best option:
     `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4_MINI,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.CONSISTENT,
       max_tokens: 50,
     });
 
-    const selectedIndex =
-      parseInt(
-        completion.choices[0].message.content?.match(/\d+/)?.[0] || "1"
-      ) - 1;
+    const selectedIndex = parseInt(completion?.match(/\d+/)?.[0] || "1") - 1;
     const selectedStory = stories[selectedIndex];
 
     return selectedStory;
@@ -802,7 +836,7 @@ class HPEF extends EmailPart {
   static async getFinetunedHPEF(details: any, openai: OpenAI) {
     const prompt = this.buildFinetunedPrompt(details);
 
-    const completion = await openai.chat.completions.create({
+    const completions = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.FINETUNED_HPEF,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.BALANCED,
@@ -810,11 +844,11 @@ class HPEF extends EmailPart {
       n: 3,
     });
 
-    const hpefs = completion.choices
-      .map((choice) => choice.message.content)
-      .filter((content) => content)
-      .map((content) => this.parseFinetunedResponse(content))
-      .filter((hpef) => hpef);
+    const hpefs = completions
+      .map((choice: any) => choice)
+      .filter((content: any) => content)
+      .map((content: any) => this.parseFinetunedResponse(content))
+      .filter((hpef: any) => hpef);
 
     if (hpefs.length === 0) {
       return await this.getStoryLikeHPEF(details, openai);
@@ -943,7 +977,7 @@ class ValueProposition extends EmailPart {
   static async getFromOpenAI(details: any, contexts: any, openai: OpenAI) {
     const prompt = await this.buildOpenAIPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4_MINI,
       messages: [{ role: "user", content: prompt }],
       temperature: Utils.getTemperatureForTone(details.preferences?.tone),
@@ -951,7 +985,7 @@ class ValueProposition extends EmailPart {
     });
 
     return {
-      content: completion.choices[0].message.content || "",
+      content: completion || "",
     };
   }
 
@@ -1023,14 +1057,14 @@ class TransitionToBusiness extends EmailPart {
   static async getFinetuned(details: any, contexts: any, openai: OpenAI) {
     const prompt = await this.buildPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.FINETUNED_TTB,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.BALANCED,
       max_tokens: 200,
     });
 
-    const content = completion.choices[0].message.content || "";
+    const content = completion || "";
     const parsed = this.parseFinetunedResponse(content);
 
     return new TransitionToBusiness(parsed.transition_to_business, {
@@ -1043,20 +1077,17 @@ class TransitionToBusiness extends EmailPart {
   static async getUsingOnlyPrompt(details: any, contexts: any, openai: OpenAI) {
     const prompt = await this.buildPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
       temperature: CONFIG.TEMPERATURE.CONSISTENT,
       max_tokens: 200,
     });
 
-    return new TransitionToBusiness(
-      completion.choices[0].message.content || "",
-      {
-        context: this.getContext(details, contexts),
-        language: details.language,
-      }
-    );
+    return new TransitionToBusiness(completion || "", {
+      context: this.getContext(details, contexts),
+      language: details.language,
+    });
   }
 
   static async getWithExamples(details: any, contexts: any, openai: OpenAI) {
@@ -1071,20 +1102,17 @@ class TransitionToBusiness extends EmailPart {
       { role: "user", content: context },
     ];
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4,
       messages: messages,
       temperature: Utils.getTemperatureForTone(details.preferences?.tone),
       max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
-    return new TransitionToBusiness(
-      completion.choices[0].message.content || "",
-      {
-        context,
-        language: details.language,
-      }
-    );
+    return new TransitionToBusiness(completion || "", {
+      context,
+      language: details.language,
+    });
   }
 
   static parseFinetunedResponse(response: string) {
@@ -1156,14 +1184,14 @@ class ObjectionHandling extends EmailPart {
   ) {
     const prompt = await this.buildPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
       temperature: Utils.getTemperatureForTone(details.preferences?.tone),
       max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
-    return new ObjectionHandling(completion.choices[0].message.content || "", {
+    return new ObjectionHandling(completion || "", {
       context: this.getContext(details, contexts),
       language: details.language,
     }).cleanContent();
@@ -1219,14 +1247,14 @@ class CallToAction extends EmailPart {
   ) {
     const prompt = await this.buildPrompt(details, contexts);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await createOpenAICompletion(openai, {
       model: CONFIG.MODELS.GPT4,
       messages: [{ role: "user", content: prompt }],
       temperature: Utils.getTemperatureForTone(details.preferences?.tone),
       max_tokens: Utils.getMaxTokens(details.preferences?.length, 200),
     });
 
-    return new CallToAction(completion.choices[0].message.content || "", {
+    return new CallToAction(completion || "", {
       context: this.getContext(details, contexts),
       language: details.language,
     }).cleanContent();
@@ -1470,9 +1498,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    // const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    // const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(
+      "https://lkkwcjhlkxqttcqrcfpm.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxra3djamhsa3hxdHRjcXJjZnBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTMxMzE5OCwiZXhwIjoyMDYwODg5MTk4fQ.e8SijEhKnoa1R8dYzPBeKcgsEjKtXb9_Gd1uYg6AhuA"
+    );
 
     const userId = await getUserId(req, supabase);
     const {
