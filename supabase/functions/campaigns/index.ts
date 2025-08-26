@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const userId = await getUserId(req, supabase);
 
-  switch (method) {
+  switch (req.method) {
     case "GET":
       const url = new URL(req.url);
       const campaignId = url.searchParams.get("campaign_id");
