@@ -241,6 +241,7 @@ async function createOpenAICompletion(
     const userPrompt = options.messages.filter(
       (message) => message.role === "user"
     );
+    console.log("User prompt:", userPrompt);
     const anthropicResponse = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 4096,
