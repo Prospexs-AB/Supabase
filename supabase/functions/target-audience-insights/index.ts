@@ -507,7 +507,7 @@ Deno.serve(async (req) => {
           margins while maintaining service levels.
           Sources: PwC Workforce Benchmark 2024, CNMC 2024.
 
-          Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
+          Important: Return using the language ${language}, except for the english names.
           Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
           Ensure that every usp, pain point, and benefit will have a title, analysis and a source array for one or more sources.
           IMPORTANT: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
