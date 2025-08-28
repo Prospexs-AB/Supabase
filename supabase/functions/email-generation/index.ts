@@ -241,9 +241,12 @@ async function createOpenAICompletion(
     const userPrompt = options.messages.filter(
       (message) => message.role === "user"
     );
+    console.log("User prompt:", userPrompt);
     const anthropicResponse = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 4096,
+      system:
+        "You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the subject or paragraph requet because some prompt results will be combined with other responses and you want it to sound natural. You will not return the subject line in the response.",
       messages: userPrompt,
     });
     result = anthropicResponse.content[0].text;
