@@ -304,38 +304,6 @@ Deno.serve(async (req) => {
           insights: {},
         };
 
-        // for (const category of categories) {
-        //   const { name, data, label, promptExample } = category;
-        //   const prompt = `
-        //     You are a senior industry analyst. Write 5 consulting-grade paragraphs analyzing how ${companyWebsite}'s ${label} directly affect ${role} at ${industry} in ${country}.
-
-        //     Language: ${language}
-
-        //     Requirements per paragraph:
-        //     - 150 words max
-        //     - 3+ quantifiable data points
-        //     - Compare against alternatives
-        //     - Focus on daily workflow impact
-        //     - Use verifiable sources
-
-        //     Base analysis on:
-        //     ${data.map((singleData) => `- ${singleData.value}`).join("\n")}
-
-        //     IMPORTANT: MUST prioritize public sources (news, industry reports, credible outlets) over company websites.
-        //     Try to not use the same source for multiple points.
-        //     If there are no public sources, then use the company website, THERE MUST BE A SOURCE.
-        //     IMPORTANT: Return only JSON. No links or citations in descriptions - put URLs in source array.
-        //     Important: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
-        //     Format:
-        //     [
-        //       {
-        //         "title": "Title",
-        //         "description": "Description (no URLs)",
-        //         "source": ["source url here", "source url here"]
-        //       }
-        //     ]
-        //   `;
-
         const context = `
           USPs: ${unique_selling_points
             .map(
@@ -614,7 +582,7 @@ Deno.serve(async (req) => {
             model: "gpt-4.1",
             tools: [{ type: "web_search_preview" }],
             input: [{ role: "user", content: prompt }],
-            max_output_tokens: 6000,
+            max_output_tokens: 8000,
             text: {
               format: zodTextFormat(insightsSchema, "insights"),
             },
@@ -629,9 +597,14 @@ Deno.serve(async (req) => {
           });
           const anthropicResponse = await client.messages.create({
             model: "claude-3-7-sonnet-20250219",
-            max_tokens: 7000,
+            max_tokens: 8000,
             messages: [{ role: "user", content: prompt }],
           });
+          console.log("Anthropic response:", anthropicResponse.content[0].text);
+          console.log(
+            "Anthropic response end:",
+            anthropicResponse.content[0].text.slice(-100)
+          );
           insights = JSON.parse(anthropicResponse.content[0].text);
           console.log("Anthropic analysis:", insights);
         }
