@@ -584,6 +584,431 @@ Deno.serve(async (req) => {
     },
   ];
 
+  const countryList = [
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "American Samoa",
+    "Andorra",
+    "Angola",
+    "Anguilla",
+    "Antarctica",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Aruba",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bermuda",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "British Indian Ocean Territory",
+    "British Virgin Islands",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Cape Verde",
+    "Cayman Islands",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Christmas Island",
+    "Colombia",
+    "Comoros",
+    "Cook Islands",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Curacao",
+    "Cyprus",
+    "Czechia",
+    "Democratic Republic of Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "East Timor",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Ethiopia",
+    "Faroe Islands",
+    "Federated States of Micronesia",
+    "Fiji",
+    "Finland",
+    "France",
+    "French Polynesia",
+    "North Macedonia",
+    "Gabon",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Gibraltar",
+    "Greece",
+    "Greenland",
+    "Grenada",
+    "Guam",
+    "Guatemala",
+    "Guernsey",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Honduras",
+    "Hong Kong S.A.R.",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Isle of Man",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jersey",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kosovo",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Macau S.A.R.",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mayotte",
+    "Mexico",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Montserrat",
+    "Morocco",
+    "Mozambique",
+    "Myanmar",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Caledonia",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "Niue",
+    "Northern Mariana Islands",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Pitcairn",
+    "Poland",
+    "Portugal",
+    "Puerto Rico",
+    "Qatar",
+    "Republic of the Congo",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Ascension and Tristan da Cunha",
+    "Saint Kitts and Nevis",
+    "Saint Pierre and Miquelon",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Saint Lucia",
+    "Sudan",
+    "Suriname",
+    "Eswatini",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Taiwan",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "The Bahamas",
+    "The Gambia",
+    "Togo",
+    "Tokelau",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Turks and Caicos Islands",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "US Virgin Islands",
+    "Uzbekistan",
+    "Vanuatu",
+    "Venezuela",
+    "Vietnam",
+    "Wallis and Futuna",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe",
+    "Asia",
+    "APJ",
+    "APAC",
+    "Africa",
+    "EMEA",
+    "Europe",
+    "MENA",
+    "North America",
+    "Oceania",
+    "South America",
+    "Guadeloupe",
+    "Martinique",
+    "FYRO Macedonia",
+    "Palestine",
+    "West Bank",
+    "Saint Helena",
+    "Sint Maarten",
+    "Reunion",
+    "Pod\"yel'sk",
+    'Raz"yezzheye',
+    'Un"yugan',
+    'Ot"yassy',
+    'Saltak"yal',
+    'Baltache"vo',
+    'Ak"yar',
+    'Pod"yem Mikhaylovka',
+    'Pod"yelanka',
+    "Kam\"yans'ke",
+    "Slov\"yanoserbs'k",
+    "North Korea",
+    "Democratic Republic of the Congo",
+    "Italy Metropolitan Area",
+    "Italy Area",
+    "Mexico City Metropolitan Area",
+    "Mexico Metropolitan Area",
+  ];
+
+  // Function to normalize country names and find the correct value from countryList
+  const normalizeCountry = (inputCountry: string): string => {
+    if (!inputCountry) return inputCountry;
+
+    const normalizedInput = inputCountry.trim().toLowerCase();
+
+    // Direct match first
+    const exactMatch = countryList.find(
+      (country) => country.toLowerCase() === normalizedInput
+    );
+    if (exactMatch) return exactMatch;
+
+    // Helper function to create searchable version of country name
+    const createSearchableString = (str: string): string => {
+      return str
+        .toLowerCase()
+        .replace(/[^a-z]/g, "") // Remove all non-alphabetic characters
+        .trim();
+    };
+
+    const searchableInput = createSearchableString(inputCountry);
+
+    // Special mappings for common variations
+    const specialMappings: Record<string, string> = {
+      hongkong: "Hong Kong S.A.R.",
+      hk: "Hong Kong S.A.R.",
+      macau: "Macau S.A.R.",
+      macao: "Macau S.A.R.",
+      usa: "United States",
+      america: "United States",
+      unitedstates: "United States",
+      us: "United States",
+      uk: "United Kingdom",
+      britain: "United Kingdom",
+      greatbritain: "United Kingdom",
+      england: "United Kingdom",
+      unitedkingdom: "United Kingdom",
+      southkorea: "South Korea",
+      korea: "South Korea",
+      northkorea: "North Korea",
+      drc: "Democratic Republic of the Congo",
+      congo: "Republic of the Congo",
+      democraticrepublicofcongo: "Democratic Republic of the Congo",
+      czechrepublic: "Czechia",
+      czech: "Czechia",
+      macedonia: "North Macedonia",
+      uae: "United Arab Emirates",
+      emirates: "United Arab Emirates",
+      russia: "Russia",
+      russianfederation: "Russia",
+      vietnam: "Vietnam",
+      "viet nam": "Vietnam",
+      saudiarabia: "Saudi Arabia",
+      saudi: "Saudi Arabia",
+      southafrica: "South Africa",
+      newzealand: "New Zealand",
+      papuanewguinea: "Papua New Guinea",
+      png: "Papua New Guinea",
+      srilanka: "Sri Lanka",
+      costarica: "Costa Rica",
+      puertorico: "Puerto Rico",
+      dominicanrepublic: "Dominican Republic",
+      elsalvador: "El Salvador",
+      equatorialguinea: "Equatorial Guinea",
+      caymanislands: "Cayman Islands",
+      marshallislands: "Marshall Islands",
+      solomonislands: "Solomon Islands",
+      cookislands: "Cook Islands",
+      faroeislands: "Faroe Islands",
+      virginislands: "US Virgin Islands",
+      usvirginislands: "US Virgin Islands",
+      britishvirginislands: "British Virgin Islands",
+      turksandcaicos: "Turks and Caicos Islands",
+      trinidadandtobago: "Trinidad and Tobago",
+      antiguaandbarbuda: "Antigua and Barbuda",
+      stkitts: "Saint Kitts and Nevis",
+      saintkitts: "Saint Kitts and Nevis",
+      stkittsandnevis: "Saint Kitts and Nevis",
+      saintkittsandnevis: "Saint Kitts and Nevis",
+      stlucia: "Saint Lucia",
+      saintlucia: "Saint Lucia",
+      stvincent: "Saint Vincent and the Grenadines",
+      saintvincent: "Saint Vincent and the Grenadines",
+      bosniaandherzegovina: "Bosnia and Herzegovina",
+      bosnia: "Bosnia and Herzegovina",
+      burkinafaso: "Burkina Faso",
+      capeverde: "Cape Verde",
+      centralafricanrepublic: "Central African Republic",
+      car: "Central African Republic",
+      easttimor: "East Timor",
+      timorleste: "East Timor",
+      federatedstatesofmicronesia: "Federated States of Micronesia",
+      micronesia: "Federated States of Micronesia",
+      fsm: "Federated States of Micronesia",
+      guineabissau: "Guinea-Bissau",
+      northernmarianaislands: "Northern Mariana Islands",
+      saotomeandprincipe: "Sao Tome and Principe",
+      sierraleone: "Sierra Leone",
+      unitedarabemirates: "United Arab Emirates",
+      wallisandfutuna: "Wallis and Futuna",
+    };
+
+    // Check special mappings first
+    if (specialMappings[searchableInput]) {
+      return specialMappings[searchableInput];
+    }
+
+    // Find matches using searchable strings
+    const matches = countryList.filter((country) => {
+      const searchableCountry = createSearchableString(country);
+
+      // Exact match after normalization
+      if (searchableCountry === searchableInput) return true;
+
+      // Check if input is contained in country name
+      if (
+        searchableCountry.includes(searchableInput) &&
+        searchableInput.length >= 3
+      )
+        return true;
+
+      // Check if country name is contained in input (for longer inputs)
+      if (
+        searchableInput.includes(searchableCountry) &&
+        searchableCountry.length >= 3
+      )
+        return true;
+
+      return false;
+    });
+
+    if (matches.length > 0) {
+      // Return the shortest match (usually more precise)
+      return matches.reduce((a, b) => (a.length < b.length ? a : b));
+    }
+
+    // Partial word matching for compound names
+    const words = searchableInput
+      .split(/\s+/)
+      .filter((word) => word.length >= 2);
+    if (words.length > 1) {
+      const partialMatches = countryList.filter((country) => {
+        const countryWords = createSearchableString(country).split(/\s+/);
+        return words.some((word) =>
+          countryWords.some(
+            (countryWord) =>
+              countryWord.includes(word) || word.includes(countryWord)
+          )
+        );
+      });
+
+      if (partialMatches.length > 0) {
+        return partialMatches.reduce((a, b) => (a.length < b.length ? a : b));
+      }
+    }
+
+    // Return original if no match found
+    return inputCountry;
+  };
+
   const targetAudienceList = target_audiences.map((targetAudience) => {
     return {
       role: targetAudience.role_english,
@@ -750,7 +1175,7 @@ Deno.serve(async (req) => {
 
     const generectBody = {
       without_company: true,
-      locations: [targetAudience.country],
+      locations: [normalizeCountry(targetAudience.country)],
       personas: [
         [
           targetAudience.role,
