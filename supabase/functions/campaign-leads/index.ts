@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
     "Guyana",
     "Haiti",
     "Honduras",
-    "Hong Kong S.A.R.",
+    "Hong Kong SAR",
     "Hungary",
     "Iceland",
     "India",
@@ -704,7 +704,7 @@ Deno.serve(async (req) => {
     "Liechtenstein",
     "Lithuania",
     "Luxembourg",
-    "Macau S.A.R.",
+    "Macau SAR",
     "Madagascar",
     "Malawi",
     "Malaysia",
@@ -873,10 +873,10 @@ Deno.serve(async (req) => {
 
     // Special mappings for common variations
     const specialMappings: Record<string, string> = {
-      hongkong: "Hong Kong S.A.R.",
-      hk: "Hong Kong S.A.R.",
-      macau: "Macau S.A.R.",
-      macao: "Macau S.A.R.",
+      hongkong: "Hong Kong SAR",
+      hk: "Hong Kong SAR",
+      macau: "Macau SAR",
+      macao: "Macau SAR",
       usa: "United States",
       america: "United States",
       unitedstates: "United States",
