@@ -258,8 +258,8 @@ Deno.serve(async (req) => {
       ● Only keep the source urls and not the name of the source.
 
       For each target audience segment, provide the below information and ensure the text is returned in the language code: ${language}:
-      1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare")
-      2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager")
+      1. "industry": A specific industry vertical (e.g., "Manufacturing", "Healthcare") translated to the language of ${language}
+      2. "role": A specific decision-maker role (e.g., "HR Director", "Operations Manager") translated to the language of ${language}
       3. "audience_brief": Audience brief for the target audience
       4. "metrics": Array of 2-3 relevant KPIs as objects with:
         - "value": A specific metric (e.g., "45%", "$2.5M")
@@ -269,19 +269,19 @@ Deno.serve(async (req) => {
 
       Try to use external sources to support the data if not available then use the company's own data.
 
-      MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
+      IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}. TRANSLATE THE TEXT TO THE LANGUAGE OF ${language} IF NEEDED.
       IMPORTANT: Return in a JSON format array of target audience objects without any other text. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
       [
         {
-          "industry": "Manufacturing",
-          "role": "HR Director",
-          "audience_brief": "The HR Director is responsible for the company's workforce and is a high-value target for the company.",
+          "industry": "Manufacturing translated to the language of ${language}",
+          "role": "HR Director translated to the language of ${language}",
+          "audience_brief": "The HR Director is responsible for the company's workforce and is a high-value target for the company. Translated to the language of ${language} if needed",
           "metrics": [{ "value": "45%", "label": "Average Cost Reduction" }],
           "country": "Sweden",
           "sources": ["https://www.google.com"]
         }
       ]
-      `;
+    `;
 
     // Log prompt in batches of 10,000 characters for better readability
     const promptLength = prompt.length;

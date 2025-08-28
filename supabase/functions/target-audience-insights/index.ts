@@ -296,6 +296,7 @@ Deno.serve(async (req) => {
     const recommendationsPromises = recommendations.map(
       async (recommendation) => {
         const { role, industry, reasoning, country } = recommendation;
+        console.log(`Processing for ${role} in ${industry} in ${country}`);
         let finalInsights = {
           role,
           industry,
@@ -340,7 +341,7 @@ Deno.serve(async (req) => {
           You are a senior industry analyst at a top global consultancy.
           Your task: Produce a detailed Audience Insights brief for a given target audience (Role: ${role}, Industry: ${industry}, Country: ${country}).
           This should combine deep research with previously extracted USPs, Benefits, and Problems Solved for ${companyName}.
-          Ensure that the language is ${language}.
+          Ensure that the language is ${language} and do not use the language of the target audience unless it is the same.
 
           ${context}
 
@@ -507,19 +508,21 @@ Deno.serve(async (req) => {
           margins while maintaining service levels.
           Sources: PwC Workforce Benchmark 2024, CNMC 2024.
 
-          Important: Return using the language ${language}, except for the english names.
+          IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}.
+          FOR EXAMPLE IF THE LANGUAGE CODE IS "sv" THEN THE TEXT SHOULD BE RETURNED IN SWEDISH AND IF THE LANGUAGE CODE IS "en" THEN THE TEXT SHOULD BE RETURNED IN ENGLISH AND SO ON.
+          
           Ensure that the keynames in the JSON object are all lowercase and spaces are replaced with underscores.
           Ensure that every usp, pain point, and benefit will have a title, analysis and a source array for one or more sources.
           IMPORTANT: Return ONLY raw JSON. Do not use triple backticks, markdown, or extra explanations.
-          IMPORTANT: Ensure the json follows the format:
+          IMPORTANT: Ensure the json follows the format and the values are translated to the language of ${language} if needed:
           {
-            "industry": "Industry of the audience",
+            "industry": "Industry of the audience translated to the language of ${language}",
             "industry_english": "English name of the industry",
-            "role": "Role of the audience",
+            "role": "Role of the audience translated to the language of ${language}",
             "role_english": "English name of the role",
             "reasoning": "Reasoning for the audience",
             "metrics": [ { "value": "Value of the metric","label": "Label of the metric" } ],
-            "country": "Country of the audience",
+            "country": "Country of the audience in the language of ${language}",
             "country_english": "English name of the country",
             "audience_profile": "Profile of the audience",
             "sources": ["source1", "source2"],
@@ -582,11 +585,16 @@ Deno.serve(async (req) => {
             model: "gpt-4.1",
             tools: [{ type: "web_search_preview" }],
             input: [{ role: "user", content: prompt }],
-            max_output_tokens: 8000,
+            max_output_tokens: 10000,
             text: {
               format: zodTextFormat(insightsSchema, "insights"),
             },
           });
+          console.log("OpenAI response:", openAiResponse.output_parsed);
+          console.log(
+            "OpenAI response end:",
+            JSON.stringify(openAiResponse.output_parsed).slice(-100)
+          );
           insights = openAiResponse.output_parsed.insights;
           console.log("OpenAI analysis:", insights);
         } catch (error) {
@@ -597,7 +605,7 @@ Deno.serve(async (req) => {
           });
           const anthropicResponse = await client.messages.create({
             model: "claude-3-7-sonnet-20250219",
-            max_tokens: 8000,
+            max_tokens: 10000,
             messages: [{ role: "user", content: prompt }],
           });
           console.log("Anthropic response:", anthropicResponse.content[0].text);
