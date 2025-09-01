@@ -246,7 +246,7 @@ async function createOpenAICompletion(
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 4096,
       system:
-        "You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the subject or paragraph requet because some prompt results will be combined with other responses and you want it to sound natural. You will not return the subject line in the response.",
+        "You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the subject or paragraph requet because some prompt results will be combined with other responses and you want it to sound natural. You will not return the subject line in the response. You will translate the response to the requested language in the prompt",
       messages: userPrompt,
     });
     result = anthropicResponse.content[0].text;
@@ -673,25 +673,26 @@ class Subject extends EmailPart {
   static async buildPrompt(details: any, contexts: any) {
     // Fallback to inline subject template if not provided elsewhere
     return `
-Generate a compelling email subject line for a professional outreach email.
+    Generate a compelling email subject line for a professional outreach email.
 
-Sender: ${details.sender.person.name} (${
+    Sender: ${details.sender.person.name} (${
       details.sender.person.designation
     }) at ${details.sender.company.name}
-Receiver: ${details.receiver.person.name} (${
+    Receiver: ${details.receiver.person.name} (${
       details.receiver.person.designation
     }) at ${details.receiver.company.name}
 
-Context: ${contexts.email || "Professional business outreach"}
+    Context: ${contexts.email || "Professional business outreach"}
 
-Requirements:
-- Keep it under 60 characters
-- Be professional and engaging
-- Avoid spam trigger words
-- Be specific and relevant
-- Return ONLY the subject line, no additional text
+    Requirements:
+    - Keep it under 60 characters
+    - Be professional and engaging
+    - Avoid spam trigger words
+    - Be specific and relevant
+    - Return ONLY the subject line, no additional text
+    - Return in this language: ${contexts.language}
 
-Subject line:`;
+    Subject line:`;
   }
 
   toText() {
@@ -1015,6 +1016,7 @@ class ValueProposition extends EmailPart {
       - Focus on mutual benefits
       - Length: ${Utils.getSentenceInstruction(details.preferences?.length)}
       - Tone: ${Utils.getToneInstruction(details.preferences?.tone)}
+      - Return in this language: ${contexts.language}
       - Highlight unique value proposition
       - Return ONLY the value proposition paragraph, no additional text
       - Do NOT include greetings or sign-offs
@@ -1645,6 +1647,7 @@ Deno.serve(async (req) => {
           similarity: "Business partnerships and growth opportunities",
         },
       },
+      language
     };
 
     // Generate email using the new structured approach
