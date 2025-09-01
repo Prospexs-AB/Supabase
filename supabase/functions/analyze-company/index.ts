@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     console.log("Raw HTML length:", html.length);
     console.log("Raw HTML preview:", html.substring(0, 500));
 
-    const content = cleanHtmlContent(html);
+    let content = cleanHtmlContent(html);
     console.log(
       "Extracted content:",
       content ? content.substring(0, 200) + "..." : "No content extracted"
@@ -157,13 +157,7 @@ Deno.serve(async (req) => {
     });
     if (!content) {
       console.error("No content extracted from website.");
-      return new Response(
-        JSON.stringify({ error: "Could not extract content from website" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      content = "No content extracted from website.";
     }
 
     console.log("Analyzing content with OpenAI...");
@@ -326,6 +320,7 @@ Deno.serve(async (req) => {
       const anthropicResponse = await client.messages.create({
         model: "claude-3-7-sonnet-20250219",
         max_tokens: 4096,
+        system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
         messages: [{ role: "user", content: prompt }],
       });
       console.log("Anthropic response:", anthropicResponse);
