@@ -347,9 +347,13 @@ Deno.serve(async (req) => {
         "Anthropic response:",
         anthropicResponse.content[0].text.slice(-199)
       );
-      targetAudience = JSON.parse(anthropicResponse.content[0].text);
-      console.log("Anthropic analysis:", targetAudience);
-      console.log("Successfully analyzed content with Anthropic");
+      try {
+        targetAudience = JSON.parse(anthropicResponse.content[0].text);
+        console.log("Anthropic analysis:", targetAudience);
+        console.log("Successfully analyzed content with Anthropic");
+      } catch (error) {
+        console.log("Error parsing Anthropic response:", error);
+      }
     }
 
     const new_latest_step = 6;
