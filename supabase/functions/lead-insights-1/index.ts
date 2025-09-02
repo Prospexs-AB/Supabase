@@ -261,7 +261,21 @@ Deno.serve(async (req) => {
       const anthropicResponse = await client.messages.create({
         model: "claude-3-7-sonnet-20250219",
         max_tokens: 4096,
-        system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
+        system: `You are a JSON-only assistant. Your task is to generate an object strictly in JSON format with the following structure:
+          {
+            "company_name": "<string> - the company name>",
+            "revenue": "<string> - the company's revenue, e.g., USD $1,000,000>",
+            "employees": "<string> - number of employees>",
+            "industry": "<string> - the company's industry>",
+            "challenges": [
+              {
+                "title": "<string> - title of the challenge>",
+                "description": "<string> - description of the challenge>",
+                "source": ["<string>", "<string>"] - list of sources supporting the challenge
+              }
+            ]
+          }
+          You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
         messages: [{ role: "user", content: challengesPrompt }],
       });
       console.log("Anthropic response:", anthropicResponse.content[0].text);
@@ -271,18 +285,6 @@ Deno.serve(async (req) => {
       detailsWithChallengesOutput = parsedResponse;
       console.log("Anthropic response:", parsedResponse);
     }
-
-    // const { detailsWithChallengesOutput } = openAiResponse.output_parsed;
-
-    // console.log("detailsWithChallengesOutput", detailsWithChallengesOutput);
-
-    // const cleanDetailsWithChallengesOutput = cleanJsonResponse(
-    //   detailsWithChallengesOutput.output_text
-    // );
-
-    // const parsedDetailsWithChallengesOutput = JSON.parse(
-    //   cleanDetailsWithChallengesOutput
-    // );
 
     const result = {
       businessInsights: {

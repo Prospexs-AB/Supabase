@@ -240,7 +240,25 @@ Deno.serve(async (req) => {
           const anthropicResponse = await client.messages.create({
             model: "claude-3-7-sonnet-20250219",
             max_tokens: 7000,
-            system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
+            system: `You are a JSON-only assistant. Your task is to generate an array of solution objects strictly in JSON format. Each object must follow this structure:
+              [
+                {
+                  "solutionTitle": "<string> - title of the solution>",
+                  "solutionDescription": "<string> - detailed description of the solution>",
+                  "impactTitle": "<string> - title of the impact of the solution>",
+                  "impactDescription": "<string> - detailed description of the impact>",
+                  "solutionSources": ["<string>", "<string>"] - sources supporting the solution,
+                  "impactSources": ["<string>", "<string>"] - sources supporting the impact,
+                  "objectionHandling": [
+                    {
+                      "objection": "<string> - the objection text>",
+                      "rebuttal": "<string> - the rebuttal text addressing the objection>",
+                      "source": ["<string>", "<string>"] - sources supporting the rebuttal
+                    }
+                  ]
+                }
+              ]
+              You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
             messages: [{ role: "user", content: objectionHandlingPrompt }],
           });
           let cleanResponse = anthropicResponse.content[0].text.trim();
@@ -262,6 +280,10 @@ Deno.serve(async (req) => {
       finalChallenges;
 
     // Handle setting up next step
+    console.log(
+      `Updating job with finished data for ${progress_data.full_name}:`,
+      finishedData
+    );
 
     const { error: updateJobError } = await supabase
       .from("jobs")

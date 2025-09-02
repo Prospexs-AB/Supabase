@@ -1104,7 +1104,18 @@ Deno.serve(async (req) => {
     const anthropicResponse = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 2000,
-      system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text.`,
+      system: `You are a JSON-only assistant. Your task is to generate an array of objects strictly in JSON format. Each object must follow this structure:
+        [
+          {
+            "role": "<string> - the actual target audience role>",
+            "industry": "<string> - the actual target audience industry>",
+            "country": "<string> - the actual target audience country>",
+            "roleList": ["<string> - list of related roles, e.g., role 1, role 2, role 3>"],
+            "seniorityList": ["<string> - list of seniority levels, e.g., seniority 1, seniority 2, seniority 3>"],
+            "recommendedIndustries": ["<string> - list of recommended industries, e.g., industry 1, industry 2>"]
+          }
+        ]
+You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text.`,
       messages: [{ role: "user", content: prompt }],
     });
     console.log(

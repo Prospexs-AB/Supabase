@@ -196,6 +196,20 @@ Deno.serve(async (req) => {
 
     const prompt = `
       You are a senior industry analyst at a top global consultancy.
+      Analyze this and output in JSON format with an array with objects.
+
+      <example>
+      [
+        {
+          "industry": <string>,
+          "role": <string>,
+          "audience_brief": <string>,
+          "metrics": [{ "value": <string>, "label": <string> }],
+          "country": <string>,
+          "sources": [<string>]
+        }
+      ]
+      </example>
 
       Your task: Identify 10 high-value target audiences that ${
         campaignData.company_website
@@ -272,6 +286,7 @@ Deno.serve(async (req) => {
       Try to use external sources to support the data if not available then use the company's own data.
 
       IMPORTANT: MAKE SURE THE TEXT IS RETURNED IN A LANGUAGE FOLLOWING THIS LANGUAGE CODE: ${language}. TRANSLATE THE TEXT TO THE LANGUAGE OF ${language} IF NEEDED.
+      IMPROTANT: Ensure the json is valid and it will be able to be parsed with JSON.parse.
       IMPORTANT: Return in a JSON format array of target audience objects without any other text. Do not include any explanatory text, markdown formatting, or additional content outside the JSON structure.
       [
         {
@@ -339,7 +354,20 @@ Deno.serve(async (req) => {
       const anthropicResponse = await client.messages.create({
         model: "claude-3-7-sonnet-20250219",
         max_tokens: 7000,
-        system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
+        system: `You are a JSON-only assistant. Your task is to generate an array of objects strictly in JSON format. Each object must have the following structure:
+          [
+            {
+              "industry": "<string> - the industry, translated to the language of ${language}>",
+              "role": "<string> - the role, translated to the language of ${language}>",
+              "audience_brief": "<string> - a description of the audience, translated to the language of ${language}>",
+              "metrics": [
+                { "value": "<string>", "label": "<string>" }
+              ],
+              "country": "<string> - the country>",
+              "sources": ["<string> - URLs of sources>"]
+            }
+          ]
+          You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
         messages: [{ role: "user", content: prompt }],
       });
       console.log("Anthropic response:", anthropicResponse.content[0].text);
@@ -347,13 +375,12 @@ Deno.serve(async (req) => {
         "Anthropic response:",
         anthropicResponse.content[0].text.slice(-199)
       );
-      try {
-        targetAudience = JSON.parse(anthropicResponse.content[0].text);
-        console.log("Anthropic analysis:", targetAudience);
-        console.log("Successfully analyzed content with Anthropic");
-      } catch (error) {
-        console.log("Error parsing Anthropic response:", error);
-      }
+      const cleanResponse = cleanJsonResponse(
+        anthropicResponse.content[0].text
+      );
+      targetAudience = JSON.parse(cleanResponse);
+      console.log("Anthropic analysis:", targetAudience);
+      console.log("Successfully analyzed content with Anthropic");
     }
 
     const new_latest_step = 6;

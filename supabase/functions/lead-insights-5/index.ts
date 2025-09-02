@@ -1349,6 +1349,15 @@ Deno.serve(async (req) => {
         }),
         fieldName: "conversationStarters",
         category: "businessInsights",
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of conversation starter objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "title": "<string> - the title of the conversation starter>",
+              "description": "<string> - a detailed description or explanation of the conversation starter>"
+            }
+          ]
+        `,
       },
       {
         prompt: commonalitiesPrompt,
@@ -1362,6 +1371,15 @@ Deno.serve(async (req) => {
         }),
         fieldName: "commonalities",
         category: "businessInsights",
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of similarity objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "title": "<string> - the title of the similarity>",
+              "description": "<string> - a detailed description of the similarity>"
+            }
+          ]
+        `,
       },
       {
         prompt: insightsPrompt,
@@ -1376,6 +1394,16 @@ Deno.serve(async (req) => {
         }),
         fieldName: "insights",
         category: "businessInsights",
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of insight objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "title": "<string> - the title of the insight>",
+              "description": "<string> - a detailed description of the insight>",
+              "source": ["<string>", "<string>", "<string>"] - list of sources supporting the insight
+            }
+          ]
+        `,
       },
       {
         prompt: discoveryPrompt,
@@ -1394,6 +1422,20 @@ Deno.serve(async (req) => {
         }),
         fieldName: "discovery",
         category: "businessInsights",
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of challenge objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "challenge": "<string> - the challenge that the solution provider should ask the target company about>",
+              "discovery_questions": [
+                {
+                  "question": "<string> - the title of the discovery question>",
+                  "answer": "<string> - the description or expected answer to the discovery question>"
+                }
+              ]
+            }
+          ]
+        `,
       },
       {
         prompt: whyNotPrompt,
@@ -1407,6 +1449,15 @@ Deno.serve(async (req) => {
         }),
         fieldName: "whyNow",
         category: "businessInsights",
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of challenge objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "challenge": "<string> - the challenge that the solution provider should ask the target company about>",
+              "why_now": "<string> - the 'why now' analysis explaining the urgency or relevance of this challenge>"
+            }
+          ]
+        `,
       },
       {
         prompt: awardsPrompt,
@@ -1421,6 +1472,15 @@ Deno.serve(async (req) => {
         fieldName: "awards",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of award objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "award": "The award or recognition",
+              "description": "The description of the award or recognition",
+            }
+          ]
+        `,
       },
       {
         prompt: interestsPrompt,
@@ -1430,6 +1490,15 @@ Deno.serve(async (req) => {
         fieldName: "interests",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of interest strings strictly in JSON format. The array should follow this structure:
+          [
+            "<string> - interest 1",
+            "<string> - interest 2",
+            "<string> - interest 3",
+            "<string> - interest 4"
+          ]
+        `,
       },
       {
         prompt: educationPrompt,
@@ -1439,6 +1508,13 @@ Deno.serve(async (req) => {
         fieldName: "education",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of school names strictly in JSON format. The array should follow this structure:
+          [
+            "<string> - school 1",
+            "<string> - school 2"
+          ]
+        `,
       },
       {
         prompt: relevantInsightsPrompt,
@@ -1453,6 +1529,15 @@ Deno.serve(async (req) => {
         fieldName: "relevantInsights",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of insight objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "title": "<string> - the title of the insight>",
+              "description": "<string> - the description of the insight>"
+            }
+          ]
+        `,
       },
       {
         prompt: similaritiesPrompt,
@@ -1462,6 +1547,13 @@ Deno.serve(async (req) => {
         fieldName: "similarities",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of similarity strings strictly in JSON format. The array should follow this structure:
+          [
+            "<string> - similarity 1",
+            "<string> - similarity 2"
+          ]
+        `,
       },
       {
         prompt: onlineMentionsPrompt,
@@ -1477,6 +1569,16 @@ Deno.serve(async (req) => {
         fieldName: "onlineMentions",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of mention objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "mention_type": "<string> - the type of mention>",
+              "summary": "<string> - the summary of the mention>",
+              "link": "<string> - the link to the mention>"
+            }
+          ]
+        `,
       },
       {
         prompt: relevantActivitiesPrompt,
@@ -1494,6 +1596,18 @@ Deno.serve(async (req) => {
         fieldName: "relevantActivities",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of activity objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "summary": "<string> - the summary of the activity>",
+              "type": "<string> - the type of interaction>",
+              "link": "<string> - the link to the post or profile section>",
+              "when": "<string> - the date or time frame of the activity>",
+              "relevance": "<string> - the relevance of the activity>"
+            }
+          ]
+        `,
       },
       {
         prompt: personConversationalStarterPrompt,
@@ -1508,12 +1622,21 @@ Deno.serve(async (req) => {
         fieldName: "personConversationalStarters",
         category: "personInsights",
         getLinkedinData: true,
+        systemExample: `
+          You are a JSON-only assistant. Your task is to generate an array of conversation starter objects strictly in JSON format. Each object must follow this structure:
+          [
+            {
+              "title": "<string> - the title of the conversation starter>",
+              "content": "<string> - the content of the conversation starter>"
+            }
+          ]
+        `,
       },
     ];
 
     const promises = additionalPrompts.map(
       async (
-        { prompt, schema, fieldName, category, getLinkedinData },
+        { prompt, schema, fieldName, category, getLinkedinData, systemExample },
         index
       ) => {
         try {
@@ -1566,7 +1689,7 @@ Deno.serve(async (req) => {
             const anthropicResponse = await client.messages.create({
               model: "claude-3-7-sonnet-20250219",
               max_tokens: 5000,
-              system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
+              system: `${systemExample} You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language}.`,
               messages: [{ role: "user", content: prompt }],
             });
             const parsedResponse = cleanJsonResponse(

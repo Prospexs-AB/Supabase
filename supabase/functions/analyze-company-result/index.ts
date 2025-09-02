@@ -118,17 +118,10 @@ Deno.serve(async (req) => {
 
     if (!content) {
       console.error("No content extracted from website.");
-      return new Response(
-        JSON.stringify({ error: "Could not extract content from website" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     }
 
     console.log("Analyzing content with OpenAI...");
-    console.log("Content being sent to OpenAI:", content.substring(0, 1000));
+    console.log("Content being sent to OpenAI:", content?.substring(0, 1000));
     const { company_name, company_website } = campaignData;
 
     const params = new URLSearchParams({
@@ -729,9 +722,21 @@ Deno.serve(async (req) => {
         const anthropicResponse = await client.messages.create({
           model: "claude-3-7-sonnet-20250219",
           max_tokens: 4096,
-          system: `You are an assistant that will follow the user's instructions and not return any extra info or markdown formatting. You will not return any markdown and will only return the target audience in a JSON format array of target audience objects without any other text. You will ensure that the JSON response is a valid JSON format and in the language of the user's requested language code: ${language_code}.`,
+          system: `You are a JSON-only assistant. Output an array of objects with the following structure:
+            [
+              {
+                "title": "<string>",
+                "value": "<string>",
+                "source": [
+                  { "name": "<string>", "url": "<string>" }
+                ]
+              }
+            ]
+            Do not include markdown, explanations, or extra text.
+            Return only valid JSON. Do not return markdown or extra text. Return only valid JSON in the language of the user's requested language code: ${language_code}.`,
           messages: [{ role: "user", content: prompt }],
         });
+
         analysis = JSON.parse(anthropicResponse.content[0].text);
         console.log("Anthropic analysis:", analysis);
         console.log("Successfully analyzed content with Anthropic");
