@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
             model: "gpt-4.1",
             tools: [{ type: "web_search_preview" }],
             input: [{ role: "user", content: objectionHandlingPrompt }],
-            max_output_tokens: 7000,
+            max_output_tokens: 8000,
             text: {
               format: zodTextFormat(analysisSchema, "objectionHandlingOutput"),
             },
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
           });
           const anthropicResponse = await client.messages.create({
             model: "claude-3-7-sonnet-20250219",
-            max_tokens: 7000,
+            max_tokens: 8000,
             system: `You are a JSON-only assistant. Your task is to generate an array of solution objects strictly in JSON format. Each object must follow this structure:
               [
                 {

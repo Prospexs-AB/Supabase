@@ -705,7 +705,7 @@ Deno.serve(async (req) => {
           model: "gpt-4.1-mini-2025-04-14",
           tools: [{ type: "web_search_preview" }],
           input: [{ role: "user", content: prompt }],
-          max_output_tokens: 4096,
+          max_output_tokens: 6000,
           text: {
             format: zodTextFormat(analysisSchema, "analysis"),
           },
@@ -721,7 +721,7 @@ Deno.serve(async (req) => {
         });
         const anthropicResponse = await client.messages.create({
           model: "claude-3-7-sonnet-20250219",
-          max_tokens: 4096,
+          max_tokens: 6000,
           system: `You are a JSON-only assistant. Output an array of objects with the following structure:
             [
               {

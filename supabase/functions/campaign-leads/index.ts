@@ -1181,40 +1181,49 @@ You will not return any markdown and will only return the target audience in a J
   };
 
   const leadsPromises = response.map(async (targetAudience) => {
-    const cleanIndustries = targetAudience.recommendedIndustries.map(
-      (industry) => matchIndustry(industry)
-    );
+    try {
+      const cleanIndustries = targetAudience.recommendedIndustries.map(
+        (industry) => matchIndustry(industry)
+      );
 
-    const generectBody = {
-      without_company: true,
-      locations: [normalizeCountry(targetAudience.country)],
-      personas: [
-        [
-          targetAudience.role,
-          [...targetAudience.roleList],
-          [],
-          [...targetAudience.seniorityList],
+      const generectBody = {
+        without_company: true,
+        locations: [normalizeCountry(targetAudience.country)],
+        personas: [
+          [
+            targetAudience.role,
+            [...targetAudience.roleList],
+            [],
+            [...targetAudience.seniorityList],
+          ],
         ],
-      ],
-      lead_industries: cleanIndustries,
-      limit_by: 300,
-    };
+        lead_industries: cleanIndustries,
+        limit_by: 300,
+      };
 
-    console.log("Generect body:", generectBody);
+      console.log("Generect body:", generectBody);
 
-    const generectResponse = await fetch(generectUrl, {
-      method: "POST",
-      headers: generectHeaders,
-      body: JSON.stringify(generectBody),
-    });
+      const generectResponse = await fetch(generectUrl, {
+        method: "POST",
+        headers: generectHeaders,
+        body: JSON.stringify(generectBody),
+      });
 
-    const generectData = await generectResponse.json();
-    console.log("Generect data:", generectData);
-    return {
-      role: targetAudience.role,
-      industry: targetAudience.industry,
-      leads: generectData?.leads,
-    };
+      const generectData = await generectResponse.json();
+      console.log("Generect data:", generectData);
+      return {
+        role: targetAudience.role,
+        industry: targetAudience.industry,
+        leads: generectData?.leads,
+      };
+    } catch (error) {
+      console.error("Error getting leads:", error);
+      return {
+        role: targetAudience.role,
+        industry: targetAudience.industry,
+        leads: [],
+      };
+    }
   });
 
   const leadsData = await Promise.all(leadsPromises);
