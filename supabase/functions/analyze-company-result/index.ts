@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       be backed by evidence.
       
       Output format:
-      USP 1: [Title]
+      [Title]
       - [Paragraph 1: Context + core USP + metrics]
       - [Paragraph 2: Supporting data + customer example + differentiation]
       - [Paragraph 3: Market implications + strategic insight]
@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
-          "title": "your title here",
+          "title": "your title here" (DO NOT USE THE FORMAT "USP 1:" IN THE TITLE, JUST THE TITLE),
           "value": "your analysis here (no links here!!)",
           "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
@@ -359,7 +359,7 @@ Deno.serve(async (req) => {
       be backed by evidence.
 
       Output format:
-      Problem Solved 1: [Title]
+      [Title]
       - [Paragraph 1: Problem + market context + metrics]
       - [Paragraph 2: Impact + supporting data + customer example]
       - [Paragraph 3: How ${company_website} solves it + why it's different]
@@ -490,7 +490,7 @@ Deno.serve(async (req) => {
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
-          "title": "your title here",
+          "title": "your title here" (DO NOT USE THE FORMAT "Problem Solved 1:" IN THE TITLE, JUST THE TITLE),
           "value": "your analysis here (no links here!!)",
           "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
@@ -538,7 +538,7 @@ Deno.serve(async (req) => {
       be backed by evidence.
 
       Output format:
-      Benefit 1: [Title]
+      [Title]
       - [Paragraph 1: Context + core benefit + metrics]
       - [Paragraph 2: Supporting data + customer example + differentiation]
       - [Paragraph 3: Strategic implication + market context]
@@ -659,7 +659,7 @@ Deno.serve(async (req) => {
       Return ONLY a valid JSON object in this exact format (no markdown formatting, no backticks, no extra words outside the json object):
       [
         {
-          "title": "your title here",
+          "title": "your title here" (DO NOT USE THE FORMAT "Benefit 1:" IN THE TITLE, JUST THE TITLE),
           "value": "your analysis here (no links here!!)",
           "source": [ { "name": "name of source", "url": "your source url here" } ]
         }
