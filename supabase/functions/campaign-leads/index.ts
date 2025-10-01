@@ -1193,8 +1193,8 @@ You will not return any markdown and will only return the target audience in a J
           [
             targetAudience.role,
             [...targetAudience.roleList],
-            [],
             [...targetAudience.seniorityList],
+            [],
           ],
         ],
         lead_industries: cleanIndustries,
