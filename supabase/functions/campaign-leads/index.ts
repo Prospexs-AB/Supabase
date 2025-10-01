@@ -1201,16 +1201,26 @@ You will not return any markdown and will only return the target audience in a J
         limit_by: 300,
       };
 
-      console.log("Generect body:", generectBody);
+      console.log(`Generect body for ${targetAudience.role}:`, generectBody);
 
       const generectResponse = await fetch(generectUrl, {
         method: "POST",
         headers: generectHeaders,
         body: JSON.stringify(generectBody),
       });
+      let generectData = await generectResponse.json();
 
-      const generectData = await generectResponse.json();
-      console.log("Generect data:", generectData);
+      if (!generectData.leads || generectData.leads.length === 0) {
+        console.log(`No leads found for ${targetAudience.role}, retrying...`);
+        const generectRetryResponse = await fetch(generectUrl, {
+          method: "POST",
+          headers: generectHeaders,
+          body: JSON.stringify(generectBody),
+        });
+        generectData = await generectRetryResponse.json();
+      }
+
+      console.log(`Generect data for ${targetAudience.role}:`, generectData);
       return {
         role: targetAudience.role,
         industry: targetAudience.industry,
