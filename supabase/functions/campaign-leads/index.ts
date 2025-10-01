@@ -1210,7 +1210,7 @@ You will not return any markdown and will only return the target audience in a J
       });
       let generectData = await generectResponse.json();
 
-      if (!generectData.leads || generectData.leads.length === 0) {
+      if (generectData.leads.length === 0) {
         console.log(`No leads found for ${targetAudience.role}, retrying...`);
         const generectRetryResponse = await fetch(generectUrl, {
           method: "POST",
